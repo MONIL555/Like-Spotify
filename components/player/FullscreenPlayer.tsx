@@ -64,7 +64,7 @@ export function FullscreenPlayer() {
               <circle cx="6" cy="18" r="3" />
               <circle cx="18" cy="16" r="3" />
             </svg>
-            <span className="font-semibold tracking-tight text-foreground">SoundWave</span>
+            <span className="font-semibold tracking-tight text-foreground">SpotTunes</span>
           </div>
           
           <Button

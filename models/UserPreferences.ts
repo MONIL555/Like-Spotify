@@ -1,5 +1,5 @@
 // ============================================================
-// SoundWave — UserPreferences Model
+// SpotTunes — UserPreferences Model
 // ============================================================
 
 import mongoose, { Schema, Document, Model } from 'mongoose';

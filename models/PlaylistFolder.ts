@@ -1,5 +1,5 @@
 // ============================================================
-// SoundWave — PlaylistFolder Model
+// SpotTunes — PlaylistFolder Model
 // ============================================================
 
 import mongoose, { Schema, Document, Model } from 'mongoose';

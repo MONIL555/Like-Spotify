@@ -1,5 +1,5 @@
 // ============================================================
-// SoundWave — Zod Validation Schemas
+// SpotTunes — Zod Validation Schemas
 // ============================================================
 
 import { z } from 'zod';

@@ -1,5 +1,5 @@
 // ============================================================
-// SoundWave — Next.js Middleware (Auth Guard)
+// SpotTunes — Next.js Middleware (Auth Guard)
 // ============================================================
 
 import { NextResponse } from 'next/server';

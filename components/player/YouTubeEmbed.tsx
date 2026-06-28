@@ -1,5 +1,5 @@
 // ============================================================
-// SoundWave — YouTubeEmbed (Hidden Iframe)
+// SpotTunes — YouTubeEmbed (Hidden Iframe)
 // ============================================================
 
 'use client';

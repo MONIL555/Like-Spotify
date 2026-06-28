@@ -1,5 +1,5 @@
 // ============================================================
-// SoundWave — Get Current User API Route
+// SpotTunes — Get Current User API Route
 // ============================================================
 
 import { NextRequest } from 'next/server';

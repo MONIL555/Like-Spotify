@@ -40,7 +40,7 @@ export function Sidebar() {
             <circle cx="6" cy="18" r="3" />
             <circle cx="18" cy="16" r="3" />
           </svg>
-          <span className="font-bold text-xl tracking-tight">SoundWave</span>
+          <span className="font-bold text-xl tracking-tight">SpotTunes</span>
         </Link>
       </div>
 

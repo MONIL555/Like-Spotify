@@ -1,5 +1,5 @@
 // ============================================================
-// SoundWave — Track Model (cached YouTube metadata)
+// SpotTunes — Track Model (cached YouTube metadata)
 // ============================================================
 
 import mongoose, { Schema, Document, Model } from 'mongoose';

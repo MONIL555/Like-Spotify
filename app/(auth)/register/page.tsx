@@ -4,7 +4,7 @@ import { RegisterForm } from '@/components/auth/RegisterForm';
 
 export const metadata: Metadata = {
   title: 'Create an account',
-  description: 'Create a new SoundWave account',
+  description: 'Create a new SpotTunes account',
 };
 
 export default function RegisterPage() {

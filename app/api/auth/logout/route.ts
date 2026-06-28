@@ -1,5 +1,5 @@
 // ============================================================
-// SoundWave — Logout API Route
+// SpotTunes — Logout API Route
 // ============================================================
 
 import { NextRequest } from 'next/server';

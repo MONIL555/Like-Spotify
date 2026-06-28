@@ -1,5 +1,5 @@
 // ============================================================
-// SoundWave — Listening History Model
+// SpotTunes — Listening History Model
 // ============================================================
 
 import mongoose, { Schema, Document, Model } from 'mongoose';

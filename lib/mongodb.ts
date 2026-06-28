@@ -1,5 +1,5 @@
 // ============================================================
-// SoundWave — MongoDB Connection Singleton
+// SpotTunes — MongoDB Connection Singleton
 // ============================================================
 
 import mongoose from 'mongoose';

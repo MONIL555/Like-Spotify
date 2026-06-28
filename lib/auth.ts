@@ -1,5 +1,5 @@
 // ============================================================
-// SoundWave — JWT Authentication Helpers
+// SpotTunes — JWT Authentication Helpers
 // ============================================================
 
 import jwt from 'jsonwebtoken';

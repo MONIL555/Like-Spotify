@@ -1,5 +1,5 @@
 // ============================================================
-// SoundWave — Rate Limiting (Upstash Redis)
+// SpotTunes — Rate Limiting (Upstash Redis)
 // ============================================================
 
 import { Ratelimit } from '@upstash/ratelimit';

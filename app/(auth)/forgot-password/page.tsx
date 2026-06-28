@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 
 export const metadata: Metadata = {
   title: 'Forgot Password',
-  description: 'Reset your SoundWave password',
+  description: 'Reset your SpotTunes password',
 };
 
 export default function ForgotPasswordPage() {

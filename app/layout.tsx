@@ -14,8 +14,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | SoundWave',
-    default: 'SoundWave - Your Personal Web Music Player',
+    template: '%s | SpotTunes',
+    default: 'SpotTunes - Your Personal Web Music Player',
   },
   description: 'A modern, high-performance web music player built with Next.js.',
   keywords: ['music', 'player', 'youtube', 'streaming', 'audio', 'nextjs'],
@@ -24,9 +24,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    siteName: "SoundWave",
-    title: "SoundWave — Your Music, Your Way",
-    description: "Stream your favorite music with SoundWave.",
+    siteName: "SpotTunes",
+    title: "SpotTunes — Your Music, Your Way",
+    description: "Stream your favorite music with SpotTunes.",
   },
   robots: {
     index: false, // Private app — no indexing

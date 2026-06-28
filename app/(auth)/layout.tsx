@@ -30,7 +30,7 @@ export default function AuthLayout({
             <circle cx="6" cy="18" r="3" />
             <circle cx="18" cy="16" r="3" />
           </svg>
-          SoundWave
+          SpotTunes
         </div>
         <div className="relative z-20 mt-auto">
           <blockquote className="space-y-2">

@@ -1,5 +1,5 @@
 // ============================================================
-// SoundWave — Utility Functions
+// SpotTunes — Utility Functions
 // ============================================================
 
 import { type ClassValue, clsx } from 'clsx';

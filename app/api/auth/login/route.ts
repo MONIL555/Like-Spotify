@@ -1,5 +1,5 @@
 // ============================================================
-// SoundWave — Login API Route
+// SpotTunes — Login API Route
 // ============================================================
 
 import { NextRequest } from 'next/server';

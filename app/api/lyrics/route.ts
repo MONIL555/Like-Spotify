@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
     const res = await fetch(fetchUrl, {
       headers: {
-        'User-Agent': 'SoundWave-NextJS/0.1.0' // lrclib requires a User-Agent
+        'User-Agent': 'SpotTunes-NextJS/0.1.0' // lrclib requires a User-Agent
       },
       next: { revalidate: 86400 } // Cache for 24 hours
     });

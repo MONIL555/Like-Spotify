@@ -1,5 +1,5 @@
 // ============================================================
-// SoundWave — Artist Model (cached YouTube channel)
+// SpotTunes — Artist Model (cached YouTube channel)
 // ============================================================
 
 import mongoose, { Schema, Document, Model } from 'mongoose';

@@ -1,5 +1,5 @@
 // ============================================================
-// SoundWave — Album Model (YouTube playlist as album)
+// SpotTunes — Album Model (YouTube playlist as album)
 // ============================================================
 
 import mongoose, { Schema, Document, Model } from 'mongoose';

@@ -1,5 +1,5 @@
 // ============================================================
-// SoundWave — SearchCache Model
+// SpotTunes — SearchCache Model
 // ============================================================
 
 import mongoose, { Schema, Document, Model } from 'mongoose';
