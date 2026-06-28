@@ -1,0 +1,127 @@
+'use client';
+
+import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1 } from 'lucide-react';
+import { useYouTubePlayer } from '@/hooks/useYouTubePlayer';
+import { useQueueStore } from '@/store/queueStore';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+
+export function PlayerControls() {
+  const {
+    isPlaying,
+    shuffle,
+    repeat,
+    isPlayerReady,
+    togglePlay,
+    toggleShuffle,
+    cycleRepeat,
+  } = useYouTubePlayer();
+
+  const { playNext, playPrevious, queue, history } = useQueueStore();
+
+  const hasNext = queue.length > 0;
+  const hasPrev = history.length > 0;
+
+  return (
+    <div className="flex items-center justify-center gap-2 md:gap-4 mb-2">
+      {/* Shuffle Button */}
+      <Tooltip>
+        <TooltipTrigger>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleShuffle}
+            className={cn(
+              "hidden sm:flex text-muted-foreground hover:text-foreground",
+              shuffle && "text-brand-primary hover:text-brand-hover"
+            )}
+            disabled={!isPlayerReady}
+          >
+            <Shuffle className="h-4 w-4" />
+            <span className="sr-only">Shuffle</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          {shuffle ? 'Disable shuffle' : 'Enable shuffle'}
+        </TooltipContent>
+      </Tooltip>
+
+      {/* Previous Button */}
+      <Tooltip>
+        <TooltipTrigger>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={playPrevious}
+            className="text-muted-foreground hover:text-foreground"
+            disabled={!isPlayerReady || !hasPrev}
+          >
+            <SkipBack className="h-5 w-5 fill-current" />
+            <span className="sr-only">Previous</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top">Previous</TooltipContent>
+      </Tooltip>
+
+      {/* Play/Pause Button */}
+      <Button
+        variant="default"
+        size="icon"
+        onClick={togglePlay}
+        className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-foreground text-background hover:bg-foreground/90 hover:scale-105 transition-transform"
+        disabled={!isPlayerReady}
+      >
+        {isPlaying ? (
+          <Pause className="h-4 w-4 md:h-5 md:w-5 fill-current" />
+        ) : (
+          <Play className="h-4 w-4 md:h-5 md:w-5 fill-current ml-0.5" />
+        )}
+        <span className="sr-only">{isPlaying ? 'Pause' : 'Play'}</span>
+      </Button>
+
+      {/* Next Button */}
+      <Tooltip>
+        <TooltipTrigger>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={playNext}
+            className="text-muted-foreground hover:text-foreground"
+            disabled={!isPlayerReady || !hasNext}
+          >
+            <SkipForward className="h-5 w-5 fill-current" />
+            <span className="sr-only">Next</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top">Next</TooltipContent>
+      </Tooltip>
+
+      {/* Repeat Button */}
+      <Tooltip>
+        <TooltipTrigger>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={cycleRepeat}
+            className={cn(
+              "hidden sm:flex text-muted-foreground hover:text-foreground",
+              repeat !== 'off' && "text-brand-primary hover:text-brand-hover"
+            )}
+            disabled={!isPlayerReady}
+          >
+            {repeat === 'one' ? (
+              <Repeat1 className="h-4 w-4" />
+            ) : (
+              <Repeat className="h-4 w-4" />
+            )}
+            <span className="sr-only">Repeat</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          {repeat === 'off' ? 'Enable repeat' : repeat === 'all' ? 'Enable repeat one' : 'Disable repeat'}
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  );
+}
