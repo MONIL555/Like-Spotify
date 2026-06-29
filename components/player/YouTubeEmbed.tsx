@@ -49,10 +49,10 @@ export function YouTubeEmbed() {
     } else if (currentTrackNow) {
       // Dynamic mix (autoplay) when queue runs out
       try {
-        const res = await fetch(`/api/autoplay?videoId=${currentTrackNow.videoId}&title=${encodeURIComponent(currentTrackNow.title)}&artist=${encodeURIComponent(currentTrackNow.artist)}`);
+        const res = await fetch(`/api/autoplay?videoId=${currentTrackNow.videoId}&artist=${encodeURIComponent(currentTrackNow.artist)}`);
         const data = await res.json();
-        if (data.track) {
-          useQueueStore.getState().addToQueue(data.track, 'next');
+        if (data.playlist && data.playlist.length > 0) {
+          useQueueStore.setState((state) => ({ queue: [...state.queue, ...data.playlist] }));
           const finalNext = playNext(currentTrackNow);
           if (finalNext) {
             setCurrentTrack(finalNext);
@@ -132,8 +132,11 @@ export function YouTubeEmbed() {
             }
           },
           onError: (event: any) => {
-            console.error('YouTube Player Error:', event.data);
-            advanceToNext(); // Skip unplayable tracks
+            console.error('YouTube Player Error:', event.data, 'for track:', usePlayerStore.getState().currentTrack);
+            // Wait 1 second before advancing to prevent infinite crash loops
+            setTimeout(() => {
+              advanceToNext();
+            }, 1000);
           },
         },
       });
@@ -152,6 +155,11 @@ export function YouTubeEmbed() {
   // 3. Handle Track Change
   useEffect(() => {
     if (playerRef.current && currentTrack) {
+      if (!currentTrack.videoId || currentTrack.videoId.length < 11) {
+        console.error('Invalid videoId passed to player:', currentTrack);
+        advanceToNext();
+        return;
+      }
       playerRef.current.loadVideoById(currentTrack.videoId);
       if (!isPlaying) {
         setIsPlaying(true);
@@ -212,12 +220,25 @@ export function YouTubeEmbed() {
     };
   }, [isPlaying, setCurrentTime]);
 
-  // Expose global method to seek (used by ProgressBar)
+  // Expose global method to seek (used by ProgressBar) and manage silent audio synchronously
   useEffect(() => {
     if (typeof window !== 'undefined') {
       (window as any).seekTo = (seconds: number) => {
         if (playerRef.current) {
           playerRef.current.seekTo(seconds, true);
+        }
+      };
+      
+      // Global methods to play/pause silent audio directly on user interaction
+      (window as any).playSilentAudio = () => {
+        if (audioRef.current) {
+          audioRef.current.play().catch(e => console.log('Silent audio play failed:', e));
+        }
+      };
+      
+      (window as any).pauseSilentAudio = () => {
+        if (audioRef.current) {
+          audioRef.current.pause();
         }
       };
     }
@@ -282,8 +303,8 @@ export function YouTubeEmbed() {
 
   return (
     <div
-      className="fixed pointer-events-none opacity-[0.01]"
-      style={{ width: '200px', height: '200px', top: '-9999px', left: '-9999px', overflow: 'hidden' }}
+      className="fixed pointer-events-none opacity-[0.01] z-[-1]"
+      style={{ width: '10px', height: '10px', top: '0', left: '0', overflow: 'hidden' }}
     >
       <div ref={containerRef} id="youtube-player" />
       <audio 

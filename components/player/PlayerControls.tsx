@@ -31,6 +31,9 @@ export function PlayerControls() {
   const [isFetchingNext, setIsFetchingNext] = useState(false);
 
   const handlePlayNext = async () => {
+    if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
+      (window as any).playSilentAudio();
+    }
     if (queue.length > 0) {
       const nextTrack = playNext(currentTrack);
       if (nextTrack) {
@@ -40,10 +43,10 @@ export function PlayerControls() {
       // Dynamic mix (autoplay)
       try {
         setIsFetchingNext(true);
-        const res = await fetch(`/api/autoplay?videoId=${currentTrack.videoId}&title=${encodeURIComponent(currentTrack.title)}&artist=${encodeURIComponent(currentTrack.artist)}`);
+        const res = await fetch(`/api/autoplay?videoId=${currentTrack.videoId}&artist=${encodeURIComponent(currentTrack.artist)}`);
         const data = await res.json();
-        if (data.track) {
-          useQueueStore.getState().addToQueue(data.track, 'next');
+        if (data.playlist && data.playlist.length > 0) {
+          useQueueStore.setState((state) => ({ queue: [...state.queue, ...data.playlist] }));
           const nextTrack = playNext(currentTrack);
           if (nextTrack) setCurrentTrack(nextTrack);
         }
@@ -56,6 +59,9 @@ export function PlayerControls() {
   };
 
   const handlePlayPrevious = () => {
+    if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
+      (window as any).playSilentAudio();
+    }
     const prevTrack = playPrevious();
     if (prevTrack) {
       setCurrentTrack(prevTrack);
@@ -103,11 +109,17 @@ export function PlayerControls() {
         <TooltipContent side="top">Previous</TooltipContent>
       </Tooltip>
 
-      {/* Play/Pause Button */}
       <Button
         variant="default"
         size="icon"
-        onClick={togglePlay}
+        onClick={() => {
+          if (!isPlaying && typeof window !== 'undefined' && (window as any).playSilentAudio) {
+            (window as any).playSilentAudio();
+          } else if (isPlaying && typeof window !== 'undefined' && (window as any).pauseSilentAudio) {
+            (window as any).pauseSilentAudio();
+          }
+          togglePlay();
+        }}
         className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-foreground text-background hover:bg-foreground/90 hover:scale-105 transition-transform"
         disabled={!isPlayerReady}
       >

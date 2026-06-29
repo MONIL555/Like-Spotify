@@ -34,6 +34,9 @@ export function TrackRow({ track, index, showCover = true, onRemove }: TrackRowP
   const durationText = track.durationText || (track.duration ? formatDuration(track.duration) : '');
 
   const handlePlay = () => {
+    if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
+      (window as any).playSilentAudio();
+    }
     if (isCurrentTrack) {
       togglePlay();
     } else {
