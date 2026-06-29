@@ -44,11 +44,11 @@ export function Player() {
     <>
       <YouTubeEmbed />
       
-      {/* Normal bottom player bar */}
+      {/* Floating glass bottom player bar */}
       <footer 
         className={cn(
-          "h-[90px] w-full bg-player border-t border-border flex items-center justify-between px-4 z-50 transition-transform duration-300 ease-in-out",
-          !currentTrack ? "translate-y-full" : "translate-y-0"
+          "fixed bottom-[64px] md:bottom-2 left-2 right-2 md:left-[208px] lg:left-[248px] h-[72px] glass-panel-heavy rounded-2xl flex items-center justify-between px-4 z-[60] transition-all duration-500 ease-out shadow-glass",
+          !currentTrack ? "translate-y-[150%] opacity-0" : "translate-y-0 opacity-100"
         )}
       >
         <NowPlayingBar />

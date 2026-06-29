@@ -24,14 +24,14 @@ export function TopBar() {
   const { user, isAuthenticated, logout } = useAuth();
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center justify-between px-6 bg-background/80 backdrop-blur-md border-b border-border/40">
+    <header className="sticky top-0 z-40 flex h-14 items-center justify-between px-4 bg-white/40 backdrop-blur-3xl border-b border-black/5 shadow-sm transition-all duration-300">
       {/* Navigation History */}
       <div className="flex items-center gap-2">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => router.back()}
-          className="rounded-full h-8 w-8 bg-surface-hover hover:bg-surface-hover/80 hidden sm:flex"
+          className="rounded-full h-10 w-10 bg-black/5 hover:bg-black/10 border border-black/5 hidden sm:flex transition-all duration-300 text-foreground"
         >
           <ChevronLeft className="h-5 w-5" />
           <span className="sr-only">Go back</span>
@@ -40,7 +40,7 @@ export function TopBar() {
           variant="ghost"
           size="icon"
           onClick={() => router.forward()}
-          className="rounded-full h-8 w-8 bg-surface-hover hover:bg-surface-hover/80 hidden sm:flex"
+          className="rounded-full h-10 w-10 bg-black/5 hover:bg-black/10 border border-black/5 hidden sm:flex transition-all duration-300 text-foreground"
         >
           <ChevronRight className="h-5 w-5" />
           <span className="sr-only">Go forward</span>
@@ -50,7 +50,7 @@ export function TopBar() {
       {/* Center: Search Bar (only visible on /search routes) */}
       <div className="flex-1 flex justify-center max-w-2xl px-4">
         {pathname.startsWith('/search') && (
-          <React.Suspense fallback={<div className="h-12 w-full max-w-sm rounded-full bg-surface-hover/50 animate-pulse" />}>
+          <React.Suspense fallback={<div className="h-12 w-full max-w-sm rounded-full bg-black/5 border border-black/5 animate-pulse" />}>
             <SearchBar />
           </React.Suspense>
         )}
@@ -79,7 +79,7 @@ export function TopBar() {
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end">
+            <DropdownMenuContent className="w-56 glass-panel border-black/10 shadow-glass" align="end">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">{user?.displayName}</p>

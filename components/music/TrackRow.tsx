@@ -60,14 +60,14 @@ export function TrackRow({ track, index, showCover = true }: TrackRowProps) {
   return (
     <div 
       className={cn(
-        "group flex items-center gap-4 px-4 py-2 rounded-md hover:bg-surface-hover/50 transition-colors cursor-pointer",
-        isCurrentTrack && "bg-surface-hover/30"
+        "group flex items-center gap-2 px-1 py-1 rounded hover:bg-black/5 transition-colors cursor-pointer",
+        isCurrentTrack && "bg-black/5"
       )}
       onClick={handlePlay}
     >
       {/* Index or Play Button */}
       {index !== undefined && (
-        <div className="w-8 text-center text-muted-foreground flex items-center justify-center relative">
+        <div className="w-6 text-center text-xs text-muted-foreground flex items-center justify-center relative">
           <span className={cn("group-hover:opacity-0", isCurrentTrack && "text-brand-primary")}>
             {isCurrentTrack && isPlaying ? (
               // Simple equalizer animation placeholder
@@ -81,7 +81,7 @@ export function TrackRow({ track, index, showCover = true }: TrackRowProps) {
             )}
           </span>
           <Play className={cn(
-            "h-4 w-4 absolute opacity-0 group-hover:opacity-100 fill-current",
+            "h-3.5 w-3.5 absolute opacity-0 group-hover:opacity-100 fill-current",
             isCurrentTrack && "text-brand-primary"
           )} />
         </div>
@@ -89,7 +89,7 @@ export function TrackRow({ track, index, showCover = true }: TrackRowProps) {
 
       {/* Cover */}
       {showCover && (
-        <div className="relative h-10 w-10 flex-shrink-0 bg-muted rounded overflow-hidden">
+        <div className="relative h-9 w-9 flex-shrink-0 bg-muted rounded overflow-hidden">
           {thumbnail && (
             <Image src={thumbnail} alt={title} fill className="object-cover" sizes="40px" />
           )}
@@ -116,20 +116,20 @@ export function TrackRow({ track, index, showCover = true }: TrackRowProps) {
       </div>
 
       {/* Right Actions */}
-      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-1 transition-opacity">
         <LikeButton videoId={track.videoId} />
         
-        <span className="text-sm text-muted-foreground min-w-[40px] text-right hidden sm:block">
+        <span className="text-xs text-muted-foreground min-w-[32px] text-right hidden sm:block">
           {durationText}
         </span>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-              <MoreHorizontal className="h-5 w-5" />
+              <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="w-48 bg-white/95 backdrop-blur-md border border-black/10 shadow-lg z-[100]">
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); /* Add to queue logic */ }}>
               Add to queue
             </DropdownMenuItem>

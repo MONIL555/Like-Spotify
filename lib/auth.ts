@@ -27,7 +27,7 @@ export function signAccessToken(
   payload: Omit<JWTPayload, 'iat' | 'exp'>
 ): string {
   return jwt.sign(payload, ACCESS_SECRET, {
-    expiresIn: '15m',
+    expiresIn: '7d',
     algorithm: 'HS256',
   });
 }
@@ -99,7 +99,7 @@ export function getAuthCookieOptions(isRefreshToken = false) {
     secure: isProduction,
     sameSite: 'lax' as const,
     path: '/',
-    maxAge: isRefreshToken ? 30 * 24 * 60 * 60 : 15 * 60, // 30 days or 15 min
+    maxAge: isRefreshToken ? 30 * 24 * 60 * 60 : 7 * 24 * 60 * 60, // 30 days or 7 days
     domain: process.env.COOKIE_DOMAIN || undefined,
   };
 }

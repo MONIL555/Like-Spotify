@@ -68,107 +68,35 @@ export function HomeDashboard() {
   };
 
   return (
-    <div className="flex flex-col gap-8 animate-fade-in-up">
-      <section>
-        <h1 className="text-3xl font-bold tracking-tight mb-6">{greeting}</h1>
-        
-        {/* Quick Picks Grid (Recently Played) */}
-        {recentlyPlayed && recentlyPlayed.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-            {recentlyPlayed.slice(0, 6).map((item: any) => (
-              <div 
-                key={item.id}
-                onClick={() => handlePlayTrack(item.data)}
-                className="group flex items-center gap-4 bg-surface-hover/50 hover:bg-surface-hover rounded-md overflow-hidden transition-colors cursor-pointer pr-4"
-              >
-                <div className="relative h-16 w-16 md:h-20 md:w-20 bg-muted flex-shrink-0">
-                  <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold truncate">{item.title}</p>
-                  <p className="text-sm text-muted-foreground truncate">{item.description}</p>
-                </div>
-                <Button 
-                  size="icon" 
-                  className="opacity-0 group-hover:opacity-100 transition-opacity bg-brand-primary text-white rounded-full h-10 w-10 md:h-12 md:w-12 shadow-lg shadow-black/20 hover:scale-105 hover:bg-brand-hover"
-                >
-                  <Play className="h-5 w-5 fill-current ml-1" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* New Releases */}
-      {newReleases && newReleases.length > 0 && (
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold tracking-tight hover:underline cursor-pointer">
-              New Releases
-            </h2>
-            <span className="text-sm font-bold text-muted-foreground hover:underline cursor-pointer">
-              Show all
-            </span>
-          </div>
-          
-          <div className="flex overflow-x-auto pb-6 -mx-6 px-6 gap-6 snap-x snap-mandatory scrollbar-hide">
-            {newReleases.map((item: any) => (
-              <div 
-                key={`new-${item.id}`}
-                onClick={() => handlePlayTrack(item.data)}
-                className="snap-start flex-shrink-0 w-[160px] md:w-[200px] group p-4 rounded-xl bg-surface hover:bg-surface-hover transition-colors cursor-pointer flex flex-col gap-4"
-              >
-                <div className="relative aspect-square w-full rounded-md overflow-hidden bg-muted shadow-card">
-                  <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full" />
-                  <div className="absolute bottom-2 right-2 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                    <Button 
-                      size="icon" 
-                      className="bg-brand-primary text-white rounded-full h-12 w-12 shadow-lg shadow-black/40 hover:scale-105 hover:bg-brand-hover"
-                    >
-                      <Play className="h-5 w-5 fill-current ml-1" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <h3 className="font-semibold truncate">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {item.description}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Made For You */}
+    <div className="flex flex-col gap-5 animate-fade-in-up">
+      {/* Based on recent listening */}
       {madeForYou && madeForYou.length > 0 && (
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold tracking-tight hover:underline cursor-pointer">
-              Made For You
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-bold tracking-tight hover:underline cursor-pointer">
+              Based on your recent listening
             </h2>
-            <span className="text-sm font-bold text-muted-foreground hover:underline cursor-pointer">
+            <span className="text-xs font-bold text-muted-foreground hover:underline cursor-pointer">
               Show all
             </span>
           </div>
           
-          <div className="flex overflow-x-auto pb-6 -mx-6 px-6 gap-6 snap-x snap-mandatory scrollbar-hide">
+          <div className="flex overflow-x-auto pb-3 -mx-4 px-4 gap-4 snap-x snap-mandatory scrollbar-hide">
             {madeForYou.map((item: any) => (
               <Link 
                 href={`/album/${item.id}`}
                 key={`made-${item.id}`}
-                className="snap-start flex-shrink-0 w-[160px] md:w-[200px] group p-4 rounded-xl bg-surface hover:bg-surface-hover transition-colors cursor-pointer flex flex-col gap-4"
+                className="snap-start flex-shrink-0 w-[140px] md:w-[180px] lg:w-[200px] 2xl:w-[240px] group p-2.5 rounded-xl glass-card cursor-pointer flex flex-col gap-3 hover:shadow-neon"
               >
-                <div className="relative aspect-square w-full rounded-md overflow-hidden bg-muted shadow-card">
+                <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-white/5 shadow-glass">
                   <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full" />
                   <div className="absolute bottom-2 right-2 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                     <Button 
                       size="icon" 
-                      className="bg-brand-primary text-white rounded-full h-12 w-12 shadow-lg shadow-black/40 hover:scale-105 hover:bg-brand-hover"
+                      className="bg-brand-primary text-white rounded-full h-10 w-10 shadow-lg shadow-black/40 hover:scale-105 hover:bg-brand-hover"
+                      onClick={(e) => { e.preventDefault(); handlePlayTrack(item.data); }}
                     >
-                      <Play className="h-5 w-5 fill-current ml-1" />
+                      <Play className="h-4 w-4 fill-current ml-1" />
                     </Button>
                   </div>
                 </div>

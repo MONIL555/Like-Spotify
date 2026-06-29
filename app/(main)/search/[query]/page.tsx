@@ -67,7 +67,7 @@ export default function SearchResultsPage() {
   }
 
   const items = data?.items || [];
-  
+
   if (items.length === 0) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px] flex-col gap-4 text-center">
@@ -81,78 +81,16 @@ export default function SearchResultsPage() {
   const songs = items; // Assuming YouTube search returned mixed or mostly videos
 
   return (
-    <div className="p-6 md:p-8 animate-fade-in">
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList className="mb-8 bg-transparent border-b border-border w-full justify-start rounded-none h-auto p-0 space-x-6">
-          <TabsTrigger value="all" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-brand-primary rounded-none px-0 pb-3 font-semibold text-base">All</TabsTrigger>
-          <TabsTrigger value="songs" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-brand-primary rounded-none px-0 pb-3 font-semibold text-base">Songs</TabsTrigger>
-          <TabsTrigger value="artists" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-brand-primary rounded-none px-0 pb-3 font-semibold text-base">Artists</TabsTrigger>
-          <TabsTrigger value="albums" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-brand-primary rounded-none px-0 pb-3 font-semibold text-base">Albums</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="all" className="mt-0 outline-none">
-          <div className="grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-8">
-            {/* Top Result */}
-            <section>
-              <h2 className="text-2xl font-bold tracking-tight mb-4">Top result</h2>
-              <div className="bg-surface hover:bg-surface-hover/80 transition-colors rounded-xl p-5 relative group cursor-pointer h-[240px] flex flex-col justify-between shadow-sm">
-                <div className="relative h-24 w-24 rounded-full overflow-hidden mb-4 shadow-md bg-muted">
-                  <Image 
-                    src={topResult.thumbnail} 
-                    alt={topResult.title} 
-                    fill 
-                    className="object-cover"
-                    sizes="96px"
-                  />
-                </div>
-                <div>
-                  <h3 className="text-3xl font-bold truncate mb-1">{topResult.title}</h3>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span className="font-semibold">{topResult.channelName}</span>
-                    <span className="w-1 h-1 bg-muted-foreground rounded-full" />
-                    <span className="uppercase tracking-wider font-semibold text-[11px] bg-background px-2 py-1 rounded-full">Song</span>
-                  </div>
-                </div>
-                
-                <div className="absolute bottom-5 right-5 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
-                  <Button 
-                    size="icon" 
-                    className="bg-brand-primary text-white rounded-full h-12 w-12 shadow-lg hover:scale-105 hover:bg-brand-hover"
-                  >
-                    <Play className="h-5 w-5 fill-current ml-1" />
-                  </Button>
-                </div>
-              </div>
-            </section>
-            
-            {/* Songs List */}
-            <section>
-              <h2 className="text-2xl font-bold tracking-tight mb-4">Songs</h2>
-              <div className="flex flex-col">
-                {songs.slice(0, 4).map((track: any, i: number) => (
-                  <TrackRow key={track.videoId} track={track} />
-                ))}
-              </div>
-            </section>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="songs" className="mt-0 outline-none">
-          <div className="flex flex-col gap-1">
-            {songs.map((track: any, i: number) => (
-              <TrackRow key={track.videoId} track={track} index={i} />
-            ))}
-          </div>
-        </TabsContent>
-        
-        {/* Placeholder for other tabs */}
-        <TabsContent value="artists" className="mt-0 outline-none text-muted-foreground pt-4">
-          Artists results would appear here.
-        </TabsContent>
-        <TabsContent value="albums" className="mt-0 outline-none text-muted-foreground pt-4">
-          Albums results would appear here.
-        </TabsContent>
-      </Tabs>
+    <div className="p-2 md:p-6 animate-fade-in">
+      {/* Songs List */}
+      <section>
+        <h2 className="text-xl font-bold tracking-tight mb-3 px-2">Songs</h2>
+        <div className="flex flex-col gap-0.5">
+          {songs.map((track: any, i: number) => (
+            <TrackRow key={track.videoId} track={track} index={i} />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
