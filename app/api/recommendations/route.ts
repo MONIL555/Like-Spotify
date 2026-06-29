@@ -5,7 +5,7 @@ import { apiLimiter, checkRateLimit, getClientIp } from '@/lib/ratelimit';
 import ListeningHistory from '@/models/ListeningHistory';
 import Track from '@/models/Track';
 import mongoose from 'mongoose';
-import { searchYouTube } from '@/lib/youtube';
+import { searchYouTube, getRelatedVideos } from '@/lib/youtube';
 
 async function getUserFromReq(req: NextRequest) {
   const token = req.cookies.get('access_token')?.value || req.headers.get('Authorization')?.replace('Bearer ', '');
@@ -64,14 +64,47 @@ export async function GET(req: NextRequest) {
       data: item
     }));
 
-    // "Made For You" (Mix of playlists based on general vibes)
-    const madeForYouSearch = await searchYouTube('chill pop mix playlist', 10);
-    const madeForYou = madeForYouSearch.items.map((item: any) => ({
-      id: item.videoId, // playlist search in our wrapper just returns videoId for the first item or playlist ID if modified
+    // "Made For You" (Similar songs based on recent listening or general vibes)
+    let madeForYouSearch;
+    let artistsToExclude: string[] = [];
+
+    if (recentlyPlayed.length > 0) {
+      // Get unique artists
+      const recentArtists = Array.from(new Set(recentlyPlayed.map((t: any) => t.artist))).filter(Boolean) as string[];
+      artistsToExclude = recentArtists.slice(0, 2).map(a => a.toLowerCase());
+      
+      const artistsQuery = recentArtists.slice(0, 2).join(' ');
+      // Search for a general mix of these artists and others
+      madeForYouSearch = await searchYouTube(`${artistsQuery} similar artists songs`, 25);
+    } else {
+      madeForYouSearch = await searchYouTube('trending pop songs', 15);
+    }
+    
+    // Filter out the exact artists we just listened to AND compilations
+    const filteredItems = madeForYouSearch.items.filter((item: any) => {
+      const itemTitle = item.title.toLowerCase();
+      const itemChannel = (item.channelTitle || item.channelName || '').toLowerCase();
+      
+      const isSameArtist = artistsToExclude.some(artist => 
+        itemTitle.includes(artist) || itemChannel.includes(artist)
+      );
+
+      // Exclude listicles, compilations, jukeboxes, and full albums
+      const isCompilation = /(top \d+|best of|mashup|jukebox|compilation|full album|audio jukebox|collection)/i.test(itemTitle);
+      
+      return !isSameArtist && !isCompilation;
+    });
+
+    // Fallback if filtering was too aggressive
+    const finalItems = filteredItems.length >= 4 ? filteredItems.slice(0, 10) : madeForYouSearch.items.slice(0, 10);
+
+    const madeForYou = finalItems.map((item: any) => ({
+      id: item.videoId,
       title: item.title,
       description: item.channelTitle || item.channelName,
       imageUrl: item.thumbnail,
-      type: 'playlist'
+      type: 'track',
+      data: item
     }));
 
     return NextResponse.json({

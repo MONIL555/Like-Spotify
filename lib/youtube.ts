@@ -98,6 +98,46 @@ export async function searchYouTube(
   };
 }
 
+// ─── Get Related Videos ──────────────────────────────────────
+
+export async function getRelatedVideos(
+  videoId: string,
+  maxResults = 20
+): Promise<YTSearchResponse> {
+  const params = new URLSearchParams({
+    part: 'snippet',
+    relatedToVideoId: videoId,
+    type: 'video',
+    videoCategoryId: '10',
+    maxResults: String(maxResults),
+    key: YT_API_KEY,
+  });
+
+  const res = await fetch(`${YT_BASE}/search?${params}`, {
+    next: { revalidate: 3600 },
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(`YouTube API error: ${res.status} - ${JSON.stringify(error)}`);
+  }
+
+  const data = await res.json();
+
+  return {
+    items: data.items
+      ?.filter((item: any) => item.id?.videoId)
+      .map((item: any) => ({
+        videoId: item.id.videoId,
+        title: decodeHTMLEntities(item.snippet.title),
+        channelId: item.snippet.channelId,
+        channelName: item.snippet.channelTitle,
+        thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.default?.url || '',
+        publishedAt: item.snippet.publishedAt,
+      })) || [],
+  };
+}
+
 // ─── Get Video Details ───────────────────────────────────────
 
 export async function getVideoDetails(

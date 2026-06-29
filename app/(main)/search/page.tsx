@@ -10,7 +10,7 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export default function SearchPage() {
   const router = useRouter();
-  const { data, error, isLoading } = useSWR('/api/recommendations', fetcher);
+  const { data, error, isLoading, mutate } = useSWR('/api/recommendations', fetcher);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
   useEffect(() => {
@@ -35,6 +35,15 @@ export default function SearchPage() {
     router.push(`/search/${encodeURIComponent(query)}`);
   };
 
+  const handleRemoveFromHistory = async (videoId: string) => {
+    try {
+      await fetch(`/api/history?videoId=${videoId}`, { method: 'DELETE' });
+      mutate();
+    } catch (e) {
+      console.error('Failed to remove from history', e);
+    }
+  };
+
   return (
     <div className="p-2 md:p-4 flex flex-col gap-2 animate-fade-in">
       <section>
@@ -57,7 +66,12 @@ export default function SearchPage() {
         ) : (
           <div className="flex flex-col gap-0.5">
             {data.recentlyPlayed.map((item: any, i: number) => (
-              <TrackRow key={`history-${item.id}-${i}`} track={item.data} index={i} />
+              <TrackRow 
+                key={`history-${item.id}-${i}`} 
+                track={item.data} 
+                index={i} 
+                onRemove={() => handleRemoveFromHistory(item.id)}
+              />
             ))}
           </div>
         )}

@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
 export function NowPlayingBar() {
-  const { currentTrack } = useYouTubePlayer();
+  const { currentTrack, toggleFullscreen } = useYouTubePlayer();
 
   if (!currentTrack) {
     return (
@@ -21,9 +21,12 @@ export function NowPlayingBar() {
   const thumbnail = currentTrack.thumbnails?.medium || currentTrack.thumbnails?.default || '';
 
   return (
-    <div className="flex items-center w-[30%] min-w-[180px] pr-4 gap-4">
+    <div className="flex items-center w-[60%] md:w-[30%] min-w-0 md:min-w-[180px] pr-2 md:pr-4 gap-3 md:gap-4">
       {/* Album Art */}
-      <div className="relative h-14 w-14 flex-shrink-0 group rounded-md overflow-hidden bg-muted">
+      <div 
+        className="relative h-12 w-12 md:h-14 md:w-14 flex-shrink-0 group rounded-md overflow-hidden bg-muted cursor-pointer"
+        onClick={toggleFullscreen}
+      >
         {thumbnail && (
           <Image
             src={thumbnail}
@@ -36,19 +39,16 @@ export function NowPlayingBar() {
       </div>
 
       {/* Track Info */}
-      <div className="flex flex-col justify-center overflow-hidden">
-        <Link 
-          href={`/track/${currentTrack.videoId}`}
-          className="text-sm font-medium text-foreground hover:underline truncate"
-        >
+      <div 
+        className="flex flex-col justify-center overflow-hidden cursor-pointer"
+        onClick={toggleFullscreen}
+      >
+        <span className="text-sm font-medium text-foreground hover:underline truncate">
           {currentTrack.title}
-        </Link>
-        <Link 
-          href={`/artist/${currentTrack.channelId}`}
-          className="text-xs text-muted-foreground hover:underline hover:text-foreground truncate"
-        >
+        </span>
+        <span className="text-xs text-muted-foreground hover:underline hover:text-foreground truncate">
           {currentTrack.artist}
-        </Link>
+        </span>
       </div>
 
       {/* Like Button */}

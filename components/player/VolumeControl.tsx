@@ -6,8 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { EqualizerPanel } from './EqualizerPanel';
-import { SleepTimer } from './SleepTimer';
 
 export function VolumeControl() {
   const {
@@ -36,7 +34,7 @@ export function VolumeControl() {
   };
 
   return (
-    <div className="flex items-center justify-end w-[30%] min-w-[180px] gap-2">
+    <div className="flex items-center justify-end w-auto md:w-[30%] md:min-w-[180px] gap-2">
       {/* Lyrics Toggle */}
       <Tooltip>
         <TooltipTrigger asChild>
@@ -72,9 +70,6 @@ export function VolumeControl() {
         </TooltipTrigger>
         <TooltipContent side="top">Queue</TooltipContent>
       </Tooltip>
-
-      <EqualizerPanel />
-      <SleepTimer />
 
       {/* Volume Controls */}
       <div className="flex items-center gap-2 group hidden sm:flex">

@@ -1,10 +1,13 @@
 'use client';
 
+import { useState } from 'react';
+
 import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1 } from 'lucide-react';
 import { useYouTubePlayer } from '@/hooks/useYouTubePlayer';
 import { usePlayerStore } from '@/store/playerStore';
 import { useQueueStore } from '@/store/queueStore';
 import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -25,11 +28,30 @@ export function PlayerControls() {
 
   const hasNext = queue.length > 0;
   const hasPrev = history.length > 0;
+  const [isFetchingNext, setIsFetchingNext] = useState(false);
 
-  const handlePlayNext = () => {
-    const nextTrack = playNext(currentTrack);
-    if (nextTrack) {
-      setCurrentTrack(nextTrack);
+  const handlePlayNext = async () => {
+    if (queue.length > 0) {
+      const nextTrack = playNext(currentTrack);
+      if (nextTrack) {
+        setCurrentTrack(nextTrack);
+      }
+    } else if (currentTrack) {
+      // Dynamic mix (autoplay)
+      try {
+        setIsFetchingNext(true);
+        const res = await fetch(`/api/autoplay?videoId=${currentTrack.videoId}&title=${encodeURIComponent(currentTrack.title)}&artist=${encodeURIComponent(currentTrack.artist)}`);
+        const data = await res.json();
+        if (data.track) {
+          useQueueStore.getState().addToQueue(data.track, 'next');
+          const nextTrack = playNext(currentTrack);
+          if (nextTrack) setCurrentTrack(nextTrack);
+        }
+      } catch (err) {
+        console.error('Failed to fetch autoplay track', err);
+      } finally {
+        setIsFetchingNext(false);
+      }
     }
   };
 
@@ -105,9 +127,13 @@ export function PlayerControls() {
             size="icon"
             onClick={handlePlayNext}
             className="text-muted-foreground hover:text-foreground"
-            disabled={!isPlayerReady || !hasNext}
+            disabled={!isPlayerReady || (!hasNext && !currentTrack) || isFetchingNext}
           >
-            <SkipForward className="h-5 w-5 fill-current" />
+            {isFetchingNext ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <SkipForward className="h-5 w-5 fill-current" />
+            )}
             <span className="sr-only">Next</span>
           </Button>
         </TooltipTrigger>

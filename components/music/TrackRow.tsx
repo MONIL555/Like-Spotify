@@ -18,9 +18,10 @@ interface TrackRowProps {
   track: any; // Using any for now, should be ITrack or YTSearchItem
   index?: number;
   showCover?: boolean;
+  onRemove?: () => void;
 }
 
-export function TrackRow({ track, index, showCover = true }: TrackRowProps) {
+export function TrackRow({ track, index, showCover = true, onRemove }: TrackRowProps) {
   const { currentTrack, isPlaying, togglePlay, setCurrentTrack } = usePlayerStore();
   const { loadPlaylist } = useQueueStore();
   
@@ -139,6 +140,14 @@ export function TrackRow({ track, index, showCover = true }: TrackRowProps) {
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); }}>
               Share
             </DropdownMenuItem>
+            {onRemove && (
+              <DropdownMenuItem 
+                onClick={(e) => { e.stopPropagation(); onRemove(); }}
+                className="text-red-500 focus:text-red-500"
+              >
+                Remove
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

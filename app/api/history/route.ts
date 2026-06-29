@@ -53,3 +53,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to record history' }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const ip = getClientIp(req);
+    await checkRateLimit(apiLimiter, ip);
+
+    const token = req.cookies.get('access_token')?.value || req.headers.get('Authorization')?.replace('Bearer ', '');
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    
+    const jwtUser = verifyAccessToken(token);
+
+    const url = new URL(req.url);
+    const videoId = url.searchParams.get('videoId');
+
+    if (!videoId) return NextResponse.json({ error: 'videoId is required' }, { status: 400 });
+
+    await connectDB();
+
+    await ListeningHistory.deleteMany({
+      userId: jwtUser.userId,
+      videoId
+    });
+
+    return NextResponse.json({ success: true });
+
+  } catch (error: any) {
+    console.error('History DELETE Error:', error);
+    return NextResponse.json({ error: 'Failed to delete history' }, { status: 500 });
+  }
+}

@@ -4,7 +4,7 @@ import useSWR from 'swr';
 import { Loader2, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQueueStore } from '@/store/queueStore';
-import Link from 'next/link';
+
 import { getTimeGreeting } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 
@@ -83,9 +83,9 @@ export function HomeDashboard() {
           
           <div className="flex overflow-x-auto pb-3 -mx-4 px-4 gap-4 snap-x snap-mandatory scrollbar-hide">
             {madeForYou.map((item: any) => (
-              <Link 
-                href={`/album/${item.id}`}
+              <div 
                 key={`made-${item.id}`}
+                onClick={() => handlePlayTrack(item.data)}
                 className="snap-start flex-shrink-0 w-[140px] md:w-[180px] lg:w-[200px] 2xl:w-[240px] group p-2.5 rounded-xl glass-card cursor-pointer flex flex-col gap-3 hover:shadow-neon"
               >
                 <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-white/5 shadow-glass">
@@ -94,7 +94,7 @@ export function HomeDashboard() {
                     <Button 
                       size="icon" 
                       className="bg-brand-primary text-white rounded-full h-10 w-10 shadow-lg shadow-black/40 hover:scale-105 hover:bg-brand-hover"
-                      onClick={(e) => { e.preventDefault(); handlePlayTrack(item.data); }}
+                      onClick={(e) => { e.stopPropagation(); handlePlayTrack(item.data); }}
                     >
                       <Play className="h-4 w-4 fill-current ml-1" />
                     </Button>
@@ -106,7 +106,7 @@ export function HomeDashboard() {
                     {item.description}
                   </p>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         </section>
