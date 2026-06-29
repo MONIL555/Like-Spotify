@@ -23,6 +23,7 @@ export function YouTubeEmbed() {
   const playerRef = useRef<any>(null);
   const [isApiReady, setIsApiReady] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const wakeLockRef = useRef<any>(null);
 
   const {
     currentTrack,
@@ -228,8 +229,22 @@ export function YouTubeEmbed() {
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.play().catch(e => console.log('Keep-alive audio failed:', e));
+        
+        // Request wake lock if supported to prevent device from sleeping
+        if ('wakeLock' in navigator) {
+          (navigator as any).wakeLock.request('screen')
+            .then((lock: any) => { wakeLockRef.current = lock; })
+            .catch((e: any) => console.log('Wake Lock failed:', e));
+        }
       } else {
         audioRef.current.pause();
+        
+        // Release wake lock
+        if (wakeLockRef.current) {
+          wakeLockRef.current.release()
+            .then(() => { wakeLockRef.current = null; })
+            .catch(() => {});
+        }
       }
     }
 
@@ -267,8 +282,8 @@ export function YouTubeEmbed() {
 
   return (
     <div
-      className="fixed bottom-0 right-0 pointer-events-none opacity-0 invisible"
-      style={{ width: '10px', height: '10px', overflow: 'hidden' }}
+      className="fixed pointer-events-none opacity-[0.01]"
+      style={{ width: '200px', height: '200px', top: '-9999px', left: '-9999px', overflow: 'hidden' }}
     >
       <div ref={containerRef} id="youtube-player" />
       <audio 
