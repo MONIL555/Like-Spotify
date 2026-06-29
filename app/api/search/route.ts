@@ -4,7 +4,7 @@ import { searchLimiter, checkRateLimit, getClientIp } from '@/lib/ratelimit';
 import { searchYouTube } from '@/lib/youtube';
 import SearchCache from '@/models/SearchCache';
 import { SearchSchema } from '@/lib/validations';
-import { z } from 'zod';
+import { ZodError } from 'zod';
 
 export async function GET(req: NextRequest) {
   try {
@@ -50,8 +50,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(youtubeData);
 
   } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: (error as any).issues[0].message }, { status: 400 });
+    if (error instanceof ZodError) {
+      return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
     }
     
     if (error.statusCode === 429) {

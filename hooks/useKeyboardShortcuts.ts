@@ -3,7 +3,7 @@ import { usePlayerStore } from '@/store/playerStore';
 import { useQueueStore } from '@/store/queueStore';
 
 export function useKeyboardShortcuts() {
-  const { isPlaying, togglePlay, setVolume, volume } = usePlayerStore();
+  const { togglePlay, setVolume, volume, currentTrack, setCurrentTrack } = usePlayerStore();
   const { playNext, playPrevious } = useQueueStore();
 
   useEffect(() => {
@@ -29,11 +29,13 @@ export function useKeyboardShortcuts() {
           break;
         case 'ArrowRight':
           e.preventDefault();
-          playNext();
+          const nextTrack = playNext(currentTrack);
+          if (nextTrack) setCurrentTrack(nextTrack);
           break;
         case 'ArrowLeft':
           e.preventDefault();
-          playPrevious();
+          const prevTrack = playPrevious();
+          if (prevTrack) setCurrentTrack(prevTrack);
           break;
         case 'ArrowUp':
           e.preventDefault();
@@ -48,5 +50,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlay, setVolume, volume, playNext, playPrevious]);
+  }, [togglePlay, setVolume, volume, playNext, playPrevious, currentTrack, setCurrentTrack]);
 }

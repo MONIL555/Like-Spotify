@@ -34,7 +34,7 @@ export default function ForgotPasswordPage() {
                 autoCorrect="off"
               />
             </div>
-            <Button className="mt-2 bg-brand-primary hover:bg-brand-hover text-white">
+            <Button type="submit" className="mt-2 bg-brand-primary hover:bg-brand-hover text-white">
               Send reset link
             </Button>
           </div>

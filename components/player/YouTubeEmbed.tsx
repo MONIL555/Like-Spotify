@@ -4,7 +4,7 @@
 
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { usePlayerStore } from '@/store/playerStore';
 import { useQueueStore } from '@/store/queueStore';
 
@@ -29,9 +29,22 @@ export function YouTubeEmbed() {
     setIsPlaying,
     setCurrentTime,
     setDuration,
+    setCurrentTrack,
   } = usePlayerStore();
 
   const { playNext } = useQueueStore();
+
+  // Helper to advance to next track (used on end + error)
+  const advanceToNext = useCallback(() => {
+    const currentTrackNow = usePlayerStore.getState().currentTrack;
+    const nextTrack = playNext(currentTrackNow);
+    if (nextTrack) {
+      setCurrentTrack(nextTrack);
+    } else {
+      setCurrentTrack(null);
+      setIsPlaying(false);
+    }
+  }, [playNext, setCurrentTrack, setIsPlaying]);
 
   // 1. Load YouTube Iframe API
   useEffect(() => {
@@ -90,12 +103,12 @@ export function YouTubeEmbed() {
               setIsPlaying(false);
             } else if (state === YT.PlayerState.ENDED) {
               setIsPlaying(false);
-              playNext(); // Auto-play next track in queue
+              advanceToNext(); // Auto-play next track in queue
             }
           },
           onError: (event: any) => {
             console.error('YouTube Player Error:', event.data);
-            playNext(); // Skip unplayable tracks
+            advanceToNext(); // Skip unplayable tracks
           },
         },
       });
@@ -109,7 +122,7 @@ export function YouTubeEmbed() {
         setPlayerReady(false);
       }
     };
-  }, [isApiReady, setPlayerReady, setIsPlaying, playNext, volume, isMuted]);
+  }, [isApiReady, setPlayerReady, setIsPlaying, advanceToNext, setDuration]);
 
   // 3. Handle Track Change
   useEffect(() => {

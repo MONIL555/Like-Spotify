@@ -5,12 +5,19 @@ import { Loader2, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQueueStore } from '@/store/queueStore';
 import Link from 'next/link';
+import { getTimeGreeting } from '@/lib/utils';
+import { useState, useEffect } from 'react';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
-export function HomeDashboard({ greeting }: { greeting: string }) {
+export function HomeDashboard() {
+  const [greeting, setGreeting] = useState('');
   const { data, error, isLoading } = useSWR('/api/recommendations', fetcher);
   const { loadPlaylist } = useQueueStore();
+
+  useEffect(() => {
+    setGreeting(getTimeGreeting());
+  }, []);
 
   if (isLoading) {
     return (

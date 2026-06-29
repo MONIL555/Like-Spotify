@@ -2,6 +2,7 @@
 
 import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1 } from 'lucide-react';
 import { useYouTubePlayer } from '@/hooks/useYouTubePlayer';
+import { usePlayerStore } from '@/store/playerStore';
 import { useQueueStore } from '@/store/queueStore';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -13,21 +14,37 @@ export function PlayerControls() {
     shuffle,
     repeat,
     isPlayerReady,
+    currentTrack,
     togglePlay,
     toggleShuffle,
     cycleRepeat,
   } = useYouTubePlayer();
 
+  const { setCurrentTrack } = usePlayerStore();
   const { playNext, playPrevious, queue, history } = useQueueStore();
 
   const hasNext = queue.length > 0;
   const hasPrev = history.length > 0;
 
+  const handlePlayNext = () => {
+    const nextTrack = playNext(currentTrack);
+    if (nextTrack) {
+      setCurrentTrack(nextTrack);
+    }
+  };
+
+  const handlePlayPrevious = () => {
+    const prevTrack = playPrevious();
+    if (prevTrack) {
+      setCurrentTrack(prevTrack);
+    }
+  };
+
   return (
     <div className="flex items-center justify-center gap-2 md:gap-4 mb-2">
       {/* Shuffle Button */}
       <Tooltip>
-        <TooltipTrigger>
+        <TooltipTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
@@ -49,11 +66,11 @@ export function PlayerControls() {
 
       {/* Previous Button */}
       <Tooltip>
-        <TooltipTrigger>
+        <TooltipTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
-            onClick={playPrevious}
+            onClick={handlePlayPrevious}
             className="text-muted-foreground hover:text-foreground"
             disabled={!isPlayerReady || !hasPrev}
           >
@@ -82,11 +99,11 @@ export function PlayerControls() {
 
       {/* Next Button */}
       <Tooltip>
-        <TooltipTrigger>
+        <TooltipTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
-            onClick={playNext}
+            onClick={handlePlayNext}
             className="text-muted-foreground hover:text-foreground"
             disabled={!isPlayerReady || !hasNext}
           >
@@ -99,7 +116,7 @@ export function PlayerControls() {
 
       {/* Repeat Button */}
       <Tooltip>
-        <TooltipTrigger>
+        <TooltipTrigger asChild>
           <Button
             variant="ghost"
             size="icon"

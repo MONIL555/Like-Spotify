@@ -69,8 +69,8 @@ export function TopBar() {
           </>
         ) : (
           <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
                 <Avatar className="h-8 w-8 border border-border">
                   <AvatarImage src={user?.avatarUrl || ''} alt={user?.displayName || ''} />
                   <AvatarFallback style={{ backgroundColor: user?.avatarColor }}>

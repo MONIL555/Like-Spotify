@@ -10,8 +10,8 @@ import { shuffleArray } from '@/lib/utils';
 
 interface QueueState {
   // State
-  queue: Track[];
-  history: Track[];
+  queue: Track[];        // upcoming tracks (not including current)
+  history: Track[];      // previously played tracks
   originalQueue: Track[];
   currentIndex: number;
 
@@ -20,9 +20,9 @@ interface QueueState {
   removeFromQueue: (index: number) => void;
   reorderQueue: (from: number, to: number) => void;
   clearQueue: () => void;
-  playNext: () => Track | null;
+  playNext: (currentTrack?: Track | null) => Track | null;
   playPrevious: () => Track | null;
-  loadPlaylist: (tracks: Track[], startIndex?: number) => void;
+  loadPlaylist: (tracks: Track[], startIndex?: number) => Track | null;
   shuffleQueue: () => void;
   restoreOriginalOrder: () => void;
   setCurrentIndex: (index: number) => void;
@@ -67,15 +67,15 @@ export const useQueueStore = create<QueueState>((set, get) => ({
       currentIndex: -1,
     }),
 
-  playNext: () => {
-    const { queue, history } = get();
+  playNext: (currentTrack) => {
+    const { queue } = get();
     if (queue.length === 0) return null;
 
     const nextTrack = queue[0];
-    const currentTrack = queue.length > 0 ? queue[0] : null;
 
     set((state) => ({
       queue: state.queue.slice(1),
+      // Push the currently-playing track into history (if provided)
       history: currentTrack
         ? [...state.history, currentTrack]
         : state.history,
@@ -100,13 +100,20 @@ export const useQueueStore = create<QueueState>((set, get) => ({
     return prevTrack;
   },
 
-  loadPlaylist: (tracks, startIndex = 0) =>
+  loadPlaylist: (tracks, startIndex = 0) => {
+    const currentTrack = tracks[startIndex] || null;
+    // Queue is everything AFTER the starting track
+    const upcomingTracks = tracks.slice(startIndex + 1);
+    
     set({
-      queue: tracks.slice(startIndex),
+      queue: upcomingTracks,
       originalQueue: [...tracks],
       history: tracks.slice(0, startIndex),
       currentIndex: startIndex,
-    }),
+    });
+
+    return currentTrack;
+  },
 
   shuffleQueue: () =>
     set((state) => ({
@@ -119,7 +126,7 @@ export const useQueueStore = create<QueueState>((set, get) => ({
 
   restoreOriginalOrder: () =>
     set((state) => ({
-      queue: state.originalQueue.slice(state.currentIndex),
+      queue: state.originalQueue.slice(state.currentIndex + 1),
     })),
 
   setCurrentIndex: (index) => set({ currentIndex: index }),

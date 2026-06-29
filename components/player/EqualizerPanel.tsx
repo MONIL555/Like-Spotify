@@ -37,8 +37,8 @@ export function EqualizerPanel() {
     setBandValues(PRESETS[preset]);
   };
 
-  const handleBandChange = (index: number, value: number | readonly number[]) => {
-    const val = Array.isArray(value) ? value[0] : value as number;
+  const handleBandChange = (index: number, value: number[]) => {
+    const val = value[0];
     const newBands = [...bandValues];
     newBands[index] = val;
     setBandValues(newBands);

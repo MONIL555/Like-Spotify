@@ -6,8 +6,7 @@ import { usePlayerStore } from '@/store/playerStore';
 import { useQueueStore } from '@/store/queueStore';
 import { LikeButton } from './LikeButton';
 import { Button } from '@/components/ui/button';
-import { formatDurationText } from '@/lib/youtube';
-import { cn } from '@/lib/utils';
+import { formatDuration, cn } from '@/lib/utils';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +21,7 @@ interface TrackRowProps {
 }
 
 export function TrackRow({ track, index, showCover = true }: TrackRowProps) {
-  const { currentTrack, isPlaying, togglePlay } = usePlayerStore();
+  const { currentTrack, isPlaying, togglePlay, setCurrentTrack } = usePlayerStore();
   const { loadPlaylist } = useQueueStore();
   
   const isCurrentTrack = currentTrack?.videoId === track.videoId;
@@ -31,14 +30,14 @@ export function TrackRow({ track, index, showCover = true }: TrackRowProps) {
   const title = track.title || 'Unknown Title';
   const artist = track.artist || track.channelName || track.channelTitle || 'Unknown Artist';
   const thumbnail = track.thumbnails?.default?.url || track.thumbnail || track.thumbnails?.default || '';
-  const durationText = track.durationText || (track.duration ? formatDurationText(track.duration) : '');
+  const durationText = track.durationText || (track.duration ? formatDuration(track.duration) : '');
 
   const handlePlay = () => {
     if (isCurrentTrack) {
       togglePlay();
     } else {
-      // In a real scenario, you'd load the whole list. For now, just play this one.
-      loadPlaylist([{
+      // Load this track as a single-track playlist and set it as current
+      const trackData = {
         videoId: track.videoId,
         title,
         artist,
@@ -50,7 +49,11 @@ export function TrackRow({ track, index, showCover = true }: TrackRowProps) {
         playCount: 0,
         likeCount: 0,
         cachedAt: new Date()
-      } as any], 0);
+      } as any;
+      const currentTrackToPlay = loadPlaylist([trackData], 0);
+      if (currentTrackToPlay) {
+        setCurrentTrack(currentTrackToPlay);
+      }
     }
   };
 
@@ -121,7 +124,7 @@ export function TrackRow({ track, index, showCover = true }: TrackRowProps) {
         </span>
 
         <DropdownMenu>
-          <DropdownMenuTrigger>
+          <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
               <MoreHorizontal className="h-5 w-5" />
             </Button>

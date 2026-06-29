@@ -48,8 +48,7 @@ export function useAuth() {
 
   useEffect(() => {
     if (data?.data) {
-      const userData = data.data as unknown as { user: UserPublic };
-      setUser(userData.user);
+      setUser(data.data.user);
     } else if (error) {
       setUser(null);
     }

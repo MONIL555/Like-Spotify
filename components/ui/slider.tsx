@@ -1,6 +1,20 @@
+import * as React from "react"
 import { Slider as SliderPrimitive } from "@base-ui/react/slider"
 
 import { cn } from "@/lib/utils"
+
+interface SliderProps {
+  className?: string
+  defaultValue?: number[]
+  value?: number[]
+  min?: number
+  max?: number
+  step?: number
+  disabled?: boolean
+  orientation?: "horizontal" | "vertical"
+  onValueChange?: (value: number[]) => void
+  onValueCommitted?: (value: number[]) => void
+}
 
 function Slider({
   className,
@@ -8,13 +22,14 @@ function Slider({
   value,
   min = 0,
   max = 100,
+  step = 1,
+  disabled = false,
+  orientation = "horizontal",
+  onValueChange,
+  onValueCommitted,
   ...props
-}: SliderPrimitive.Root.Props) {
-  const _values = Array.isArray(value)
-    ? value
-    : Array.isArray(defaultValue)
-      ? defaultValue
-      : [min, max]
+}: SliderProps) {
+  const _values = value ?? defaultValue ?? [min]
 
   return (
     <SliderPrimitive.Root
@@ -24,8 +39,19 @@ function Slider({
       value={value}
       min={min}
       max={max}
-      thumbAlignment="edge"
-      {...props}
+      step={step}
+      disabled={disabled}
+      orientation={orientation}
+      onValueChange={(val, _details) => {
+        // base-ui passes number for single-value, number[] for multi
+        // We normalize to always pass number[]
+        const arr = Array.isArray(val) ? [...val] : [val]
+        onValueChange?.(arr)
+      }}
+      onValueCommitted={(val, _details) => {
+        const arr = Array.isArray(val) ? [...val] : [val]
+        onValueCommitted?.(arr)
+      }}
     >
       <SliderPrimitive.Control className="relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col">
         <SliderPrimitive.Track

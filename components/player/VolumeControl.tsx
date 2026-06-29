@@ -23,8 +23,8 @@ export function VolumeControl() {
     isPlayerReady,
   } = useYouTubePlayer();
 
-  const handleVolumeChange = (value: number | readonly number[]) => {
-    const val = Array.isArray(value) ? value[0] : value;
+  const handleVolumeChange = (value: number[]) => {
+    const val = value[0];
     setVolume(val);
   };
 
@@ -39,7 +39,7 @@ export function VolumeControl() {
     <div className="flex items-center justify-end w-[30%] min-w-[180px] gap-2">
       {/* Lyrics Toggle */}
       <Tooltip>
-        <TooltipTrigger>
+        <TooltipTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
@@ -57,7 +57,7 @@ export function VolumeControl() {
 
       {/* Queue Toggle */}
       <Tooltip>
-        <TooltipTrigger>
+        <TooltipTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
@@ -101,7 +101,7 @@ export function VolumeControl() {
 
       {/* Fullscreen Toggle */}
       <Tooltip>
-        <TooltipTrigger>
+        <TooltipTrigger asChild>
           <Button
             variant="ghost"
             size="icon"

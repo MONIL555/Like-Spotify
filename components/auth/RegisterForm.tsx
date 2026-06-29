@@ -116,7 +116,7 @@ export function RegisterForm({ className, ...props }: RegisterFormProps) {
             )}
           </div>
           
-          <Button disabled={isLoading} className="mt-2 bg-brand-primary hover:bg-brand-hover text-white">
+          <Button type="submit" disabled={isLoading} className="mt-2 bg-brand-primary hover:bg-brand-hover text-white">
             {isLoading && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
