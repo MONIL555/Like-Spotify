@@ -44,7 +44,7 @@ interface PlayerState {
 const initialState = {
   currentTrack: null,
   isPlaying: false,
-  volume: 70,
+  volume: 100,
   isMuted: false,
   shuffle: false,
   repeat: 'off' as RepeatMode,
