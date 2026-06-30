@@ -8,8 +8,8 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { usePlayerStore } from '@/store/playerStore';
 import { useQueueStore } from '@/store/queueStore';
 
-// Tiny 1-second silent WAV base64
-const SILENT_AUDIO = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+// We will generate a continuous silent audio stream using Web Audio API instead of a base64 string
+// to avoid loop gaps that could cause mobile OS to suspend the background process.
 
 declare global {
   interface Window {
@@ -234,13 +234,40 @@ export function YouTubeEmbed() {
         if (audioRef.current) {
           audioRef.current.play().catch(e => console.log('Silent audio play failed:', e));
         }
+        if (playerRef.current) {
+          // Play synchronously to satisfy mobile user-gesture requirements
+          playerRef.current.playVideo();
+        }
       };
       
       (window as any).pauseSilentAudio = () => {
         if (audioRef.current) {
           audioRef.current.pause();
         }
+        if (playerRef.current) {
+          playerRef.current.pauseVideo();
+        }
       };
+    }
+  }, []);
+
+  // Setup continuous silent audio stream
+  useEffect(() => {
+    if (!audioRef.current) return;
+    
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContextClass) {
+        const ctx = new AudioContextClass();
+        const oscillator = ctx.createOscillator();
+        const dst = ctx.createMediaStreamDestination();
+        oscillator.connect(dst);
+        oscillator.start();
+        
+        audioRef.current.srcObject = dst.stream;
+      }
+    } catch (e) {
+      console.log('Web audio silent stream failed', e);
     }
   }, []);
 
@@ -280,22 +307,39 @@ export function YouTubeEmbed() {
       });
 
       navigator.mediaSession.setActionHandler('play', () => {
+        if (audioRef.current) audioRef.current.play().catch(()=>{});
+        if (playerRef.current) playerRef.current.playVideo();
         setIsPlaying(true);
       });
       navigator.mediaSession.setActionHandler('pause', () => {
+        if (audioRef.current) audioRef.current.pause();
+        if (playerRef.current) playerRef.current.pauseVideo();
         setIsPlaying(false);
       });
       navigator.mediaSession.setActionHandler('previoustrack', () => {
+        if (audioRef.current) audioRef.current.play().catch(()=>{});
         const prevTrack = playPrevious();
-        if (prevTrack) setCurrentTrack(prevTrack);
+        if (prevTrack) {
+          setCurrentTrack(prevTrack);
+          if (playerRef.current) {
+            playerRef.current.loadVideoById(prevTrack.videoId);
+            playerRef.current.playVideo();
+          }
+        }
       });
       navigator.mediaSession.setActionHandler('nexttrack', () => {
+        if (audioRef.current) audioRef.current.play().catch(()=>{});
         const nextTrack = playNext(currentTrack);
         if (nextTrack) {
           setCurrentTrack(nextTrack);
+          if (playerRef.current) {
+            playerRef.current.loadVideoById(nextTrack.videoId);
+            playerRef.current.playVideo();
+          }
         } else {
           setCurrentTrack(null);
           setIsPlaying(false);
+          if (playerRef.current) playerRef.current.stopVideo();
         }
       });
     }
@@ -309,7 +353,6 @@ export function YouTubeEmbed() {
       <div ref={containerRef} id="youtube-player" />
       <audio 
         ref={audioRef} 
-        src={SILENT_AUDIO} 
         loop 
         playsInline 
       />
