@@ -305,6 +305,8 @@ export function YouTubeEmbed() {
           { src: currentTrack.thumbnails?.high || currentTrack.thumbnails?.default || '', sizes: '512x512', type: 'image/jpeg' },
         ],
       });
+      
+      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
 
       navigator.mediaSession.setActionHandler('play', () => {
         if (audioRef.current) audioRef.current.play().catch(()=>{});
@@ -321,29 +323,14 @@ export function YouTubeEmbed() {
         const prevTrack = playPrevious();
         if (prevTrack) {
           setCurrentTrack(prevTrack);
-          if (playerRef.current) {
-            playerRef.current.loadVideoById(prevTrack.videoId);
-            playerRef.current.playVideo();
-          }
         }
       });
       navigator.mediaSession.setActionHandler('nexttrack', () => {
         if (audioRef.current) audioRef.current.play().catch(()=>{});
-        const nextTrack = playNext(currentTrack);
-        if (nextTrack) {
-          setCurrentTrack(nextTrack);
-          if (playerRef.current) {
-            playerRef.current.loadVideoById(nextTrack.videoId);
-            playerRef.current.playVideo();
-          }
-        } else {
-          setCurrentTrack(null);
-          setIsPlaying(false);
-          if (playerRef.current) playerRef.current.stopVideo();
-        }
+        advanceToNext();
       });
     }
-  }, [isPlaying, currentTrack, playNext, playPrevious, setCurrentTrack, setIsPlaying]);
+  }, [isPlaying, currentTrack, playNext, playPrevious, setCurrentTrack, setIsPlaying, advanceToNext]);
 
   return (
     <div

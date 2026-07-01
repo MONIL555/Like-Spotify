@@ -23,7 +23,7 @@ const PlaylistSchema = new Schema<IPlaylist>(
       index: true,
     },
     tracks: {
-      type: [Schema.Types.Mixed],
+      type: [Object],
       default: [],
     },
   },

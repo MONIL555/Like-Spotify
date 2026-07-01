@@ -67,7 +67,7 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
           tags: [],
           playCount: 0,
           likeCount: 0,
-          cachedAt: new Date()
+          cachedAt: new Date().toISOString()
         }));
         
         const startIndex = index !== undefined ? index : playlist.findIndex(t => t.videoId === track.videoId);
@@ -86,7 +86,7 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
           tags: [],
           playCount: 0,
           likeCount: 0,
-          cachedAt: new Date()
+          cachedAt: new Date().toISOString()
         } as any;
         const currentTrackToPlay = loadPlaylist([trackData], 0);
         if (currentTrackToPlay) {
