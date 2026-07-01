@@ -87,7 +87,7 @@ export default function SearchResultsPage() {
         <h2 className="text-xl font-bold tracking-tight mb-3 px-2">Songs</h2>
         <div className="flex flex-col gap-0.5">
           {songs.map((track: any, i: number) => (
-            <TrackRow key={track.videoId} track={track} index={i} contextTracks={data} />
+            <TrackRow key={track.videoId} track={track} index={i} contextTracks={songs} />
           ))}
         </div>
       </section>

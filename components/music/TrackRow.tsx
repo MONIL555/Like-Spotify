@@ -44,9 +44,18 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
   const durationText = track.durationText || (track.duration ? formatDuration(track.duration) : '');
 
   const handlePlay = () => {
-    if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
+    if (typeof window !== 'undefined' && (window as any).playVideoSync) {
+      if (isCurrentTrack) {
+        if (!isPlaying) {
+          (window as any).playVideoSync();
+        }
+      } else {
+        (window as any).playVideoSync(track.videoId);
+      }
+    } else if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
       (window as any).playSilentAudio();
     }
+    
     if (isCurrentTrack) {
       togglePlay();
     } else {

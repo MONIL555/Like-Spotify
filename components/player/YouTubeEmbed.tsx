@@ -232,46 +232,29 @@ export function YouTubeEmbed() {
         }
       };
       
-      // Global methods to play/pause silent audio directly on user interaction
-      (window as any).playSilentAudio = () => {
+      (window as any).playVideoSync = (videoId?: string) => {
         if (audioRef.current) {
           audioRef.current.play().catch(e => console.log('Silent audio play failed:', e));
         }
         if (playerRef.current) {
-          // Play synchronously to satisfy mobile user-gesture requirements
+          if (videoId) {
+            playerRef.current.loadVideoById(videoId);
+          }
           playerRef.current.playVideo();
-        }
-      };
-      
-      (window as any).pauseSilentAudio = () => {
-        if (audioRef.current) {
-          audioRef.current.pause();
-        }
-        if (playerRef.current) {
-          playerRef.current.pauseVideo();
         }
       };
     }
   }, []);
 
-  // Setup continuous silent audio stream
+  // Setup continuous silent audio stream using base64 audio
   useEffect(() => {
     if (!audioRef.current) return;
     
-    try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioContextClass) {
-        const ctx = new AudioContextClass();
-        const oscillator = ctx.createOscillator();
-        const dst = ctx.createMediaStreamDestination();
-        oscillator.connect(dst);
-        oscillator.start();
-        
-        audioRef.current.srcObject = dst.stream;
-      }
-    } catch (e) {
-      console.log('Web audio silent stream failed', e);
-    }
+    // Tiny silent WAV base64 string
+    const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+    audioRef.current.src = SILENT_WAV;
+    audioRef.current.loop = true;
+    audioRef.current.load();
   }, []);
 
   // Background Keep-Alive & Media Session
