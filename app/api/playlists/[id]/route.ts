@@ -4,7 +4,7 @@ import { verifyAccessToken } from '@/lib/auth';
 import { apiLimiter, checkRateLimit, getClientIp } from '@/lib/ratelimit';
 import Playlist from '@/models/Playlist';
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const ip = getClientIp(req);
     await checkRateLimit(apiLimiter, ip);
@@ -19,9 +19,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     if (!track || !track.videoId) return NextResponse.json({ error: 'Valid track is required' }, { status: 400 });
 
+    const resolvedParams = await params;
+
     await connectDB();
 
-    const playlist = await Playlist.findOne({ _id: params.id, userId: jwtUser.userId });
+    const playlist = await Playlist.findOne({ _id: resolvedParams.id, userId: jwtUser.userId });
     
     if (!playlist) {
       return NextResponse.json({ error: 'Playlist not found' }, { status: 404 });
@@ -41,7 +43,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const ip = getClientIp(req);
     await checkRateLimit(apiLimiter, ip);
@@ -51,9 +53,11 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     
     const jwtUser = verifyAccessToken(token);
 
+    const resolvedParams = await params;
+
     await connectDB();
 
-    const result = await Playlist.deleteOne({ _id: params.id, userId: jwtUser.userId });
+    const result = await Playlist.deleteOne({ _id: resolvedParams.id, userId: jwtUser.userId });
 
     if (result.deletedCount === 0) {
       return NextResponse.json({ error: 'Playlist not found or unauthorized' }, { status: 404 });
