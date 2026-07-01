@@ -4,6 +4,8 @@ import useSWR from 'swr';
 import { Loader2, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQueueStore } from '@/store/queueStore';
+import { CreatePlaylistModal } from '@/components/modals/CreatePlaylistModal';
+import { Shuffle, Plus } from 'lucide-react';
 
 import { getTimeGreeting } from '@/lib/utils';
 import { useState, useEffect } from 'react';
@@ -12,8 +14,10 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function HomeDashboard() {
   const [greeting, setGreeting] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { data, error, isLoading } = useSWR('/api/recommendations', fetcher);
-  const { loadPlaylist } = useQueueStore();
+  const { data: playlists, isLoading: playlistsLoading } = useSWR('/api/playlists', fetcher);
+  const { loadPlaylist, shuffleQueue } = useQueueStore();
 
   useEffect(() => {
     setGreeting(getTimeGreeting());
@@ -67,6 +71,13 @@ export function HomeDashboard() {
     loadPlaylist([track], 0);
   };
 
+  const handleShufflePlaylist = (playlist: any) => {
+    if (playlist.tracks && playlist.tracks.length > 0) {
+      loadPlaylist(playlist.tracks, 0);
+      shuffleQueue();
+    }
+  };
+
   return (
     <div className="flex flex-col gap-5 animate-fade-in-up">
       {/* Based on recent listening */}
@@ -111,6 +122,67 @@ export function HomeDashboard() {
           </div>
         </section>
       )}
+
+      {/* Your Playlists */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xl font-bold tracking-tight hover:underline cursor-pointer">
+            Your Playlist
+          </h2>
+        </div>
+        
+        <div className="flex overflow-x-auto pb-3 -mx-4 px-4 gap-4 snap-x snap-mandatory scrollbar-hide">
+          {/* Create New Playlist Card */}
+          <div 
+            onClick={() => setIsCreateModalOpen(true)}
+            className="snap-start flex-shrink-0 w-[140px] md:w-[180px] lg:w-[200px] 2xl:w-[240px] group p-2.5 rounded-xl glass-card cursor-pointer flex flex-col items-center justify-center gap-3 hover:shadow-neon border-dashed border-2 border-muted-foreground/30 hover:border-brand-primary/50 transition-colors"
+            style={{ minHeight: '220px' }}
+          >
+            <div className="h-12 w-12 rounded-full bg-surface flex items-center justify-center text-muted-foreground group-hover:text-brand-primary group-hover:scale-110 transition-transform">
+              <Plus className="h-6 w-6" />
+            </div>
+            <span className="font-semibold text-muted-foreground group-hover:text-foreground">Create New</span>
+          </div>
+
+          {/* User Playlists */}
+          {playlists && playlists.map((pl: any) => (
+            <div 
+              key={`pl-${pl._id}`}
+              className="snap-start flex-shrink-0 w-[140px] md:w-[180px] lg:w-[200px] 2xl:w-[240px] group p-2.5 rounded-xl glass-card cursor-pointer flex flex-col gap-3 hover:shadow-neon"
+            >
+              <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-gradient-to-br from-indigo-500/20 to-purple-500/20 shadow-glass flex items-center justify-center">
+                {pl.tracks && pl.tracks.length > 0 ? (
+                  <img src={pl.tracks[0].thumbnails?.high || pl.tracks[0].thumbnails?.default || ''} alt={pl.name} className="object-cover w-full h-full opacity-60" />
+                ) : (
+                  <Play className="h-12 w-12 text-white/20" />
+                )}
+                <div className="absolute bottom-2 right-2 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                  <Button 
+                    size="icon" 
+                    className="bg-brand-primary text-white rounded-full h-10 w-10 shadow-lg shadow-black/40 hover:scale-105 hover:bg-brand-hover"
+                    onClick={(e) => { e.stopPropagation(); handleShufflePlaylist(pl); }}
+                    title="Shuffle Play"
+                    disabled={!pl.tracks || pl.tracks.length === 0}
+                  >
+                    <Shuffle className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <h3 className="font-semibold truncate">{pl.name}</h3>
+                <p className="text-sm text-muted-foreground line-clamp-1">
+                  {pl.tracks?.length || 0} tracks
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <CreatePlaylistModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
+      />
     </div>
   );
 }

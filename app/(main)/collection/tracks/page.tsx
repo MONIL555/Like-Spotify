@@ -88,7 +88,8 @@ export default function LikedSongsPage() {
               <TrackRow 
                 key={`${track.videoId}-${index}`} 
                 track={track} 
-                index={index} 
+                index={index}
+                contextTracks={tracks} 
               />
             ))}
           </div>

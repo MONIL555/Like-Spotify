@@ -10,12 +10,37 @@ interface CreatePlaylistModalProps {
   onClose: () => void;
 }
 
+import { toast } from 'sonner';
+import { mutate } from 'swr';
+
 export function CreatePlaylistModal({ isOpen, onClose }: CreatePlaylistModalProps) {
   const [name, setName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleCreate = async () => {
-    // Logic to create playlist goes here
-    onClose();
+    if (!name.trim()) return;
+    
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/playlists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      
+      if (res.ok) {
+        toast.success('Playlist created!');
+        setName('');
+        mutate('/api/playlists');
+        onClose();
+      } else {
+        toast.error('Failed to create playlist');
+      }
+    } catch (error) {
+      toast.error('Something went wrong');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -35,8 +60,8 @@ export function CreatePlaylistModal({ isOpen, onClose }: CreatePlaylistModalProp
           />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleCreate}>Create</Button>
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>Cancel</Button>
+          <Button onClick={handleCreate} disabled={isLoading || !name.trim()}>Create</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

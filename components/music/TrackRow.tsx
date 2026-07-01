@@ -11,19 +11,29 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
+import useSWR from 'swr';
+import { toast } from 'sonner';
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 interface TrackRowProps {
   track: any; // Using any for now, should be ITrack or YTSearchItem
   index?: number;
   showCover?: boolean;
   onRemove?: () => void;
+  contextTracks?: any[];
 }
 
-export function TrackRow({ track, index, showCover = true, onRemove }: TrackRowProps) {
+export function TrackRow({ track, index, showCover = true, onRemove, contextTracks }: TrackRowProps) {
   const { currentTrack, isPlaying, togglePlay, setCurrentTrack } = usePlayerStore();
   const { loadPlaylist } = useQueueStore();
+  const { data: playlists } = useSWR('/api/playlists', fetcher);
   
   const isCurrentTrack = currentTrack?.videoId === track.videoId;
   
@@ -40,24 +50,66 @@ export function TrackRow({ track, index, showCover = true, onRemove }: TrackRowP
     if (isCurrentTrack) {
       togglePlay();
     } else {
-      // Load this track as a single-track playlist and set it as current
-      const trackData = {
-        videoId: track.videoId,
-        title,
-        artist,
-        channelId: track.channelId || '',
-        thumbnails: { default: thumbnail, medium: thumbnail, high: thumbnail, maxres: thumbnail },
-        duration: track.duration || 0,
-        durationText,
-        tags: [],
-        playCount: 0,
-        likeCount: 0,
-        cachedAt: new Date()
-      } as any;
-      const currentTrackToPlay = loadPlaylist([trackData], 0);
-      if (currentTrackToPlay) {
-        setCurrentTrack(currentTrackToPlay);
+      if (contextTracks && contextTracks.length > 0) {
+        const playlist = contextTracks.map(t => ({
+          videoId: t.videoId,
+          title: t.title || 'Unknown Title',
+          artist: t.artist || t.channelName || t.channelTitle || 'Unknown Artist',
+          channelId: t.channelId || '',
+          thumbnails: { 
+            default: t.thumbnails?.default?.url || t.thumbnail || t.thumbnails?.default || '',
+            medium: t.thumbnails?.medium?.url || t.thumbnail || t.thumbnails?.default || '',
+            high: t.thumbnails?.high?.url || t.thumbnail || t.thumbnails?.default || '',
+            maxres: t.thumbnails?.maxres?.url || t.thumbnail || t.thumbnails?.default || ''
+          },
+          duration: t.duration || 0,
+          durationText: t.durationText || (t.duration ? formatDuration(t.duration) : ''),
+          tags: [],
+          playCount: 0,
+          likeCount: 0,
+          cachedAt: new Date()
+        }));
+        
+        const startIndex = index !== undefined ? index : playlist.findIndex(t => t.videoId === track.videoId);
+        const currentTrackToPlay = loadPlaylist(playlist, Math.max(0, startIndex));
+        if (currentTrackToPlay) setCurrentTrack(currentTrackToPlay);
+      } else {
+        // Load this track as a single-track playlist and set it as current
+        const trackData = {
+          videoId: track.videoId,
+          title,
+          artist,
+          channelId: track.channelId || '',
+          thumbnails: { default: thumbnail, medium: thumbnail, high: thumbnail, maxres: thumbnail },
+          duration: track.duration || 0,
+          durationText,
+          tags: [],
+          playCount: 0,
+          likeCount: 0,
+          cachedAt: new Date()
+        } as any;
+        const currentTrackToPlay = loadPlaylist([trackData], 0);
+        if (currentTrackToPlay) {
+          setCurrentTrack(currentTrackToPlay);
+        }
       }
+    }
+  };
+
+  const handleAddToPlaylist = async (playlistId: string) => {
+    try {
+      const res = await fetch(`/api/playlists/${playlistId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ track })
+      });
+      if (res.ok) {
+        toast.success('Added to playlist');
+      } else {
+        toast.error('Failed to add to playlist');
+      }
+    } catch (error) {
+      toast.error('Error adding to playlist');
     }
   };
 
@@ -137,6 +189,19 @@ export function TrackRow({ track, index, showCover = true, onRemove }: TrackRowP
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); /* Add to queue logic */ }}>
               Add to queue
             </DropdownMenuItem>
+            {playlists && playlists.length > 0 && (
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>Add to playlist</DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="bg-white/95 backdrop-blur-md border border-black/10 shadow-lg z-[100]">
+                  {playlists.map((pl: any) => (
+                    <DropdownMenuItem key={pl._id} onClick={(e) => { e.stopPropagation(); handleAddToPlaylist(pl._id); }}>
+                      {pl.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            )}
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); }}>
               Go to artist
             </DropdownMenuItem>

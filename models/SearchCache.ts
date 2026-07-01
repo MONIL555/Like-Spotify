@@ -31,7 +31,6 @@ const SearchCacheSchema = new Schema<ISearchCache>(
     cachedAt: {
       type: Date,
       default: Date.now,
-      expires: 86400, // 24-hour TTL
     },
   },
   {
