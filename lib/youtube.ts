@@ -55,6 +55,7 @@ export async function searchYouTube(
     q: `${query} official audio OR lyrics OR music video`,
     type: 'video',
     videoCategoryId: '10', // Music category
+    videoEmbeddable: 'true',
     maxResults: String(maxResults),
     key: YT_API_KEY,
     ...(pageToken ? { pageToken } : {}),
@@ -109,6 +110,7 @@ export async function getRelatedVideos(
     relatedToVideoId: videoId,
     type: 'video',
     videoCategoryId: '10',
+    videoEmbeddable: 'true',
     maxResults: String(maxResults),
     key: YT_API_KEY,
   });

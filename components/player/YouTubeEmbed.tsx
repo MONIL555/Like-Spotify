@@ -246,13 +246,11 @@ export function YouTubeEmbed() {
     }
   }, []);
 
-  // Setup continuous silent audio stream using base64 audio
+  // Setup continuous silent audio stream using a real 5-second file
   useEffect(() => {
     if (!audioRef.current) return;
     
-    // Tiny silent WAV base64 string
-    const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-    audioRef.current.src = SILENT_WAV;
+    audioRef.current.src = '/silent.wav';
     audioRef.current.loop = true;
     audioRef.current.load();
   }, []);
