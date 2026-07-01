@@ -47,7 +47,8 @@ export function YouTubeEmbed() {
     if (nextTrack) {
       setCurrentTrack(nextTrack);
     } else if (currentTrackNow) {
-      // Dynamic mix (autoplay) when queue runs out
+      // Dynamic mix (autoplay) when queue runs out - Temporarily disabled
+      /*
       try {
         const res = await fetch(`/api/autoplay?videoId=${currentTrackNow.videoId}&artist=${encodeURIComponent(currentTrackNow.artist)}`);
         const data = await res.json();
@@ -62,6 +63,7 @@ export function YouTubeEmbed() {
       } catch (err) {
         console.error('Failed to fetch autoplay track', err);
       }
+      */
       
       setCurrentTrack(null);
       setIsPlaying(false);
@@ -70,6 +72,7 @@ export function YouTubeEmbed() {
       setIsPlaying(false);
     }
   }, [playNext, setCurrentTrack, setIsPlaying]);
+
 
   // 1. Load YouTube Iframe API
   useEffect(() => {

@@ -40,7 +40,8 @@ export function PlayerControls() {
         setCurrentTrack(nextTrack);
       }
     } else if (currentTrack) {
-      // Dynamic mix (autoplay)
+      // Dynamic mix (autoplay) - Temporarily disabled
+      /*
       try {
         setIsFetchingNext(true);
         const res = await fetch(`/api/autoplay?videoId=${currentTrack.videoId}&artist=${encodeURIComponent(currentTrack.artist)}`);
@@ -55,8 +56,10 @@ export function PlayerControls() {
       } finally {
         setIsFetchingNext(false);
       }
+      */
     }
   };
+
 
   const handlePlayPrevious = () => {
     if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
