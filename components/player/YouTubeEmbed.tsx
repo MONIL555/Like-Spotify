@@ -24,6 +24,7 @@ export function YouTubeEmbed() {
   const [isApiReady, setIsApiReady] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   const wakeLockRef = useRef<any>(null);
+  const fallbackRef = useRef<string | null>(null);
 
   const {
     currentTrack,
@@ -47,24 +48,6 @@ export function YouTubeEmbed() {
     if (nextTrack) {
       setCurrentTrack(nextTrack);
     } else if (currentTrackNow) {
-      // Dynamic mix (autoplay) when queue runs out - Temporarily disabled
-      /*
-      try {
-        const res = await fetch(`/api/autoplay?videoId=${currentTrackNow.videoId}&artist=${encodeURIComponent(currentTrackNow.artist)}`);
-        const data = await res.json();
-        if (data.playlist && data.playlist.length > 0) {
-          useQueueStore.setState((state) => ({ queue: [...state.queue, ...data.playlist] }));
-          const finalNext = playNext(currentTrackNow);
-          if (finalNext) {
-            setCurrentTrack(finalNext);
-            return;
-          }
-        }
-      } catch (err) {
-        console.error('Failed to fetch autoplay track', err);
-      }
-      */
-      
       setCurrentTrack(null);
       setIsPlaying(false);
     } else {
@@ -134,8 +117,39 @@ export function YouTubeEmbed() {
               advanceToNext(); // Auto-play next track in queue
             }
           },
-          onError: (event: any) => {
-            console.error('YouTube Player Error:', event.data, 'for track:', usePlayerStore.getState().currentTrack);
+          onError: async (event: any) => {
+            const currentTrackNow = usePlayerStore.getState().currentTrack;
+            console.warn('YouTube Player Error:', event.data, 'for track:', currentTrackNow);
+            
+            if (!currentTrackNow) {
+              setTimeout(() => advanceToNext(), 1000);
+              return;
+            }
+
+            // If embedding is restricted (101 or 150) and we haven't tried a fallback for this track yet
+            if ((event.data === 150 || event.data === 101) && fallbackRef.current !== currentTrackNow.videoId) {
+              fallbackRef.current = currentTrackNow.videoId;
+              try {
+                const query = `${currentTrackNow.title} ${currentTrackNow.artist} audio`;
+                const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                
+                if (data.items && data.items.length > 0) {
+                  const fallback = data.items.find((i: any) => i.videoId !== currentTrackNow.videoId);
+                  if (fallback && playerRef.current) {
+                    console.log(`Using fallback video ID: ${fallback.videoId} for ${currentTrackNow.videoId}`);
+                    playerRef.current.loadVideoById(fallback.videoId);
+                    if (!usePlayerStore.getState().isPlaying) {
+                      usePlayerStore.getState().setIsPlaying(true);
+                    }
+                    return; // Successfully started fallback, do not advance!
+                  }
+                }
+              } catch (err) {
+                console.error('Fallback search failed', err);
+              }
+            }
+
             // Wait 1 second before advancing to prevent infinite crash loops
             setTimeout(() => {
               advanceToNext();
@@ -154,6 +168,20 @@ export function YouTubeEmbed() {
       }
     };
   }, [isApiReady, setPlayerReady, setIsPlaying, advanceToNext, setDuration]);
+
+  // Hack to try and force YouTube to keep playing when page is backgrounded / locked on mobile
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && isPlaying && playerRef.current) {
+        playerRef.current.playVideo();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isPlaying]);
 
   // 3. Handle Track Change
   useEffect(() => {
