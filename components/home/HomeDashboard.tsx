@@ -145,7 +145,7 @@ export function HomeDashboard() {
           </div>
 
           {/* User Playlists */}
-          {playlists && playlists.map((pl: any) => (
+          {Array.isArray(playlists) && playlists.map((pl: any) => (
             <div 
               key={`pl-${pl._id}`}
               className="snap-start flex-shrink-0 w-[140px] md:w-[180px] lg:w-[200px] 2xl:w-[240px] group p-2.5 rounded-xl glass-card cursor-pointer flex flex-col gap-3 hover:shadow-neon"

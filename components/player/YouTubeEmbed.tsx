@@ -111,7 +111,13 @@ export function YouTubeEmbed() {
               state === YT.PlayerState.PAUSED ||
               state === YT.PlayerState.CUED
             ) {
-              setIsPlaying(false);
+              // Prevent background suspension: if YouTube auto-pauses when hidden, force play
+              if (document.hidden && usePlayerStore.getState().isPlaying) {
+                console.log('YouTube auto-paused in background, forcing play...');
+                event.target.playVideo();
+              } else {
+                setIsPlaying(false);
+              }
             } else if (state === YT.PlayerState.ENDED) {
               setIsPlaying(false);
               advanceToNext(); // Auto-play next track in queue
@@ -286,14 +292,7 @@ export function YouTubeEmbed() {
     }
   }, []);
 
-  // Setup continuous silent audio stream using a real 5-second file
-  useEffect(() => {
-    if (!audioRef.current) return;
-    
-    audioRef.current.src = '/silent.wav';
-    audioRef.current.loop = true;
-    audioRef.current.load();
-  }, []);
+      // Removed redundant silent audio setup useEffect to prevent load() from aborting play()
 
   // Background Keep-Alive & Media Session
   useEffect(() => {
@@ -321,14 +320,19 @@ export function YouTubeEmbed() {
     }
 
     if ('mediaSession' in navigator && currentTrack) {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: currentTrack.title,
-        artist: currentTrack.artist,
-        album: currentTrack.albumName || 'Unknown Album',
-        artwork: [
-          { src: currentTrack.thumbnails?.high || currentTrack.thumbnails?.default || '', sizes: '512x512', type: 'image/jpeg' },
-        ],
-      });
+      const artworkSrc = currentTrack.thumbnails?.high || currentTrack.thumbnails?.default || currentTrack.thumbnail;
+      const artwork = artworkSrc ? [{ src: artworkSrc, sizes: '512x512', type: 'image/jpeg' }] : [];
+
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: currentTrack.title || 'Unknown Title',
+          artist: currentTrack.artist || 'Unknown Artist',
+          album: currentTrack.albumName || 'Unknown Album',
+          artwork: artwork,
+        });
+      } catch (e) {
+        console.error('Failed to set MediaMetadata:', e);
+      }
       
       navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
 
@@ -364,8 +368,10 @@ export function YouTubeEmbed() {
       <div ref={containerRef} id="youtube-player" />
       <audio 
         ref={audioRef} 
+        src="/silent.wav"
         loop 
         playsInline 
+        preload="auto"
       />
     </div>
   );

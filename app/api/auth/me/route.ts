@@ -12,6 +12,29 @@ export async function GET(req: NextRequest) {
     await connectDB();
     const payload = await withAuth(req);
 
+    if (payload.role === 'admin') {
+      return Response.json({
+        success: true,
+        data: {
+          user: {
+            _id: 'admin',
+            email: payload.email,
+            username: 'admin',
+            displayName: 'Administrator',
+            avatarUrl: null,
+            avatarColor: '#1DB954',
+            plan: 'premium',
+            role: 'admin',
+            followers: [],
+            following: [],
+            likedTrackIds: [],
+            savedAlbumIds: [],
+            followedArtistIds: [],
+          }
+        },
+      });
+    }
+
     const user = await User.findById(payload.userId)
       .select('-refreshTokens -__v')
       .lean();

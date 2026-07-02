@@ -67,6 +67,7 @@ export interface UserPublic {
   avatarUrl: string | null;
   avatarColor: string;
   plan: 'free' | 'premium';
+  role?: 'admin' | 'user';
   isActive: boolean;
   followers: string[];
   following: string[];
@@ -264,6 +265,7 @@ export interface JWTPayload {
   userId: string;
   email: string;
   plan: 'free' | 'premium';
+  role?: 'admin' | 'user';
   iat?: number;
   exp?: number;
 }

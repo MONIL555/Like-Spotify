@@ -29,6 +29,58 @@ export async function POST(req: NextRequest) {
 
     const { email, password } = validated.data;
 
+    // Check for admin login
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (adminEmail && adminPassword && email === adminEmail && password === adminPassword) {
+      const tokenPayload = {
+        userId: 'admin',
+        email: adminEmail,
+        plan: 'premium' as const,
+        role: 'admin' as const,
+      };
+
+      const accessToken = signAccessToken(tokenPayload);
+      const refreshToken = signRefreshToken(tokenPayload);
+
+      const response = Response.json({
+        success: true,
+        data: {
+          user: {
+            _id: 'admin',
+            email: adminEmail,
+            username: 'admin',
+            displayName: 'Administrator',
+            avatarUrl: null,
+            avatarColor: '#1DB954',
+            plan: 'premium',
+            role: 'admin',
+            followers: [],
+            following: [],
+            likedTrackIds: [],
+            savedAlbumIds: [],
+            followedArtistIds: [],
+          },
+        },
+      });
+
+      const headers = new Headers(response.headers);
+      const accessCookie = getAuthCookieOptions(false);
+      const refreshCookie = getAuthCookieOptions(true);
+
+      headers.append(
+        'Set-Cookie',
+        `access_token=${accessToken}; HttpOnly; Path=${accessCookie.path}; Max-Age=${accessCookie.maxAge}; SameSite=${accessCookie.sameSite}${accessCookie.secure ? '; Secure' : ''}`
+      );
+      headers.append(
+        'Set-Cookie',
+        `refresh_token=${refreshToken}; HttpOnly; Path=${refreshCookie.path}; Max-Age=${refreshCookie.maxAge}; SameSite=${refreshCookie.sameSite}${refreshCookie.secure ? '; Secure' : ''}`
+      );
+
+      return new Response(response.body, { status: 200, headers });
+    }
+
     // Find user with password field
     const user = await User.findOne({ email }).select('+passwordHash');
 
@@ -52,6 +104,7 @@ export async function POST(req: NextRequest) {
       userId: user._id.toString(),
       email: user.email,
       plan: user.plan,
+      role: (user as any).role || 'user',
     };
 
     const accessToken = signAccessToken(tokenPayload);
@@ -87,6 +140,7 @@ export async function POST(req: NextRequest) {
           avatarUrl: user.avatarUrl,
           avatarColor: user.avatarColor,
           plan: user.plan,
+          role: (user as any).role || 'user',
           followers: user.followers,
           following: user.following,
           likedTrackIds: user.likedTrackIds,

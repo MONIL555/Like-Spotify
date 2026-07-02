@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Search, Library } from 'lucide-react';
+import { Home, Search, Library, ShieldAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useYouTubePlayer } from '@/hooks/useYouTubePlayer';
+import { useAuth } from '@/hooks/useAuth';
 
 const NAV_ITEMS = [
   { icon: Home, label: 'Home', href: '/' },
@@ -14,6 +15,7 @@ const NAV_ITEMS = [
 export function MobileNav() {
   const pathname = usePathname();
   const { currentTrack } = useYouTubePlayer();
+  const { user } = useAuth();
   
   return (
     <nav className={cn(
@@ -37,6 +39,18 @@ export function MobileNav() {
             </Link>
           );
         })}
+        {user?.role === 'admin' && (
+          <Link
+            href="/admin"
+            className={cn(
+              "flex flex-col items-center justify-center gap-1 w-16 h-full transition-colors",
+              pathname.startsWith('/admin') ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <ShieldAlert className={cn("h-5 w-5", pathname.startsWith('/admin') && "fill-current")} />
+            <span className="text-[10px] font-medium">Admin</span>
+          </Link>
+        )}
       </div>
     </nav>
   );

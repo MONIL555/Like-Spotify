@@ -14,6 +14,10 @@ export async function GET(req: NextRequest) {
     
     const jwtUser = verifyAccessToken(token);
 
+    if (jwtUser.role === 'admin') {
+      return NextResponse.json([]);
+    }
+
     await connectDB();
 
     const playlists = await Playlist.find({ userId: jwtUser.userId }).sort({ createdAt: -1 });

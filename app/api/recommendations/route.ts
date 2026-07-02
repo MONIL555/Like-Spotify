@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 
     let recentlyPlayed: any[] = [];
 
-    if (jwtUser) {
+    if (jwtUser && jwtUser.role !== 'admin') {
       // Get most recent unique videoIds from history
       const history = await ListeningHistory.aggregate([
         { $match: { userId: new mongoose.Types.ObjectId(jwtUser.userId) } },
