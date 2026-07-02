@@ -132,19 +132,27 @@ export function YouTubeEmbed() {
               return;
             }
 
-            // If embedding is restricted (101 or 150) and we haven't tried a fallback for this track yet
-            if ((event.data === 150 || event.data === 101) && fallbackRef.current !== currentTrackNow.videoId) {
+            // Try a fallback for this track if we haven't already
+            if (fallbackRef.current !== currentTrackNow.videoId) {
               fallbackRef.current = currentTrackNow.videoId;
               try {
-                const query = `${currentTrackNow.title} ${currentTrackNow.artist} audio`;
+                const artist = currentTrackNow.artist || currentTrackNow.channelTitle || '';
+                const title = currentTrackNow.title || '';
+                const query = `${title} ${artist} audio`.trim();
+                
+                console.log(`Searching for fallback: ${query}`);
                 const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
                 const data = await res.json();
                 
                 if (data.items && data.items.length > 0) {
+                  // Find a video that is NOT the broken one
                   const fallback = data.items.find((i: any) => i.videoId !== currentTrackNow.videoId);
                   if (fallback && playerRef.current) {
                     console.log(`Using fallback video ID: ${fallback.videoId} for ${currentTrackNow.videoId}`);
+                    
+                    // Load the fallback video
                     playerRef.current.loadVideoById(fallback.videoId);
+                    
                     if (!usePlayerStore.getState().isPlaying) {
                       usePlayerStore.getState().setIsPlaying(true);
                     }
