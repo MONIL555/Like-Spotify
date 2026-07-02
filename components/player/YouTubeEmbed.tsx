@@ -8,6 +8,9 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { usePlayerStore } from '@/store/playerStore';
 import { useQueueStore } from '@/store/queueStore';
 
+// We will generate a continuous silent audio stream using Web Audio API instead of a base64 string
+// to avoid loop gaps that could cause mobile OS to suspend the background process.
+
 declare global {
   interface Window {
     onYouTubeIframeAPIReady: () => void;
@@ -37,6 +40,7 @@ export function YouTubeEmbed() {
 
   const { playNext, playPrevious } = useQueueStore();
 
+  // Helper to advance to next track (used on end + error)
   const advanceToNext = useCallback(async () => {
     const currentTrackNow = usePlayerStore.getState().currentTrack;
     let nextTrack = playNext(currentTrackNow);
@@ -52,6 +56,8 @@ export function YouTubeEmbed() {
     }
   }, [playNext, setCurrentTrack, setIsPlaying]);
 
+
+  // 1. Load YouTube Iframe API
   useEffect(() => {
     if (!window.YT) {
       const tag = document.createElement('script');
@@ -67,6 +73,7 @@ export function YouTubeEmbed() {
     }
   }, []);
 
+  // 2. Initialize Player Instance
   useEffect(() => {
     if (isApiReady && !playerRef.current && containerRef.current) {
       playerRef.current = new window.YT.Player(containerRef.current, {
@@ -86,6 +93,7 @@ export function YouTubeEmbed() {
         events: {
           onReady: (event: any) => {
             setPlayerReady(true);
+            // Apply initial volume
             if (isMuted) {
               event.target.mute();
             } else {
@@ -103,6 +111,7 @@ export function YouTubeEmbed() {
               state === YT.PlayerState.PAUSED ||
               state === YT.PlayerState.CUED
             ) {
+              // Prevent background suspension: if YouTube auto-pauses when hidden, force play
               if (document.hidden && usePlayerStore.getState().isPlaying) {
                 console.log('YouTube auto-paused in background, forcing play...');
                 event.target.playVideo();
@@ -111,7 +120,7 @@ export function YouTubeEmbed() {
               }
             } else if (state === YT.PlayerState.ENDED) {
               setIsPlaying(false);
-              advanceToNext();
+              advanceToNext(); // Auto-play next track in queue
             }
           },
           onError: async (event: any) => {
@@ -123,6 +132,7 @@ export function YouTubeEmbed() {
               return;
             }
 
+            // If embedding is restricted (101 or 150) and we haven't tried a fallback for this track yet
             if ((event.data === 150 || event.data === 101) && fallbackRef.current !== currentTrackNow.videoId) {
               fallbackRef.current = currentTrackNow.videoId;
               try {
@@ -138,7 +148,7 @@ export function YouTubeEmbed() {
                     if (!usePlayerStore.getState().isPlaying) {
                       usePlayerStore.getState().setIsPlaying(true);
                     }
-                    return; 
+                    return; // Successfully started fallback, do not advance!
                   }
                 }
               } catch (err) {
@@ -146,6 +156,7 @@ export function YouTubeEmbed() {
               }
             }
 
+            // Wait 1 second before advancing to prevent infinite crash loops
             setTimeout(() => {
               advanceToNext();
             }, 1000);
@@ -155,6 +166,7 @@ export function YouTubeEmbed() {
     }
 
     return () => {
+      // Cleanup player on unmount
       if (playerRef.current && playerRef.current.destroy) {
         playerRef.current.destroy();
         playerRef.current = null;
@@ -163,6 +175,7 @@ export function YouTubeEmbed() {
     };
   }, [isApiReady, setPlayerReady, setIsPlaying, advanceToNext, setDuration]);
 
+  // Hack to try and force YouTube to keep playing when page is backgrounded / locked on mobile
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden && isPlaying && playerRef.current) {
@@ -176,6 +189,7 @@ export function YouTubeEmbed() {
     };
   }, [isPlaying]);
 
+  // 3. Handle Track Change
   useEffect(() => {
     if (playerRef.current && currentTrack) {
       if (!currentTrack.videoId || currentTrack.videoId.length < 11) {
@@ -191,8 +205,9 @@ export function YouTubeEmbed() {
       playerRef.current.stopVideo();
       setIsPlaying(false);
     }
-  }, [currentTrack?.videoId]); 
+  }, [currentTrack?.videoId]); // Only run when videoId changes
 
+  // 4. Handle Play/Pause Toggle
   useEffect(() => {
     if (playerRef.current && currentTrack) {
       const state = playerRef.current.getPlayerState();
@@ -206,6 +221,7 @@ export function YouTubeEmbed() {
     }
   }, [isPlaying, currentTrack]);
 
+  // 5. Handle Volume & Mute Changes
   useEffect(() => {
     if (playerRef.current) {
       playerRef.current.setVolume(volume);
@@ -217,6 +233,7 @@ export function YouTubeEmbed() {
     }
   }, [volume, isMuted]);
 
+  // 6. Time Tracking Loop
   useEffect(() => {
     let animationFrameId: number;
 
@@ -240,6 +257,7 @@ export function YouTubeEmbed() {
     };
   }, [isPlaying, setCurrentTime]);
 
+  // Expose global method to seek (used by ProgressBar) and manage silent audio synchronously
   useEffect(() => {
     if (typeof window !== 'undefined') {
       (window as any).seekTo = (seconds: number) => {
@@ -274,11 +292,16 @@ export function YouTubeEmbed() {
     }
   }, []);
 
+      // Removed redundant silent audio setup useEffect to prevent load() from aborting play()
+
+  // Background Keep-Alive & Media Session
   useEffect(() => {
+    // Play/pause the silent audio to keep the session alive on mobile
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.play().catch(e => console.log('Keep-alive audio failed:', e));
         
+        // Request wake lock if supported to prevent device from sleeping
         if ('wakeLock' in navigator) {
           (navigator as any).wakeLock.request('screen')
             .then((lock: any) => { wakeLockRef.current = lock; })
@@ -287,6 +310,7 @@ export function YouTubeEmbed() {
       } else {
         audioRef.current.pause();
         
+        // Release wake lock
         if (wakeLockRef.current) {
           wakeLockRef.current.release()
             .then(() => { wakeLockRef.current = null; })
