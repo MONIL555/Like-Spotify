@@ -271,6 +271,18 @@ export function YouTubeEmbed() {
           playerRef.current.playVideo();
         }
       };
+      
+      (window as any).playSilentAudio = () => {
+        if (audioRef.current) {
+          audioRef.current.play().catch(e => console.log('Silent audio play failed:', e));
+        }
+      };
+      
+      (window as any).pauseSilentAudio = () => {
+        if (audioRef.current) {
+          audioRef.current.pause();
+        }
+      };
     }
   }, []);
 
