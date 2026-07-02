@@ -320,7 +320,7 @@ export function YouTubeEmbed() {
     }
 
     if ('mediaSession' in navigator && currentTrack) {
-      const artworkSrc = currentTrack.thumbnails?.high || currentTrack.thumbnails?.default || currentTrack.thumbnail;
+      const artworkSrc = currentTrack.thumbnails?.high || currentTrack.thumbnails?.default;
       const artwork = artworkSrc ? [{ src: artworkSrc, sizes: '512x512', type: 'image/jpeg' }] : [];
 
       try {

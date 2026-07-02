@@ -4,6 +4,7 @@ import { verifyAccessToken, handleApiError } from '@/lib/auth';
 import User from '@/models/User';
 import ListeningHistory from '@/models/ListeningHistory';
 import Track from '@/models/Track';
+import { getVideoDetails } from '@/lib/youtube';
 
 export async function GET(req: NextRequest) {
   try {
@@ -54,14 +55,44 @@ export async function GET(req: NextRequest) {
     ]);
 
     const topTracks = await Promise.all(topTracksAggregate.map(async (item) => {
-      const track = await Track.findOne({ videoId: item._id });
+      let track = await Track.findOne({ videoId: item._id });
+      
+      let title = track?.title;
+      let artist = track?.artist;
+      let thumbnails = track?.thumbnails;
+
+      if (!track) {
+        try {
+          const ytDetails = await getVideoDetails([item._id]);
+          if (ytDetails && ytDetails.length > 0) {
+            title = ytDetails[0].title;
+            artist = ytDetails[0].channelTitle;
+            thumbnails = ytDetails[0].thumbnails;
+            
+            await Track.create({
+              videoId: ytDetails[0].videoId,
+              title: title,
+              artist: artist,
+              channelId: ytDetails[0].channelId,
+              channelTitle: artist,
+              thumbnails: thumbnails,
+              duration: ytDetails[0].duration,
+              durationText: ytDetails[0].durationText,
+              publishedAt: ytDetails[0].publishedAt,
+            });
+          }
+        } catch (e) {
+          console.error("Failed to fetch YT details for", item._id);
+        }
+      }
+
       return {
         videoId: item._id,
         playCount: item.playCount,
         totalDuration: item.totalDuration,
-        title: track?.title || 'Unknown Title',
-        artist: track?.artist || 'Unknown Artist',
-        thumbnails: track?.thumbnails
+        title: title || 'Unknown Title',
+        artist: artist || 'Unknown Artist',
+        thumbnails: thumbnails
       };
     }));
 
