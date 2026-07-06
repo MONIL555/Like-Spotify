@@ -3,6 +3,7 @@ import { Inter, Geist } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Providers } from "@/components/providers/Providers";
+import Script from "next/script";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -17,6 +18,7 @@ export const metadata: Metadata = {
     template: '%s | SpotTunes',
     default: 'SpotTunes - Your Personal Web Music Player',
   },
+  manifest: "/manifest.json",
   description: 'A modern, high-performance web music player built with Next.js.',
   keywords: ['music', 'player', 'youtube', 'streaming', 'audio', 'nextjs'],
   authors: [{ name: 'Antigravity' }],
@@ -45,6 +47,22 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
+        <Script id="register-sw" strategy="afterInteractive">
+          {`
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(
+                  function(registration) {
+                    console.log('Service Worker registration successful with scope: ', registration.scope);
+                  },
+                  function(err) {
+                    console.log('Service Worker registration failed: ', err);
+                  }
+                );
+              });
+            }
+          `}
+        </Script>
       </body>
     </html>
   );
