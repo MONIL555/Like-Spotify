@@ -35,43 +35,45 @@ export function FullscreenPlayer() {
     '';
 
   return (
-    <div className="fixed inset-0 z-[100] bg-background animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[100] bg-black animate-in fade-in zoom-in-95 duration-500">
       {/* Blurred background image */}
       <div 
-        className="absolute inset-0 opacity-40 dark:opacity-30 bg-cover bg-center bg-no-repeat blur-[100px] scale-150 saturate-150"
+        className="absolute inset-0 opacity-40 bg-cover bg-center bg-no-repeat blur-[100px] scale-150 saturate-150"
         style={{ backgroundImage: `url(${thumbnail})` }}
       />
       
       {/* Gradient overlay for better contrast */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/30 pointer-events-none" />
 
       {/* Content */}
       <div className="relative h-full flex flex-col p-4 sm:p-8 md:p-12">
         {/* Top bar */}
         <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-6 w-6 text-brand-primary"
-            >
-              <path d="M9 18V5l12-2v13" />
-              <circle cx="6" cy="18" r="3" />
-              <circle cx="18" cy="16" r="3" />
-            </svg>
-            <span className="font-semibold tracking-tight text-foreground">SpotTunes</span>
+          <div className="flex items-center gap-3 text-white">
+            <div className="bg-gradient-brand p-1.5 rounded-lg shadow-neon">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-6 w-6 text-white"
+              >
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+              </svg>
+            </div>
+            <span className="font-extrabold text-xl tracking-tight text-white drop-shadow-md">SpotTunes</span>
           </div>
           
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleFullscreen}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-white/50 hover:text-white transition-colors"
           >
             <Minimize2 className="h-6 w-6" />
           </Button>
@@ -79,42 +81,43 @@ export function FullscreenPlayer() {
 
         {/* Center content (Album Art) */}
         <div className="flex-1 flex items-center justify-center min-h-0 mb-4 md:mb-8 w-full max-w-2xl mx-auto">
-          <div className="relative w-full aspect-video rounded-xl md:rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 dark:ring-white/5">
+          <div className="relative w-full aspect-video rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.8)] ring-1 ring-white/10 group">
             {thumbnail && (
               <Image
                 src={thumbnail}
                 alt={currentTrack.title}
                 fill
-                className="object-cover transition-transform duration-700 ease-out hover:scale-105"
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                 sizes="(max-width: 768px) 100vw, 800px"
                 priority
               />
             )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           </div>
         </div>
 
         {/* Bottom controls area */}
-        <div className="w-full max-w-4xl mx-auto space-y-6">
+        <div className="w-full max-w-4xl mx-auto space-y-8 pb-4">
           {/* Track Info */}
           <div className="flex justify-between items-end mb-2">
             <div className="w-full text-center md:text-left">
-              <h1 className="text-3xl md:text-5xl font-extrabold text-foreground mb-1 md:mb-2 line-clamp-1 tracking-tight">
+              <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-2 line-clamp-1 tracking-tight drop-shadow-lg">
                 {currentTrack.title}
               </h1>
-              <p className="text-lg md:text-xl text-muted-foreground line-clamp-1 font-medium">
+              <p className="text-lg md:text-xl text-white/70 line-clamp-1 font-medium drop-shadow-md">
                 {currentTrack.artist}
               </p>
             </div>
           </div>
 
           {/* Controls */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-6">
             <ProgressBar />
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-0">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-0 mt-4">
               <div className="hidden sm:block w-[30%] min-w-[180px]">
                 {/* Empty space to balance VolumeControl */}
               </div>
-              <div className="flex-1 flex justify-center w-full scale-110 sm:scale-125 origin-center my-4 sm:my-0">
+              <div className="flex-1 flex justify-center w-full scale-110 sm:scale-[1.35] origin-center my-4 sm:my-0">
                 <PlayerControls />
               </div>
               <div className="w-full sm:w-auto flex justify-center sm:justify-end">

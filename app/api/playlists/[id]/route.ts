@@ -4,6 +4,33 @@ import { verifyAccessToken } from '@/lib/auth';
 import { apiLimiter, checkRateLimit, getClientIp } from '@/lib/ratelimit';
 import Playlist from '@/models/Playlist';
 
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const ip = getClientIp(req);
+    await checkRateLimit(apiLimiter, ip);
+
+    const token = req.cookies.get('access_token')?.value || req.headers.get('Authorization')?.replace('Bearer ', '');
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    
+    const jwtUser = verifyAccessToken(token);
+
+    const resolvedParams = await params;
+
+    await connectDB();
+
+    const playlist = await Playlist.findOne({ _id: resolvedParams.id, userId: jwtUser.userId });
+    
+    if (!playlist) {
+      return NextResponse.json({ error: 'Playlist not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(playlist);
+  } catch (error: any) {
+    console.error('Playlist GET Error:', error);
+    return NextResponse.json({ error: 'Failed to get playlist' }, { status: 500 });
+  }
+}
+
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const ip = getClientIp(req);

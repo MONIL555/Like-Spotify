@@ -1,42 +1,69 @@
 'use client';
 
+import { use } from 'react';
 import useSWR from 'swr';
-import { Loader2, Play, Heart } from 'lucide-react';
+import { Play, Music } from 'lucide-react';
 import { TrackRow } from '@/components/music/TrackRow';
 import { Button } from '@/components/ui/button';
 import { useQueueStore } from '@/store/queueStore';
+import { usePlayerStore } from '@/store/playerStore';
 
 const fetcher = (url: string) => fetch(url).then((res) => {
   if (!res.ok) throw new Error('Failed to fetch');
   return res.json();
 });
 
-export default function LikedSongsPage() {
-  const { data: tracks, error, isLoading } = useSWR('/api/library/liked', fetcher);
+export default function PlaylistPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
+  const { data: playlist, error, isLoading } = useSWR(`/api/playlists/${resolvedParams.id}`, fetcher);
   const { loadPlaylist } = useQueueStore();
+  const { setCurrentTrack } = usePlayerStore();
 
   const handlePlayAll = () => {
-    if (tracks && tracks.length > 0) {
-      loadPlaylist(tracks, 0);
+    if (playlist?.tracks && playlist.tracks.length > 0) {
+      const firstTrack = loadPlaylist(playlist.tracks, 0);
+      if (firstTrack) setCurrentTrack(firstTrack);
+    }
+  };
+
+  const handleRemoveTrack = async (videoId: string) => {
+    try {
+      const res = await fetch(`/api/playlists/${resolvedParams.id}/tracks?videoId=${videoId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        // Optimistic UI update could be done here or just revalidate via SWR mutate
+        // But for simplicity, the next SWR fetch or mutate will update it
+      }
+    } catch (error) {
+      console.error('Failed to remove track', error);
     }
   };
 
   return (
     <div className="flex flex-col animate-fade-in min-h-full">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row items-end gap-4 p-4 md:p-6 bg-gradient-to-b from-indigo-800/80 to-background">
-        <div className="w-48 h-48 md:w-60 md:h-60 shadow-2xl flex-shrink-0 bg-gradient-to-br from-indigo-500 to-indigo-300 flex items-center justify-center rounded-sm">
-          <Heart className="w-24 h-24 text-white fill-white" />
+      <div className="flex flex-col md:flex-row items-end gap-4 p-4 md:p-6 bg-gradient-to-b from-purple-800/80 to-background">
+        <div className="w-48 h-48 md:w-60 md:h-60 shadow-2xl flex-shrink-0 bg-gradient-to-br from-purple-500 to-purple-300 flex items-center justify-center rounded-sm overflow-hidden">
+          {playlist?.tracks && playlist.tracks.length > 0 ? (
+            <img 
+              src={playlist.tracks[0].thumbnails?.high?.url || playlist.tracks[0].thumbnails?.default?.url || playlist.tracks[0].thumbnails?.high || playlist.tracks[0].thumbnails?.default || playlist.tracks[0].thumbnail} 
+              alt={playlist.name} 
+              className="object-cover w-full h-full opacity-80" 
+            />
+          ) : (
+            <Music className="w-24 h-24 text-white fill-white" />
+          )}
         </div>
         <div className="flex flex-col gap-2 w-full">
           <span className="text-sm font-bold uppercase tracking-wider hidden md:block">Playlist</span>
           <h1 className="text-4xl md:text-7xl font-bold tracking-tighter text-foreground mb-2">
-            Liked Songs
+            {playlist?.name || 'Loading...'}
           </h1>
           <div className="flex items-center gap-2 text-sm font-semibold">
             <span>You</span>
             <span className="w-1 h-1 bg-foreground rounded-full hidden sm:block" />
-            <span className="text-muted-foreground">{tracks?.length || 0} songs</span>
+            <span className="text-muted-foreground">{playlist?.tracks?.length || 0} songs</span>
           </div>
         </div>
       </div>
@@ -46,7 +73,7 @@ export default function LikedSongsPage() {
         <Button 
           size="icon" 
           onClick={handlePlayAll}
-          disabled={!tracks || tracks.length === 0}
+          disabled={!playlist?.tracks || playlist.tracks.length === 0}
           className="bg-brand-primary text-white rounded-full h-14 w-14 shadow-lg hover:scale-105 hover:bg-brand-hover disabled:opacity-50 disabled:hover:scale-100"
         >
           <Play className="h-6 w-6 fill-current ml-1" />
@@ -80,24 +107,25 @@ export default function LikedSongsPage() {
           </div>
         ) : error ? (
           <div className="text-center p-12 text-muted-foreground">
-            Failed to load liked songs.
+            Failed to load playlist.
           </div>
-        ) : tracks && tracks.length > 0 ? (
+        ) : playlist?.tracks && playlist.tracks.length > 0 ? (
           <div className="flex flex-col pb-8">
-            {tracks.map((track: any, index: number) => (
+            {playlist.tracks.map((track: any, index: number) => (
               <TrackRow 
                 key={`${track.videoId}-${index}`} 
                 track={track} 
                 index={index}
-                contextTracks={tracks} 
+                contextTracks={playlist.tracks}
+                // Optional: onRemove={() => handleRemoveTrack(track.videoId)}
               />
             ))}
           </div>
         ) : (
           <div className="text-center p-12 text-muted-foreground flex flex-col items-center gap-4">
-            <Heart className="h-12 w-12" />
-            <h3 className="text-xl font-bold text-foreground">Songs you like will appear here</h3>
-            <p>Save songs by tapping the heart icon.</p>
+            <Music className="h-12 w-12" />
+            <h3 className="text-xl font-bold text-foreground">This playlist is empty</h3>
+            <p>Add some songs to get started.</p>
           </div>
         )}
       </div>

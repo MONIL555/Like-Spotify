@@ -39,16 +39,6 @@ export function formatTotalDuration(seconds: number): string {
   return `${mins} min`;
 }
 
-// ─── Time-based Greeting ─────────────────────────────────────
-
-export function getTimeGreeting(): string {
-  const hour = new Date().getHours();
-
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
-}
-
 // ─── Avatar Color Generator ─────────────────────────────────
 
 const AVATAR_COLORS = [

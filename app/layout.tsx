@@ -40,8 +40,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("h-full", inter.variable, "font-sans", geist.variable)}>
-      <body className="h-full bg-background text-foreground font-sans antialiased">
+    <html lang="en" className={cn("dark h-[100dvh] w-full overflow-hidden", inter.variable, "font-sans", geist.variable)}>
+      <body className="h-[100dvh] w-full overflow-hidden bg-background text-foreground font-sans antialiased">
         <Providers>
           {children}
         </Providers>

@@ -39,27 +39,8 @@ export function PlayerControls() {
       if (nextTrack) {
         setCurrentTrack(nextTrack);
       }
-    } else if (currentTrack) {
-      // Dynamic mix (autoplay) - Temporarily disabled
-      /*
-      try {
-        setIsFetchingNext(true);
-        const res = await fetch(`/api/autoplay?videoId=${currentTrack.videoId}&artist=${encodeURIComponent(currentTrack.artist)}`);
-        const data = await res.json();
-        if (data.playlist && data.playlist.length > 0) {
-          useQueueStore.setState((state) => ({ queue: [...state.queue, ...data.playlist] }));
-          const nextTrack = playNext(currentTrack);
-          if (nextTrack) setCurrentTrack(nextTrack);
-        }
-      } catch (err) {
-        console.error('Failed to fetch autoplay track', err);
-      } finally {
-        setIsFetchingNext(false);
-      }
-      */
     }
   };
-
 
   const handlePlayPrevious = () => {
     if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
@@ -72,7 +53,7 @@ export function PlayerControls() {
   };
 
   return (
-    <div className="flex items-center justify-center gap-2 md:gap-4 mb-2">
+    <div className="flex items-center justify-center gap-3 md:gap-6 mb-2">
       {/* Shuffle Button */}
       <Tooltip>
         <TooltipTrigger asChild>
@@ -81,8 +62,8 @@ export function PlayerControls() {
             size="icon"
             onClick={toggleShuffle}
             className={cn(
-              "hidden sm:flex text-muted-foreground hover:text-foreground",
-              shuffle && "text-brand-primary hover:text-brand-hover"
+              "transition-colors",
+              shuffle ? "text-accent-coral" : "text-white/50 hover:text-white"
             )}
             disabled={!isPlayerReady}
           >
@@ -90,7 +71,7 @@ export function PlayerControls() {
             <span className="sr-only">Shuffle</span>
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="top">
+        <TooltipContent side="top" className="bg-black/90 text-white border-white/10">
           {shuffle ? 'Disable shuffle' : 'Enable shuffle'}
         </TooltipContent>
       </Tooltip>
@@ -102,14 +83,14 @@ export function PlayerControls() {
             variant="ghost"
             size="icon"
             onClick={handlePlayPrevious}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-white/70 hover:text-white transition-colors"
             disabled={!isPlayerReady || !hasPrev}
           >
-            <SkipBack className="h-5 w-5 fill-current" />
+            <SkipBack className="h-6 w-6 fill-current" />
             <span className="sr-only">Previous</span>
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="top">Previous</TooltipContent>
+        <TooltipContent side="top" className="bg-black/90 text-white border-white/10">Previous</TooltipContent>
       </Tooltip>
 
       <Button
@@ -123,13 +104,13 @@ export function PlayerControls() {
           }
           togglePlay();
         }}
-        className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-foreground text-background hover:bg-foreground/90 hover:scale-105 transition-transform"
+        className="h-12 w-12 rounded-full bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.4)] hover:shadow-[0_0_30px_rgba(255,255,255,0.6)] hover:scale-105 transition-all duration-300"
         disabled={!isPlayerReady}
       >
         {isPlaying ? (
-          <Pause className="h-4 w-4 md:h-5 md:w-5 fill-current" />
+          <Pause className="h-6 w-6 fill-current" />
         ) : (
-          <Play className="h-4 w-4 md:h-5 md:w-5 fill-current ml-0.5" />
+          <Play className="h-6 w-6 fill-current ml-1" />
         )}
         <span className="sr-only">{isPlaying ? 'Pause' : 'Play'}</span>
       </Button>
@@ -141,18 +122,18 @@ export function PlayerControls() {
             variant="ghost"
             size="icon"
             onClick={handlePlayNext}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-white/70 hover:text-white transition-colors"
             disabled={!isPlayerReady || (!hasNext && !currentTrack) || isFetchingNext}
           >
             {isFetchingNext ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <Loader2 className="h-6 w-6 animate-spin" />
             ) : (
-              <SkipForward className="h-5 w-5 fill-current" />
+              <SkipForward className="h-6 w-6 fill-current" />
             )}
             <span className="sr-only">Next</span>
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="top">Next</TooltipContent>
+        <TooltipContent side="top" className="bg-black/90 text-white border-white/10">Next</TooltipContent>
       </Tooltip>
 
       {/* Repeat Button */}
@@ -163,8 +144,8 @@ export function PlayerControls() {
             size="icon"
             onClick={cycleRepeat}
             className={cn(
-              "hidden sm:flex text-muted-foreground hover:text-foreground",
-              repeat !== 'off' && "text-brand-primary hover:text-brand-hover"
+              "transition-colors",
+              repeat !== 'off' ? "text-accent-coral" : "text-white/50 hover:text-white"
             )}
             disabled={!isPlayerReady}
           >
@@ -176,7 +157,7 @@ export function PlayerControls() {
             <span className="sr-only">Repeat</span>
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="top">
+        <TooltipContent side="top" className="bg-black/90 text-white border-white/10">
           {repeat === 'off' ? 'Enable repeat' : repeat === 'all' ? 'Enable repeat one' : 'Disable repeat'}
         </TooltipContent>
       </Tooltip>

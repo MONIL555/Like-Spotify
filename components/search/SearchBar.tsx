@@ -48,8 +48,8 @@ export function SearchBar() {
   };
 
   return (
-    <div className="relative w-full max-w-sm flex items-center group">
-      <div className="absolute left-3 text-muted-foreground group-focus-within:text-foreground transition-colors">
+    <div className="relative w-full max-w-md flex items-center group mx-auto">
+      <div className="absolute left-3 text-white/50 group-focus-within:text-white transition-colors z-10">
         <SearchIcon className="h-5 w-5" />
       </div>
       <Input
@@ -57,14 +57,14 @@ export function SearchBar() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="What do you want to listen to?"
-        className="pl-10 pr-10 rounded-full bg-surface-hover/50 border-transparent hover:border-border hover:bg-surface-hover focus-visible:bg-surface focus-visible:ring-brand-primary h-12 text-base transition-all shadow-sm"
+        className="pl-10 pr-10 rounded-full bg-white/10 text-white placeholder:text-white/50 border-transparent hover:border-white/20 hover:bg-white/15 focus-visible:bg-white/15 focus-visible:ring-accent-coral h-12 text-base transition-all shadow-sm"
       />
       {query && (
         <Button
           variant="ghost"
           size="icon"
           onClick={clearSearch}
-          className="absolute right-2 h-8 w-8 rounded-full text-muted-foreground hover:text-foreground"
+          className="absolute right-2 h-8 w-8 rounded-full text-white/50 hover:text-white hover:bg-white/10 z-10"
         >
           <X className="h-4 w-4" />
           <span className="sr-only">Clear search</span>

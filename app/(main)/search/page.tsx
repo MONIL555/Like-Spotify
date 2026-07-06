@@ -45,7 +45,7 @@ export default function SearchPage() {
   };
 
   return (
-    <div className="p-2 md:p-4 flex flex-col gap-2 animate-fade-in">
+    <div className="p-2 md:p-3 flex flex-col gap-1 animate-fade-in">
       <section>
         {isLoading ? (
           <div className="flex flex-col gap-2">

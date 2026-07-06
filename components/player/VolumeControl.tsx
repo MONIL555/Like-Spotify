@@ -27,10 +27,10 @@ export function VolumeControl() {
   };
 
   const VolumeIcon = () => {
-    if (isMuted || volume === 0) return <VolumeX className="h-4 w-4" />;
-    if (volume < 33) return <Volume className="h-4 w-4" />;
-    if (volume < 66) return <Volume1 className="h-4 w-4" />;
-    return <Volume2 className="h-4 w-4" />;
+    if (isMuted || volume === 0) return <VolumeX className="h-5 w-5" />;
+    if (volume < 33) return <Volume className="h-5 w-5" />;
+    if (volume < 66) return <Volume1 className="h-5 w-5" />;
+    return <Volume2 className="h-5 w-5" />;
   };
 
   return (
@@ -43,14 +43,14 @@ export function VolumeControl() {
             size="icon"
             onClick={toggleLyrics}
             className={cn(
-              "text-muted-foreground hover:text-foreground hidden lg:flex",
-              isLyricsOpen && "text-brand-primary hover:text-brand-hover"
+              "hidden lg:flex transition-colors",
+              isLyricsOpen ? "text-accent-coral" : "text-white/50 hover:text-white"
             )}
           >
-            <Mic2 className="h-4 w-4" />
+            <Mic2 className="h-5 w-5" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="top">Lyrics</TooltipContent>
+        <TooltipContent side="top" className="bg-black/90 text-white border-white/10">Lyrics</TooltipContent>
       </Tooltip>
 
       {/* Queue Toggle */}
@@ -61,14 +61,14 @@ export function VolumeControl() {
             size="icon"
             onClick={toggleQueue}
             className={cn(
-              "text-muted-foreground hover:text-foreground hidden md:flex",
-              isQueueOpen && "text-brand-primary hover:text-brand-hover"
+              "hidden md:flex transition-colors",
+              isQueueOpen ? "text-accent-coral" : "text-white/50 hover:text-white"
             )}
           >
-            <ListMusic className="h-4 w-4" />
+            <ListMusic className="h-5 w-5" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="top">Queue</TooltipContent>
+        <TooltipContent side="top" className="bg-black/90 text-white border-white/10">Queue</TooltipContent>
       </Tooltip>
 
       {/* Volume Controls */}
@@ -77,7 +77,7 @@ export function VolumeControl() {
           variant="ghost"
           size="icon"
           onClick={toggleMute}
-          className="text-muted-foreground hover:text-foreground h-8 w-8"
+          className="text-white/50 hover:text-white transition-colors h-9 w-9"
           disabled={!isPlayerReady}
         >
           <VolumeIcon />
@@ -89,7 +89,7 @@ export function VolumeControl() {
             step={1}
             onValueChange={handleVolumeChange}
             disabled={!isPlayerReady}
-            className="w-full"
+            className="w-full cursor-pointer [&_[role=slider]]:opacity-0 group-hover:[&_[role=slider]]:opacity-100 [&_[role=slider]]:transition-opacity [&_[role=slider]]:bg-white [&>.bg-primary]:bg-white"
           />
         </div>
       </div>
@@ -101,12 +101,12 @@ export function VolumeControl() {
             variant="ghost"
             size="icon"
             onClick={toggleFullscreen}
-            className="text-muted-foreground hover:text-foreground hidden lg:flex ml-2"
+            className="hidden lg:flex ml-2 text-white/50 hover:text-white transition-colors"
           >
-            <Maximize2 className="h-4 w-4" />
+            <Maximize2 className="h-5 w-5" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="top">Fullscreen</TooltipContent>
+        <TooltipContent side="top" className="bg-black/90 text-white border-white/10">Fullscreen</TooltipContent>
       </Tooltip>
     </div>
   );

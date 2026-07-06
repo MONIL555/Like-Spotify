@@ -15,7 +15,8 @@ import {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
-  DropdownMenuSeparator
+  DropdownMenuSeparator,
+  DropdownMenuPortal
 } from '@/components/ui/dropdown-menu';
 import useSWR from 'swr';
 import { toast } from 'sonner';
@@ -125,8 +126,8 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
   return (
     <div 
       className={cn(
-        "group flex items-center gap-2 px-1 py-1 rounded hover:bg-black/5 transition-colors cursor-pointer",
-        isCurrentTrack && "bg-black/5"
+        "group flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors cursor-pointer",
+        isCurrentTrack && "bg-white/10"
       )}
       onClick={handlePlay}
     >
@@ -181,7 +182,7 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
       </div>
 
       {/* Right Actions */}
-      <div className="flex items-center gap-1 transition-opacity">
+      <div className="flex items-center gap-1 transition-opacity" onClick={(e) => e.stopPropagation()}>
         <LikeButton videoId={track.videoId} />
         
         <span className="text-xs text-muted-foreground min-w-[32px] text-right hidden sm:block">
@@ -194,33 +195,34 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 bg-white/95 backdrop-blur-md border border-black/10 shadow-lg z-[100]">
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); /* Add to queue logic */ }}>
+          <DropdownMenuContent align="end" className="w-48 bg-black/90 backdrop-blur-xl border border-white/10 shadow-2xl z-[100] text-white">
+            <DropdownMenuItem className="focus:bg-white/10 focus:text-white" onSelect={() => { /* Add to queue logic */ }}>
               Add to queue
             </DropdownMenuItem>
             {playlists && playlists.length > 0 && (
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>Add to playlist</DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="bg-white/95 backdrop-blur-md border border-black/10 shadow-lg z-[100]">
-                  {playlists.map((pl: any) => (
-                    <DropdownMenuItem key={pl._id} onClick={(e) => { e.stopPropagation(); handleAddToPlaylist(pl._id); }}>
-                      {pl.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
+              <>
+                <DropdownMenuSeparator className="bg-white/10" />
+                <div className="px-2 py-1.5 text-[10px] font-semibold text-white/50 uppercase tracking-wider">
+                  Add to playlist
+                </div>
+                {playlists.map((pl: any) => (
+                  <DropdownMenuItem key={pl._id} className="focus:bg-white/10 focus:text-white pl-4" onSelect={() => handleAddToPlaylist(pl._id)}>
+                    {pl.name}
+                  </DropdownMenuItem>
+                ))}
+              </>
             )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); }}>
+            <DropdownMenuSeparator className="bg-white/10" />
+            <DropdownMenuItem className="focus:bg-white/10 focus:text-white" onSelect={() => {}}>
               Go to artist
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); }}>
+            <DropdownMenuItem className="focus:bg-white/10 focus:text-white" onSelect={() => {}}>
               Share
             </DropdownMenuItem>
             {onRemove && (
               <DropdownMenuItem 
-                onClick={(e) => { e.stopPropagation(); onRemove(); }}
-                className="text-red-500 focus:text-red-500"
+                onSelect={() => onRemove()}
+                className="text-red-400 focus:bg-red-400/10 focus:text-red-300"
               >
                 Remove
               </DropdownMenuItem>

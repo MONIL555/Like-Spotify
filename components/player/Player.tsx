@@ -47,8 +47,8 @@ export function Player() {
       {/* Floating glass bottom player bar */}
       <footer 
         className={cn(
-          "fixed bottom-[64px] md:bottom-2 left-2 right-2 md:left-[208px] lg:left-[248px] h-[72px] glass-panel-heavy rounded-2xl flex items-center justify-between px-4 z-[60] transition-all duration-500 ease-out shadow-glass",
-          !currentTrack ? "translate-y-[150%] opacity-0" : "translate-y-0 opacity-100"
+          "fixed bottom-[72px] md:bottom-4 left-3 right-3 md:left-[196px] lg:left-[226px] h-[72px] bg-black/70 backdrop-blur-3xl border border-white/10 rounded-3xl flex items-center justify-between px-4 z-[60] transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1) shadow-[0_16px_40px_rgba(0,0,0,0.5)]",
+          !currentTrack ? "translate-y-[150%] scale-95 opacity-0 pointer-events-none" : "translate-y-0 scale-100 opacity-100"
         )}
       >
         <NowPlayingBar />

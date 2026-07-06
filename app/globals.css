@@ -5,33 +5,35 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
-   SpotTunes — Premium Glassmorphism Design System (Light Theme)
+   SpotTunes — Premium Glassmorphism Design System (Dark Theme)
    ============================================================ */
 
 :root {
-  /* Brand/Accent Colors (Light & Vibrant) */
-  --accent-blue: #0A84FF;
-  --accent-purple: #AF52DE;
-  --accent-magenta: #FF2D55;
-  --accent-teal: #32ADE6;
-
+  /* Default to Dark Mode for 2026 Vibes */
+  
+  /* Brand/Accent Colors (Coral to Purple Gradient) */
+  --accent-coral: #FF7EB3;
+  --accent-purple: #8E2DE2;
+  --accent-blue: #4A00E0;
+  
   /* Solid Colors */
   --white: #FFFFFF;
   --black: #000000;
-  
+
   /* Text */
-  --text-primary: #1C1C1E;
-  --text-secondary: rgba(28, 28, 30, 0.7);
-  --text-muted: rgba(28, 28, 30, 0.5);
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
 
   /* Base Background */
-  --bg-base: #F2F2F7; /* Apple's light gray background */
+  --bg-base: #0A0A0A;
+  --bg-elevated: #18181B;
 
-  /* Glass Surfaces (Light Mode) */
-  --glass-bg: rgba(255, 255, 255, 0.75);
-  --glass-bg-hover: rgba(255, 255, 255, 0.9);
-  --glass-border: rgba(0, 0, 0, 0.05);
-  --glass-highlight: rgba(255, 255, 255, 1);
+  /* Glass Surfaces */
+  --glass-bg: rgba(24, 24, 27, 0.6);
+  --glass-bg-hover: rgba(39, 39, 42, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.12);
 
   /* Spacing Scale */
   --space-0: 0px;
@@ -57,8 +59,8 @@
   --radius-full: 9999px;
 
   /* Shadows */
-  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
-  --shadow-neon: 0 4px 16px rgba(0, 0, 0, 0.05);
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  --shadow-neon: 0 0 20px rgba(142, 45, 226, 0.4);
 
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -66,55 +68,39 @@
   --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Base theme variables (shadcn compatible) */
-  --background: oklch(0.97 0 0); 
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0 / 0.7);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0 / 0.85);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.5 0.2 290); /* Purple accent */
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.9 0 0 / 0.5);
-  --secondary-foreground: oklch(0.145 0 0);
-  --muted: oklch(0.9 0 0 / 0.5);
-  --muted-foreground: oklch(0.4 0 0);
-  --accent: oklch(0.5 0.2 290 / 0.1);
-  --accent-foreground: oklch(0.5 0.2 290);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0 0 0 / 0.08);
-  --input: oklch(0 0 0 / 0.08);
-  --ring: oklch(0.5 0.2 290 / 0.3);
-  --radius: 1rem;
-}
-
-.dark {
-  /* We will keep dark mode variables just in case, but light is default */
-  --glass-bg: rgba(28, 28, 30, 0.6);
-  --glass-bg-hover: rgba(44, 44, 46, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-highlight: rgba(255, 255, 255, 0.15);
-  
-  --background: oklch(0.15 0.05 260); 
+  --background: oklch(0.13 0.02 260);
   --foreground: oklch(0.98 0 0);
-  --text-primary: #FFFFFF;
+  --card: oklch(0.15 0.02 260 / 0.7);
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.15 0.02 260 / 0.85);
+  --popover-foreground: oklch(0.98 0 0);
+  --primary: oklch(0.6 0.2 320);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.2 0 0 / 0.5);
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.2 0 0 / 0.5);
+  --muted-foreground: oklch(0.6 0 0);
+  --accent: oklch(0.6 0.2 320 / 0.15);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(1 1 1 / 0.08);
+  --input: oklch(1 1 1 / 0.08);
+  --ring: oklch(0.6 0.2 320 / 0.3);
+  --radius: 1rem;
 }
 
 /* ─── Tailwind Theme Integration ───────────────────────────── */
 @theme inline {
   --color-background: var(--bg-base);
   --color-foreground: var(--text-primary);
-  --font-sans: var(--font-sans);
 
   /* Brand Colors */
   --color-brand-primary: var(--accent-purple);
-  --color-brand-hover: var(--accent-magenta);
-  --color-brand-light: var(--accent-blue);
+  --color-brand-secondary: var(--accent-coral);
 
   /* Surface Colors */
   --color-surface: var(--glass-bg);
   --color-surface-hover: var(--glass-bg-hover);
-  --color-sidebar: var(--glass-bg);
-  --color-player: var(--glass-bg);
 
   /* Text Colors */
   --color-text-primary: var(--text-primary);
@@ -122,7 +108,7 @@
   --color-text-muted: var(--text-muted);
 
   --color-border: var(--glass-border);
-  
+
   /* Additional Radii for Glass */
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
@@ -145,54 +131,47 @@ body {
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 16px;
   line-height: 1.5;
-  overflow: hidden; /* Prevent body scroll — layout handles scrolling */
+  overflow: hidden;
+  /* Prevent body scroll — layout handles scrolling */
 }
 
 /* ─── Glassmorphism Utility Classes ─────────────────────────── */
 .glass-panel {
   background: var(--glass-bg);
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
   border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-glass);
-}
-
-.glass-panel-heavy {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(48px) saturate(200%);
-  -webkit-backdrop-filter: blur(48px) saturate(200%);
-  border: 1px solid var(--glass-border);
-  border-top: 1px solid var(--glass-highlight);
   box-shadow: var(--shadow-glass);
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(24, 24, 27, 0.4);
   backdrop-filter: blur(16px) saturate(150%);
   -webkit-backdrop-filter: blur(16px) saturate(150%);
   border: 1px solid var(--glass-border);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   transition: all var(--transition-base);
 }
 
 .glass-card:hover {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  background: rgba(39, 39, 42, 0.6);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
 }
 
 .glass-button {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all var(--transition-fast);
 }
 
 .glass-button:hover {
-  background: rgba(0, 0, 0, 0.1);
-  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
 }
 
 /* ─── Scrollbar Styling ────────────────────────────────────── */
@@ -206,17 +185,17 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
 /* ─── Selection ────────────────────────────────────────────── */
@@ -227,18 +206,34 @@ body {
 
 /* ─── Animations ───────────────────────────────────────────── */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* ─── Utility Classes ──────────────────────────────────────── */
@@ -248,6 +243,16 @@ body {
 
 .animate-fade-in-up {
   animation: fadeInUp var(--transition-slow) forwards;
+}
+
+/* Brand Gradients */
+.bg-gradient-brand {
+  background: linear-gradient(135deg, var(--accent-coral) 0%, var(--accent-purple) 100%);
+}
+.text-gradient-brand {
+  background: linear-gradient(135deg, var(--accent-coral) 0%, var(--accent-purple) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* ─── Line Clamp Utilities ─────────────────────────────────── */
@@ -269,6 +274,7 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
