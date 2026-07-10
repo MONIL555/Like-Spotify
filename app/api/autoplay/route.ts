@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
     }
 
     // ── KEY FIX 4: Return a full playlist, not just one track ──────────────
-    const playlist = mixTracks.slice(0, 20).map(toTrack);
+    const playlist = mixTracks.slice(0, 8).map(toTrack);
 
     return NextResponse.json({
       playlist,           // wire this to your player queue on the frontend

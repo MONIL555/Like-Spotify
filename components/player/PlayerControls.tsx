@@ -11,15 +11,15 @@ export function PlayerControls() {
     isPlaying, togglePlay, 
     shuffle, toggleShuffle,
     repeat, cycleRepeat,
-    currentTrack 
+    currentTrack,
+    advanceToNext
   } = usePlayerStore();
   
-  const { playNext, playPrevious } = useQueueStore();
+  const { playPrevious } = useQueueStore();
   const { setCurrentTrack } = usePlayerStore();
 
   const handleNext = () => {
-    const next = playNext(currentTrack);
-    if (next) setCurrentTrack(next);
+    advanceToNext();
   };
 
   const handlePrev = () => {

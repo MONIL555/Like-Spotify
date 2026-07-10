@@ -13,6 +13,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { usePlayerStore } from '@/store/playerStore';
 import { useQueueStore } from '@/store/queueStore';
 import { useHistoryStore } from '@/store/historyStore';
+import { useAuthStore } from '@/store/authStore';
 
 declare global {
   interface Window {
@@ -56,18 +57,16 @@ export function YouTubeEmbed() {
     setCurrentTime,
     setDuration,
     setCurrentTrack,
+    advanceToNext,
   } = usePlayerStore();
 
   const { playNext, playPrevious } = useQueueStore();
   const { addToHistory } = useHistoryStore();
 
-  const advanceToNext = useCallback(async () => {
+  const handleAdvanceToNext = useCallback(async () => {
     currentVideoIdRef.current = null; // Allow next track to load
-    const now = usePlayerStore.getState().currentTrack;
-    const next = playNext(now);
-    if (next) setCurrentTrack(next);
-    else { setCurrentTrack(null); setIsPlaying(false); }
-  }, [playNext, setCurrentTrack, setIsPlaying]);
+    await advanceToNext();
+  }, [advanceToNext]);
 
   const stopNative = useCallback(() => {
     if (nativeAudioRef.current) {
@@ -123,14 +122,14 @@ export function YouTubeEmbed() {
               }
             } else if (state === YT.PlayerState.ENDED) {
               setIsPlaying(false);
-              advanceToNext();
+              handleAdvanceToNext();
             }
           },
 
           onError: async (event: any) => {
             if (playerModeRef.current !== 'iframe') return;
             const track = usePlayerStore.getState().currentTrack;
-            if (!track) { setTimeout(advanceToNext, 1000); return; }
+            if (!track) { setTimeout(handleAdvanceToNext, 1000); return; }
 
             if (fallbackRef.current !== track.videoId) {
               fallbackRef.current = track.videoId;
@@ -146,14 +145,14 @@ export function YouTubeEmbed() {
                 }
               } catch { /* ignore */ }
             }
-            setTimeout(advanceToNext, 1000);
+            setTimeout(handleAdvanceToNext, 1000);
           },
         },
       });
     });
 
     return iframePromiseRef.current;
-  }, [isApiReady, setIsPlaying, setDuration, advanceToNext]);
+  }, [isApiReady, setIsPlaying, setDuration, handleAdvanceToNext]);
 
   // ══════════════════════════════════════════════════════════════
   // 1. Load YouTube API script (background, for potential fallback)
@@ -189,7 +188,7 @@ export function YouTubeEmbed() {
     const onEnded = () => {
       if (playerModeRef.current === 'native') {
         setIsPlaying(false);
-        advanceToNext();
+        handleAdvanceToNext();
       }
     };
 
@@ -243,7 +242,7 @@ export function YouTubeEmbed() {
       audio.removeEventListener('error', onError);
       audio.removeEventListener('pause', onPause);
     };
-  }, [setDuration, setIsPlaying, advanceToNext, stopNative, ensureIframeReady]);
+  }, [setDuration, setIsPlaying, handleAdvanceToNext, stopNative, ensureIframeReady]);
 
   // ══════════════════════════════════════════════════════════════
   // 3. Web Audio API Keep-Alive
@@ -382,7 +381,7 @@ export function YouTubeEmbed() {
     }
 
     if (videoId.length < 11) {
-      advanceToNext();
+      handleAdvanceToNext();
       return;
     }
 
@@ -586,7 +585,7 @@ export function YouTubeEmbed() {
       navigator.mediaSession.setActionHandler('nexttrack', () => {
         audioContextRef.current?.resume().catch(() => {});
         silentAudioRef.current?.play().catch(() => {});
-        advanceToNext();
+        handleAdvanceToNext();
       });
 
       try {
@@ -595,7 +594,7 @@ export function YouTubeEmbed() {
         if (d > 0) navigator.mediaSession.setPositionState({ duration: d, playbackRate: 1, position: Math.min(t, d) });
       } catch { /* ignore */ }
     }
-  }, [isPlaying, currentTrack, playNext, playPrevious, setCurrentTrack, setIsPlaying, advanceToNext]);
+  }, [isPlaying, currentTrack, playNext, playPrevious, setCurrentTrack, setIsPlaying, handleAdvanceToNext]);
 
   // ══════════════════════════════════════════════════════════════
   // 13. Lock Screen Progress

@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 
 import { Play, Pause, MoreHorizontal, ListPlus, User } from 'lucide-react';
 import { usePlayerStore } from '@/store/playerStore';
@@ -23,6 +24,7 @@ interface TrackRowProps {
 }
 
 export function TrackRow({ track, index, showCover = true, onRemove, contextTracks }: TrackRowProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const { currentTrack, isPlaying, togglePlay, setCurrentTrack } = usePlayerStore();
   const { loadPlaylist, addToQueue } = useQueueStore();
   const { data: playlists } = useSWR('/api/playlists', fetcher);
@@ -118,7 +120,8 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
           }
         }}
         className={cn(
-          "relative bg-background group flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer transition-colors duration-200 z-10",
+          "relative bg-background group flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer transition-colors duration-200",
+          menuOpen ? "z-50" : "z-10",
           isCurrentTrack 
             ? "clay-inset bg-brand-primary/10" 
             : "hover:bg-surface-hover"
@@ -168,6 +171,7 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
         </span>
 
         <DropdownMenu 
+          onOpenChange={setMenuOpen}
           trigger={
             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
               <MoreHorizontal className="h-4 w-4" />

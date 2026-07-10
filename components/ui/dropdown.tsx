@@ -6,16 +6,22 @@ interface DropdownMenuProps {
   trigger: React.ReactNode;
   children: React.ReactNode;
   align?: 'start' | 'end' | 'center';
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function DropdownMenu({ trigger, children, align = 'end' }: DropdownMenuProps) {
+export function DropdownMenu({ trigger, children, align = 'end', onOpenChange }: DropdownMenuProps) {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
+
+  const handleSetOpen = (newOpen: boolean) => {
+    setOpen(newOpen);
+    onOpenChange?.(newOpen);
+  };
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (ref.current && !ref.current.contains(event.target as Node)) {
-        setOpen(false);
+        handleSetOpen(false);
       }
     };
     if (open) document.addEventListener('mousedown', handleClickOutside);
@@ -24,19 +30,19 @@ export function DropdownMenu({ trigger, children, align = 'end' }: DropdownMenuP
 
   return (
     <div className="relative inline-block text-left" ref={ref}>
-      <div onClick={() => setOpen(!open)} className="cursor-pointer inline-flex">
+      <div onClick={() => handleSetOpen(!open)} className="cursor-pointer inline-flex">
         {trigger}
       </div>
       
       {open && (
         <div 
           className={cn(
-            "absolute z-50 mt-2 min-w-[200px] rounded-2xl clay-panel p-2 shadow-xl animate-slide-up",
+            "absolute z-[100] mt-2 min-w-[200px] rounded-xl bg-surface/95 backdrop-blur-xl border border-border/50 p-2 shadow-2xl animate-slide-up",
             align === 'end' ? 'right-0 origin-top-right' : 
             align === 'start' ? 'left-0 origin-top-left' : 
             'left-1/2 -translate-x-1/2 origin-top'
           )}
-          onClick={() => setOpen(false)}
+          onClick={() => handleSetOpen(false)}
         >
           {children}
         </div>
@@ -49,7 +55,7 @@ export function DropdownMenuItem({ className, children, onClick }: React.HTMLAtt
   return (
     <div
       className={cn(
-        "relative flex cursor-pointer select-none items-center rounded-xl px-3 py-2.5 text-sm outline-none transition-colors hover:bg-surface-hover hover:text-brand-primary",
+        "relative flex cursor-pointer select-none items-center rounded-lg px-3 py-2.5 text-sm font-semibold text-foreground outline-none transition-colors hover:bg-surface-hover hover:text-brand-primary",
         className
       )}
       onClick={onClick}

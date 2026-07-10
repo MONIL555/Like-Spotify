@@ -6,6 +6,8 @@
 
 import { create } from 'zustand';
 import type { Track, RepeatMode } from '@/types';
+import { useQueueStore } from './queueStore';
+import { useAuthStore } from './authStore';
 
 interface PlayerState {
   // State
@@ -39,6 +41,7 @@ interface PlayerState {
   setContextPlaylistId: (id: string | null) => void;
   setPlayerReady: (ready: boolean) => void;
   reset: () => void;
+  advanceToNext: () => Promise<void>;
 }
 
 const initialState = {
@@ -57,7 +60,7 @@ const initialState = {
   isPlayerReady: false,
 };
 
-export const usePlayerStore = create<PlayerState>((set) => ({
+export const usePlayerStore = create<PlayerState>((set, get) => ({
   ...initialState,
 
   setCurrentTrack: (track) =>
@@ -106,4 +109,38 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   setPlayerReady: (ready) => set({ isPlayerReady: ready }),
 
   reset: () => set(initialState),
+
+  advanceToNext: async () => {
+    const { currentTrack, setCurrentTrack, setIsPlaying } = get();
+    let next = useQueueStore.getState().playNext(currentTrack);
+
+    // AUTOPLAY LOGIC
+    if (!next && currentTrack) {
+      const user = useAuthStore.getState().user as any;
+      const autoplayEnabled = user?.preferences?.autoplay !== false;
+
+      if (autoplayEnabled) {
+        try {
+          console.log(`[Autoplay] Queue empty, fetching mix for: ${currentTrack.title}...`);
+          const res = await fetch(`/api/autoplay?videoId=${currentTrack.videoId}&artist=${encodeURIComponent(currentTrack.artist || '')}`);
+          const data = await res.json();
+          if (data.playlist && data.playlist.length > 0) {
+            useQueueStore.getState().addMultipleToQueue(data.playlist);
+            next = useQueueStore.getState().playNext(null);
+          }
+        } catch (err) {
+          console.error('[Autoplay] Failed to fetch next tracks', err);
+        }
+      }
+    }
+
+    if (next) {
+      setCurrentTrack(next);
+      // Wait a tick to ensure state is updated before iframe plays
+      setTimeout(() => setIsPlaying(true), 50);
+    } else {
+      setCurrentTrack(null);
+      setIsPlaying(false);
+    }
+  },
 }));

@@ -17,6 +17,7 @@ interface QueueState {
 
   // Actions
   addToQueue: (track: Track, position?: 'next' | 'last') => void;
+  addMultipleToQueue: (tracks: Track[]) => void;
   removeFromQueue: (index: number) => void;
   reorderQueue: (from: number, to: number) => void;
   clearQueue: () => void;
@@ -45,6 +46,11 @@ export const useQueueStore = create<QueueState>((set, get) => ({
         queue: [...state.queue, track],
       };
     }),
+
+  addMultipleToQueue: (tracks) =>
+    set((state) => ({
+      queue: [...state.queue, ...tracks],
+    })),
 
   removeFromQueue: (index) =>
     set((state) => ({
