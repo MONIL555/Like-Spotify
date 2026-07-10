@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@distube/ytdl-core": "^4.16.12",
     "@hookform/resolvers": "^5.4.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",

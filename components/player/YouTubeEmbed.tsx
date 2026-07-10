@@ -1,19 +1,9 @@
-// ============================================================
-// SpotTunes — YouTubeEmbed (Hybrid Player v3 — Lazy Iframe)
-// ============================================================
-// PRIMARY  → Native <audio> via /api/stream proxy (same-origin)
-// FALLBACK → YouTube IFrame — created ON DEMAND only when
-//            native audio actually fails. This eliminates all
-//            iframe CORS/network noise when native mode works.
-// ============================================================
-
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { usePlayerStore } from '@/store/playerStore';
 import { useQueueStore } from '@/store/queueStore';
 import { useHistoryStore } from '@/store/historyStore';
-import { useAuthStore } from '@/store/authStore';
 
 declare global {
   interface Window {
@@ -22,30 +12,13 @@ declare global {
   }
 }
 
-type PlayerMode = 'native' | 'iframe' | 'idle';
-
 export function YouTubeEmbed() {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
   const [isApiReady, setIsApiReady] = useState(false);
   const silentAudioRef = useRef<HTMLAudioElement>(null);
-  const nativeAudioRef = useRef<HTMLAudioElement>(null);
   const wakeLockRef = useRef<any>(null);
-  const fallbackRef = useRef<string | null>(null);
-
-  // Hybrid state
-  const playerModeRef = useRef<PlayerMode>('idle');
-  const switchingRef = useRef(false);
-  const currentVideoIdRef = useRef<string | null>(null);
-
-  // Lazy iframe
-  const iframeReadyRef = useRef(false);
-  const iframePromiseRef = useRef<Promise<void> | null>(null);
-
-  // Background hardening
   const audioContextRef = useRef<AudioContext | null>(null);
-  const watchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const webLockAbortRef = useRef<AbortController | null>(null);
 
   const {
     currentTrack,
@@ -61,191 +34,197 @@ export function YouTubeEmbed() {
   } = usePlayerStore();
 
   const { playNext, playPrevious } = useQueueStore();
-  const { addToHistory } = useHistoryStore();
 
   const handleAdvanceToNext = useCallback(async () => {
-    currentVideoIdRef.current = null; // Allow next track to load
     await advanceToNext();
   }, [advanceToNext]);
 
-  const stopNative = useCallback(() => {
-    if (nativeAudioRef.current) {
-      nativeAudioRef.current.pause();
-      nativeAudioRef.current.removeAttribute('src');
-      nativeAudioRef.current.load();
+  // ══════════════════════════════════════════════════════════════
+  // 1. Initialize YouTube IFrame API
+  // ══════════════════════════════════════════════════════════════
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (window.YT && window.YT.Player) {
+      setIsApiReady(true);
+      return;
+    }
+
+    window.onYouTubeIframeAPIReady = () => {
+      setIsApiReady(true);
+    };
+
+    if (!document.getElementById('youtube-api-script')) {
+      const tag = document.createElement('script');
+      tag.id = 'youtube-api-script';
+      tag.src = 'https://www.youtube.com/iframe_api';
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag?.parentNode?.insertBefore(tag, firstScriptTag);
     }
   }, []);
 
-  const stopIframe = useCallback(() => {
-    try { playerRef.current?.stopVideo(); } catch { /* ignore */ }
-  }, []);
-
   // ══════════════════════════════════════════════════════════════
-  // LAZY IFRAME: Only created when native audio fails
+  // 2. Create the Player Instance
   // ══════════════════════════════════════════════════════════════
-  const ensureIframeReady = useCallback((): Promise<void> => {
-    if (iframeReadyRef.current && playerRef.current) return Promise.resolve();
-    if (iframePromiseRef.current) return iframePromiseRef.current;
-    if (!isApiReady || !containerRef.current) return Promise.resolve();
+  useEffect(() => {
+    if (!isApiReady || !containerRef.current || playerRef.current) return;
 
-    iframePromiseRef.current = new Promise<void>((resolve) => {
-      console.log('[Hybrid] Creating iframe fallback player...');
-      playerRef.current = new window.YT.Player(containerRef.current!, {
-        height: '100',
-        width: '100',
-        playerVars: {
-          autoplay: 0, controls: 0, disablekb: 1, fs: 0,
-          iv_load_policy: 3, rel: 0, showinfo: 0,
-          modestbranding: 1, playsinline: 1,
-          origin: typeof window !== 'undefined' ? window.location.origin : '',
+    playerRef.current = new window.YT.Player(containerRef.current, {
+      height: '100',
+      width: '100',
+      playerVars: {
+        autoplay: 0,
+        controls: 0,
+        disablekb: 1,
+        fs: 0,
+        iv_load_policy: 3,
+        rel: 0,
+        showinfo: 0,
+        modestbranding: 1,
+        playsinline: 1,
+        origin: typeof window !== 'undefined' ? window.location.origin : '',
+      },
+      events: {
+        onReady: () => {
+          setPlayerReady(true);
+          console.log('[YouTube Player] Ready');
         },
-        events: {
-          onReady: () => {
-            iframeReadyRef.current = true;
-            console.log('[Hybrid] Iframe fallback ready');
-            resolve();
-          },
+        onStateChange: (event: any) => {
+          const state = event.data;
+          const YT = window.YT;
 
-          onStateChange: (event: any) => {
-            if (playerModeRef.current !== 'iframe' || switchingRef.current) return;
-            const state = event.data;
-            const YT = window.YT;
-
-            if (state === YT.PlayerState.PLAYING) {
-              setIsPlaying(true);
-              setDuration(event.target.getDuration());
-            } else if (state === YT.PlayerState.PAUSED || state === YT.PlayerState.CUED) {
-              if (document.hidden && usePlayerStore.getState().isPlaying) {
-                event.target.playVideo();
-              } else {
-                setIsPlaying(false);
-              }
-            } else if (state === YT.PlayerState.ENDED) {
+          if (state === YT.PlayerState.PLAYING) {
+            setIsPlaying(true);
+            setDuration(event.target.getDuration());
+          } else if (state === YT.PlayerState.PAUSED || state === YT.PlayerState.CUED) {
+            if (document.hidden && usePlayerStore.getState().isPlaying) {
+              // Try to force play if it was paused while backgrounded
+              event.target.playVideo();
+            } else {
               setIsPlaying(false);
-              handleAdvanceToNext();
             }
-          },
-
-          onError: async (event: any) => {
-            if (playerModeRef.current !== 'iframe') return;
-            const track = usePlayerStore.getState().currentTrack;
-            if (!track) { setTimeout(handleAdvanceToNext, 1000); return; }
-
-            if (fallbackRef.current !== track.videoId) {
-              fallbackRef.current = track.videoId;
-              try {
-                const q = `${track.title || ''} ${track.artist || track.channelTitle || ''} audio`.trim();
-                const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
-                const data = await res.json();
-                const alt = data.items?.find((i: any) => i.videoId !== track.videoId);
-                if (alt && playerRef.current) {
-                  playerRef.current.loadVideoById(alt.videoId);
-                  if (!usePlayerStore.getState().isPlaying) setIsPlaying(true);
-                  return;
-                }
-              } catch { /* ignore */ }
-            }
-            setTimeout(handleAdvanceToNext, 1000);
-          },
+          } else if (state === YT.PlayerState.ENDED) {
+            setIsPlaying(false);
+            handleAdvanceToNext();
+          }
         },
-      });
+        onError: () => {
+          // If the video fails to load or play, try the next one in the queue after a brief delay
+          setTimeout(handleAdvanceToNext, 1000);
+        },
+      },
     });
 
-    return iframePromiseRef.current;
-  }, [isApiReady, setIsPlaying, setDuration, handleAdvanceToNext]);
-
-  // ══════════════════════════════════════════════════════════════
-  // 1. Load YouTube API script (background, for potential fallback)
-  // ══════════════════════════════════════════════════════════════
-  useEffect(() => {
-    // Player is ready immediately — native audio doesn't need iframe
-    setPlayerReady(true);
-
-    if (!window.YT) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      const first = document.getElementsByTagName('script')[0];
-      first.parentNode?.insertBefore(tag, first);
-      window.onYouTubeIframeAPIReady = () => setIsApiReady(true);
-    } else {
-      setIsApiReady(true);
-    }
-  }, [setPlayerReady]);
-
-  // ══════════════════════════════════════════════════════════════
-  // 2. Native Audio Event Listeners
-  // ══════════════════════════════════════════════════════════════
-  useEffect(() => {
-    const audio = nativeAudioRef.current;
-    if (!audio) return;
-
-    const onDurationChange = () => {
-      if (playerModeRef.current === 'native' && isFinite(audio.duration)) {
-        setDuration(audio.duration);
-      }
-    };
-
-    const onEnded = () => {
-      if (playerModeRef.current === 'native') {
-        setIsPlaying(false);
-        handleAdvanceToNext();
-      }
-    };
-
-    const triggerIframeFallback = async (resumeTime = 0) => {
-      if (switchingRef.current || playerModeRef.current === 'iframe') return;
-      
-      const videoId = currentVideoIdRef.current;
-      if (!videoId) return;
-
-      console.log(`[Hybrid] ✗ Native stream failed at ${resumeTime.toFixed(1)}s → Falling back to iframe for ${videoId}`);
-      
-      switchingRef.current = true;
-      playerModeRef.current = 'iframe';
-      stopNative();
-
-      await ensureIframeReady();
-      if (playerRef.current) {
-        playerRef.current.loadVideoById({
-          videoId,
-          startSeconds: resumeTime,
-        });
-      }
-      switchingRef.current = false;
-      setIsPlaying(true);
-    };
-
-    const onError = () => {
-      triggerIframeFallback(audio.currentTime || 0);
-    };
-
-    // Attach triggerIframeFallback to audio object so it can be called from catch block
-    (audio as any)._triggerFallback = triggerIframeFallback;
-
-    const onPause = () => {
-      if (playerModeRef.current !== 'native' || switchingRef.current) return;
-      if (document.hidden && usePlayerStore.getState().isPlaying) {
-        audio.play().catch(() => {});
-      } else {
-        setIsPlaying(false);
-      }
-    };
-
-    audio.addEventListener('durationchange', onDurationChange);
-    audio.addEventListener('ended', onEnded);
-    audio.addEventListener('error', onError);
-    audio.addEventListener('pause', onPause);
-
     return () => {
-      audio.removeEventListener('durationchange', onDurationChange);
-      audio.removeEventListener('ended', onEnded);
-      audio.removeEventListener('error', onError);
-      audio.removeEventListener('pause', onPause);
+      if (playerRef.current) {
+        playerRef.current.destroy();
+        playerRef.current = null;
+        setPlayerReady(false);
+      }
     };
-  }, [setDuration, setIsPlaying, handleAdvanceToNext, stopNative, ensureIframeReady]);
+  }, [isApiReady, setPlayerReady, setIsPlaying, setDuration, handleAdvanceToNext]);
 
   // ══════════════════════════════════════════════════════════════
-  // 3. Web Audio API Keep-Alive
+  // 3. Sync Current Track (Load new video)
+  // ══════════════════════════════════════════════════════════════
+  useEffect(() => {
+    if (!currentTrack || !playerRef.current) return;
+    
+    // Add to recently played history
+    useHistoryStore.getState().addToHistory(currentTrack);
+
+    // Always load by ID when the track changes
+    if (typeof playerRef.current.loadVideoById === 'function') {
+      playerRef.current.loadVideoById(currentTrack.videoId);
+      // Wait for it to play, the onStateChange will handle the isPlaying state update
+    }
+  }, [currentTrack]);
+
+  // ══════════════════════════════════════════════════════════════
+  // 4. Sync Play/Pause State (Global toggle)
+  // ══════════════════════════════════════════════════════════════
+  useEffect(() => {
+    if (!playerRef.current) return;
+
+    if (isPlaying) {
+      if (typeof playerRef.current.playVideo === 'function') {
+        playerRef.current.playVideo();
+      }
+    } else {
+      if (typeof playerRef.current.pauseVideo === 'function') {
+        playerRef.current.pauseVideo();
+      }
+    }
+  }, [isPlaying]);
+
+  // ══════════════════════════════════════════════════════════════
+  // 5. Sync Volume
+  // ══════════════════════════════════════════════════════════════
+  useEffect(() => {
+    if (!playerRef.current || typeof playerRef.current.setVolume !== 'function') return;
+    if (isMuted) {
+      playerRef.current.setVolume(0);
+    } else {
+      playerRef.current.setVolume(volume);
+    }
+  }, [volume, isMuted]);
+
+  // ══════════════════════════════════════════════════════════════
+  // 6. Time Tracking Loop
+  // ══════════════════════════════════════════════════════════════
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const id = setInterval(() => {
+      if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
+        try { 
+          const t = playerRef.current.getCurrentTime();
+          if (isFinite(t) && t > 0) setCurrentTime(t);
+        } catch { /* ignore */ }
+      }
+    }, 250);
+
+    return () => clearInterval(id);
+  }, [isPlaying, setCurrentTime]);
+
+  // ══════════════════════════════════════════════════════════════
+  // 7. Global Expose for Seek and Sync Play (TrackRow.tsx)
+  // ══════════════════════════════════════════════════════════════
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    (window as any).seekTo = (seconds: number) => {
+      if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
+        playerRef.current.seekTo(seconds, true);
+      }
+    };
+
+    (window as any).playVideoSync = (videoId?: string) => {
+      audioContextRef.current?.resume().catch(() => {});
+      silentAudioRef.current?.play().catch(() => {});
+      
+      if (playerRef.current) {
+        if (videoId && typeof playerRef.current.loadVideoById === 'function') {
+          playerRef.current.loadVideoById(videoId);
+        }
+        if (typeof playerRef.current.playVideo === 'function') {
+          playerRef.current.playVideo();
+        }
+      }
+    };
+
+    (window as any).playSilentAudio = () => {
+      audioContextRef.current?.resume().catch(() => {});
+      silentAudioRef.current?.play().catch(() => {});
+    };
+
+    (window as any).pauseSilentAudio = () => {
+      silentAudioRef.current?.pause();
+    };
+  }, []);
+
+  // ══════════════════════════════════════════════════════════════
+  // 8. Background Keep-Alive Hacks (Web Audio & Silent Audio)
   // ══════════════════════════════════════════════════════════════
   useEffect(() => {
     const setup = () => {
@@ -280,245 +259,6 @@ export function YouTubeEmbed() {
     };
   }, []);
 
-  // ══════════════════════════════════════════════════════════════
-  // 4. Visibility Change (Hardened)
-  // ══════════════════════════════════════════════════════════════
-  useEffect(() => {
-    const handler = async () => {
-      const playing = usePlayerStore.getState().isPlaying;
-
-      if (document.hidden && playing) {
-        if (playerModeRef.current === 'native') {
-          nativeAudioRef.current?.play().catch(() => {});
-        } else if (playerModeRef.current === 'iframe') {
-          try { playerRef.current?.playVideo(); } catch { /* ignore */ }
-        }
-        audioContextRef.current?.resume().catch(() => {});
-      }
-
-      if (!document.hidden && playing) {
-        if ('wakeLock' in navigator && !wakeLockRef.current) {
-          try {
-            wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
-            wakeLockRef.current.addEventListener('release', () => { wakeLockRef.current = null; });
-          } catch { /* ignore */ }
-        }
-        if (playerModeRef.current === 'native' && nativeAudioRef.current?.paused) {
-          nativeAudioRef.current.play().catch(() => {});
-        } else if (playerModeRef.current === 'iframe') {
-          try {
-            const s = playerRef.current?.getPlayerState?.();
-            if (s !== undefined && window.YT && s !== window.YT.PlayerState.PLAYING) playerRef.current.playVideo();
-          } catch { /* ignore */ }
-        }
-        audioContextRef.current?.resume().catch(() => {});
-      }
-    };
-
-    document.addEventListener('visibilitychange', handler);
-    return () => document.removeEventListener('visibilitychange', handler);
-  }, []);
-
-  // ══════════════════════════════════════════════════════════════
-  // 5. Watchdog Timer
-  // ══════════════════════════════════════════════════════════════
-  useEffect(() => {
-    if (watchdogRef.current) { clearInterval(watchdogRef.current); watchdogRef.current = null; }
-    if (!isPlaying) return;
-
-    watchdogRef.current = setInterval(() => {
-      if (!usePlayerStore.getState().isPlaying) return;
-
-      if (playerModeRef.current === 'native' && nativeAudioRef.current) {
-        if (nativeAudioRef.current.paused && !nativeAudioRef.current.ended) {
-          nativeAudioRef.current.play().catch(() => {});
-        }
-      } else if (playerModeRef.current === 'iframe' && playerRef.current) {
-        try {
-          const s = playerRef.current.getPlayerState?.();
-          if (s !== undefined && window.YT &&
-            s !== window.YT.PlayerState.PLAYING &&
-            s !== window.YT.PlayerState.BUFFERING &&
-            s !== window.YT.PlayerState.ENDED) {
-            playerRef.current.playVideo();
-          }
-        } catch { /* ignore */ }
-      }
-      audioContextRef.current?.resume().catch(() => {});
-    }, 2000);
-
-    return () => { if (watchdogRef.current) { clearInterval(watchdogRef.current); watchdogRef.current = null; } };
-  }, [isPlaying]);
-
-  // ══════════════════════════════════════════════════════════════
-  // 6. Web Locks API
-  // ══════════════════════════════════════════════════════════════
-  useEffect(() => {
-    if (!('locks' in navigator)) return;
-    if (isPlaying) {
-      const c = new AbortController();
-      webLockAbortRef.current = c;
-      navigator.locks.request('spottunes-keepalive', { signal: c.signal }, () => new Promise(() => {})).catch(() => {});
-    } else {
-      webLockAbortRef.current?.abort(); webLockAbortRef.current = null;
-    }
-    return () => { webLockAbortRef.current?.abort(); webLockAbortRef.current = null; };
-  }, [isPlaying]);
-
-  // ══════════════════════════════════════════════════════════════
-  // 7. HYBRID TRACK LOADING
-  // ══════════════════════════════════════════════════════════════
-  useEffect(() => {
-    const videoId = currentTrack?.videoId;
-
-    if (!videoId) {
-      currentVideoIdRef.current = null;
-      playerModeRef.current = 'idle';
-      stopNative();
-      stopIframe();
-      setIsPlaying(false);
-      return;
-    }
-
-    if (videoId.length < 11) {
-      handleAdvanceToNext();
-      return;
-    }
-
-    // Prevent re-loading same video (fixes restart loops)
-    if (currentVideoIdRef.current === videoId) return;
-    currentVideoIdRef.current = videoId;
-    fallbackRef.current = null;
-
-    if (currentTrack) {
-      addToHistory(currentTrack);
-    }
-
-    // Stop any current playback
-    switchingRef.current = true;
-    stopNative();
-    stopIframe();
-
-    const audio = nativeAudioRef.current;
-    if (!audio) {
-      switchingRef.current = false;
-      return;
-    }
-
-    // Try native audio via same-origin proxy
-    audio.src = `/api/stream?videoId=${videoId}`;
-    playerModeRef.current = 'native';
-    switchingRef.current = false;
-
-    audio.play()
-      .then(() => {
-        console.log(`[Hybrid] ✓ Native audio playing: ${videoId}`);
-        setIsPlaying(true);
-        silentAudioRef.current?.play().catch(() => {});
-      })
-      .catch((err) => {
-        if ((audio as any)._triggerFallback) {
-          (audio as any)._triggerFallback(0);
-        } else {
-          console.log(`[Hybrid] ✗ Native play failed: ${err.message} → fallback unavailable`);
-        }
-      });
-  }, [currentTrack?.videoId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ══════════════════════════════════════════════════════════════
-  // 8. Play/Pause Toggle
-  // ══════════════════════════════════════════════════════════════
-  useEffect(() => {
-    if (!currentTrack || switchingRef.current) return;
-
-    if (playerModeRef.current === 'native' && nativeAudioRef.current) {
-      if (isPlaying && nativeAudioRef.current.paused) {
-        nativeAudioRef.current.play().catch(() => {});
-      } else if (!isPlaying && !nativeAudioRef.current.paused) {
-        nativeAudioRef.current.pause();
-      }
-    } else if (playerModeRef.current === 'iframe' && playerRef.current) {
-      try {
-        const state = playerRef.current.getPlayerState();
-        const YT = window.YT;
-        if (isPlaying && state !== YT.PlayerState.PLAYING) playerRef.current.playVideo();
-        else if (!isPlaying && state === YT.PlayerState.PLAYING) playerRef.current.pauseVideo();
-      } catch { /* player not ready */ }
-    }
-  }, [isPlaying, currentTrack]);
-
-  // ══════════════════════════════════════════════════════════════
-  // 9. Volume & Mute
-  // ══════════════════════════════════════════════════════════════
-  useEffect(() => {
-    if (nativeAudioRef.current) {
-      nativeAudioRef.current.volume = isMuted ? 0 : volume / 100;
-    }
-    if (playerRef.current) {
-      try {
-        playerRef.current.setVolume(volume);
-        if (isMuted) playerRef.current.mute(); else playerRef.current.unMute();
-      } catch { /* ignore */ }
-    }
-  }, [volume, isMuted]);
-
-  // ══════════════════════════════════════════════════════════════
-  // 10. Unified Time Tracking (works for BOTH modes)
-  // ══════════════════════════════════════════════════════════════
-  useEffect(() => {
-    if (!isPlaying) return;
-
-    const id = setInterval(() => {
-      const mode = playerModeRef.current;
-      if (mode === 'native' && nativeAudioRef.current) {
-        const t = nativeAudioRef.current.currentTime;
-        if (isFinite(t)) setCurrentTime(t);
-      } else if (mode === 'iframe' && playerRef.current?.getCurrentTime) {
-        try { setCurrentTime(playerRef.current.getCurrentTime()); } catch { /* ignore */ }
-      }
-    }, 250);
-
-    return () => clearInterval(id);
-  }, [isPlaying, setCurrentTime]);
-
-  // ══════════════════════════════════════════════════════════════
-  // 11. Global Methods
-  // ══════════════════════════════════════════════════════════════
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    (window as any).seekTo = (seconds: number) => {
-      if (playerModeRef.current === 'native' && nativeAudioRef.current) {
-        nativeAudioRef.current.currentTime = seconds;
-      } else if (playerRef.current) {
-        playerRef.current.seekTo(seconds, true);
-      }
-    };
-
-    (window as any).playVideoSync = (videoId?: string) => {
-      audioContextRef.current?.resume().catch(() => {});
-      silentAudioRef.current?.play().catch(() => {});
-      if (playerModeRef.current === 'native' && nativeAudioRef.current) {
-        nativeAudioRef.current.play().catch(() => {});
-      } else if (playerRef.current) {
-        if (videoId) playerRef.current.loadVideoById(videoId);
-        playerRef.current.playVideo();
-      }
-    };
-
-    (window as any).playSilentAudio = () => {
-      audioContextRef.current?.resume().catch(() => {});
-      silentAudioRef.current?.play().catch(() => {});
-    };
-
-    (window as any).pauseSilentAudio = () => {
-      silentAudioRef.current?.pause();
-    };
-  }, []);
-
-  // ══════════════════════════════════════════════════════════════
-  // 12. Background Keep-Alive & Media Session
-  // ══════════════════════════════════════════════════════════════
   useEffect(() => {
     if (isPlaying) {
       silentAudioRef.current?.play().catch(() => {});
@@ -530,11 +270,6 @@ export function YouTubeEmbed() {
             wakeLockRef.current = lock;
             lock.addEventListener('release', () => {
               wakeLockRef.current = null;
-              if (usePlayerStore.getState().isPlaying && !document.hidden) {
-                (navigator as any).wakeLock.request('screen')
-                  .then((l: any) => { wakeLockRef.current = l; l.addEventListener('release', () => { wakeLockRef.current = null; }); })
-                  .catch(() => {});
-              }
             });
           })
           .catch(() => {});
@@ -562,22 +297,23 @@ export function YouTubeEmbed() {
       navigator.mediaSession.setActionHandler('play', () => {
         audioContextRef.current?.resume().catch(() => {});
         silentAudioRef.current?.play().catch(() => {});
-        if (playerModeRef.current === 'native') nativeAudioRef.current?.play().catch(() => {});
-        else playerRef.current?.playVideo();
+        if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
+          playerRef.current.playVideo();
+        }
         setIsPlaying(true);
       });
 
       navigator.mediaSession.setActionHandler('pause', () => {
         silentAudioRef.current?.pause();
-        if (playerModeRef.current === 'native') nativeAudioRef.current?.pause();
-        else playerRef.current?.pauseVideo();
+        if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
+          playerRef.current.pauseVideo();
+        }
         setIsPlaying(false);
       });
 
       navigator.mediaSession.setActionHandler('previoustrack', () => {
         audioContextRef.current?.resume().catch(() => {});
         silentAudioRef.current?.play().catch(() => {});
-        currentVideoIdRef.current = null;
         const prev = playPrevious();
         if (prev) setCurrentTrack(prev);
       });
@@ -587,51 +323,24 @@ export function YouTubeEmbed() {
         silentAudioRef.current?.play().catch(() => {});
         handleAdvanceToNext();
       });
-
-      try {
-        const d = usePlayerStore.getState().duration;
-        const t = usePlayerStore.getState().currentTime;
-        if (d > 0) navigator.mediaSession.setPositionState({ duration: d, playbackRate: 1, position: Math.min(t, d) });
-      } catch { /* ignore */ }
     }
   }, [isPlaying, currentTrack, playNext, playPrevious, setCurrentTrack, setIsPlaying, handleAdvanceToNext]);
 
-  // ══════════════════════════════════════════════════════════════
-  // 13. Lock Screen Progress
-  // ══════════════════════════════════════════════════════════════
-  useEffect(() => {
-    if (!isPlaying || !('mediaSession' in navigator)) return;
-    const id = setInterval(() => {
-      try {
-        const { duration, currentTime } = usePlayerStore.getState();
-        if (duration > 0) navigator.mediaSession.setPositionState({ duration, playbackRate: 1, position: Math.min(currentTime, duration) });
-      } catch { /* ignore */ }
-    }, 5000);
-    return () => clearInterval(id);
-  }, [isPlaying]);
-
-  // ══════════════════════════════════════════════════════════════
-  // Cleanup
-  // ══════════════════════════════════════════════════════════════
-  useEffect(() => {
-    return () => {
-      if (playerRef.current?.destroy) {
-        playerRef.current.destroy();
-        playerRef.current = null;
-        iframeReadyRef.current = false;
-        iframePromiseRef.current = null;
-      }
-    };
-  }, []);
-
   return (
-    <div
-      className="fixed pointer-events-none opacity-[0.01] z-[-1]"
-      style={{ width: '10px', height: '10px', top: '0', left: '0', overflow: 'hidden' }}
-    >
-      <div ref={containerRef} id="youtube-player" />
-      <audio ref={nativeAudioRef} playsInline preload="auto" />
-      <audio ref={silentAudioRef} src="/silent.wav" loop playsInline preload="auto" />
-    </div>
+    <>
+      <audio
+        ref={silentAudioRef}
+        src="/silence.mp3"
+        loop
+        playsInline
+        preload="auto"
+        className="hidden"
+      />
+      <div 
+        ref={containerRef} 
+        className="fixed top-0 left-0 w-px h-px opacity-0 pointer-events-none z-[-9999]"
+        style={{ visibility: 'hidden' }}
+      />
+    </>
   );
 }

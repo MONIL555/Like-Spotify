@@ -39,7 +39,6 @@ export default function SearchResultPage() {
                 key={track.videoId} 
                 track={track} 
                 index={i}
-                contextTracks={data.items}
               />
             ))}
           </div>

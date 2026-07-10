@@ -122,7 +122,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       if (autoplayEnabled) {
         try {
           console.log(`[Autoplay] Queue empty, fetching mix for: ${currentTrack.title}...`);
-          const res = await fetch(`/api/autoplay?videoId=${currentTrack.videoId}&artist=${encodeURIComponent(currentTrack.artist || '')}`);
+          const res = await fetch(`/api/autoplay?videoId=${currentTrack.videoId}&artist=${encodeURIComponent(currentTrack.artist || '')}&title=${encodeURIComponent(currentTrack.title || '')}`);
           const data = await res.json();
           if (data.playlist && data.playlist.length > 0) {
             useQueueStore.getState().addMultipleToQueue(data.playlist);

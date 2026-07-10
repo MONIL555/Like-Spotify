@@ -16,6 +16,16 @@ function cleanStr(str: string): string {
     .trim();
 }
 
+// Extract the base core of a title to detect exact same songs
+// e.g. "Song (Official Video)" and "Song Lyrical" both become "song"
+function getBaseTitle(title: string): string {
+  let base = title.toLowerCase();
+  base = base.split(/[\-–|]/)[0]; // Real title is usually before the first dash
+  base = base.replace(/\s*[\(\[].+?[\)\]]/g, '');
+  base = base.replace(/\b(official|video|audio|lyrical|lyric|full|song|hd|4k|remix|mashup)\b/gi, '');
+  return base.replace(/[^a-z0-9]/g, '');
+}
+
 function toTrack(item: any) {
   return {
     id: item.videoId,
@@ -37,40 +47,42 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const videoId = searchParams.get('videoId');
     const artist  = searchParams.get('artist');
+    const title   = searchParams.get('title') || '';
 
     if (!videoId) {
       return NextResponse.json({ error: 'Missing videoId' }, { status: 400 });
     }
 
     const cleanArtist = cleanStr(artist ?? '');
+    const cleanTitle = cleanStr(title);
 
-    // ── KEY FIX 1: Never include the song title ────────────────────────────
-    // Including the title causes YouTube to return different uploads of the
-    // exact same song (audio / lyrics / HD). These four queries give us:
-    //   bucket 0 → same-artist catalog   (anchors the mix in familiar territory)
-    //   bucket 1 → same-artist recents   (surfaces newer tracks)
-    //   bucket 2 → similar artists       (the "discovery" layer)
-    //   bucket 3 → collaborations / ft.  (bridges between artist worlds)
+    // ── FALLBACK ALGORITHM (Since relatedToVideoId is deprecated) ────────────
+    // Because YouTube deprecated the 'relatedToVideoId' endpoint in August 2023,
+    // we cannot use it directly. To simulate a YouTube Mix and capture the mood/vibe,
+    // we query YouTube with natural language searches that emulate related tracks.
+    // 
+    // bucket 0 → "songs like [Title] by [Artist]" (Captures the specific mood)
+    // bucket 1 → "[Artist] best songs" (Familiar hits)
+    // bucket 2 → "songs similar to [Artist]" (Discovery/Similar artists)
+    // bucket 3 → "[Artist] new songs" (Recent catalog)
     const queries = [
-      `${cleanArtist} songs`,
-      `${cleanArtist} new songs`,
+      `songs like ${cleanTitle} by ${cleanArtist}`,
+      `${cleanArtist} best songs`,
       `songs similar to ${cleanArtist}`,
-      `${cleanArtist} collaborations ft`,
+      `${cleanArtist} new songs`,
     ];
 
-    // ── KEY FIX 2: Parallel fetches ────────────────────────────────────────
     const settled = await Promise.allSettled(
-      queries.map(q => searchYouTube(q, 12))
+      queries.map(q => searchYouTube(q, 10))
     );
 
     const buckets: any[][] = settled.map(r =>
       r.status === 'fulfilled' ? (r.value?.items ?? []) : []
     );
 
-    // ── KEY FIX 3: Interleave (round-robin) for variety ────────────────────
-    // YouTube Mix alternates same-artist and related-artist tracks rather than
-    // dumping all same-artist tracks first. Round-robin achieves that.
-    const seen = new Set<string>([videoId]);
+    // Round-robin interleave to weave the mood and artists together
+    const seenIds = new Set<string>([videoId]);
+    const seenTitles = new Set<string>([getBaseTitle(cleanTitle)]);
     const mixTracks: any[] = [];
     const maxLen = Math.max(...buckets.map(b => b.length));
 
@@ -78,9 +90,15 @@ export async function GET(req: NextRequest) {
       for (const bucket of buckets) {
         const item = bucket[i];
         if (!item) continue;
-        if (seen.has(item.videoId)) continue;
+
+        const baseTitle = getBaseTitle(item.title);
+
+        if (seenIds.has(item.videoId)) continue;
+        if (seenTitles.has(baseTitle) && baseTitle.length > 2) continue; // Skip same songs!
         if (isCompilation(item.title)) continue;
-        seen.add(item.videoId);
+
+        seenIds.add(item.videoId);
+        seenTitles.add(baseTitle);
         mixTracks.push(item);
       }
     }
@@ -89,12 +107,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'No similar tracks found' }, { status: 404 });
     }
 
-    // ── KEY FIX 4: Return a full playlist, not just one track ──────────────
     const playlist = mixTracks.slice(0, 8).map(toTrack);
 
     return NextResponse.json({
-      playlist,           // wire this to your player queue on the frontend
-      track: playlist[0], // backward compat — the immediate next track
+      playlist,           
+      track: playlist[0], 
     });
 
   } catch (error: any) {

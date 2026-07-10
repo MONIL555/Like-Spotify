@@ -47,7 +47,7 @@ const Slider = React.forwardRef<HTMLInputElement, SliderProps>(
         <input
           type="range"
           ref={ref}
-          value={value}
+          value={value ?? 0}
           max={max}
           step={step}
           onChange={handleChange}
