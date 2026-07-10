@@ -4,6 +4,8 @@ import { ITrack } from './Track';
 export interface IPlaylist extends Document {
   name: string;
   userId: mongoose.Types.ObjectId | string;
+  collaborators?: (mongoose.Types.ObjectId | string)[];
+  inviteToken?: string;
   tracks: any[]; // Array of track objects
   createdAt: Date;
   updatedAt: Date;
@@ -21,6 +23,15 @@ const PlaylistSchema = new Schema<IPlaylist>(
       ref: 'User',
       required: true,
       index: true,
+    },
+    collaborators: [{
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    }],
+    inviteToken: {
+      type: String,
+      unique: true,
+      sparse: true,
     },
     tracks: {
       type: [Object],

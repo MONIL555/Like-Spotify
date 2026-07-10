@@ -42,41 +42,74 @@ function pruneCache() {
 }
 
 async function extractStreamUrl(videoId: string): Promise<CachedStream> {
-  const info = await ytdl.getInfo(videoId, {
-    requestOptions: {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  try {
+    const info = await ytdl.getInfo(videoId, {
+      requestOptions: {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        },
       },
-    },
-  });
+    });
 
-  const formats = ytdl
-    .filterFormats(info.formats, 'audioonly')
-    .sort((a, b) => (b.audioBitrate || 0) - (a.audioBitrate || 0));
+    const formats = ytdl
+      .filterFormats(info.formats, 'audioonly')
+      .sort((a, b) => (b.audioBitrate || 0) - (a.audioBitrate || 0));
 
-  if (formats.length === 0) {
-    throw new Error('No audio-only format found');
+    if (formats.length > 0) {
+      const format =
+        formats.find((f) => f.container === 'mp4' && (f.audioBitrate || 0) >= 128) ||
+        formats.find((f) => f.container === 'webm' && (f.audioBitrate || 0) >= 128) ||
+        formats[0];
+
+      if (format?.url) {
+        const entry: CachedStream = {
+          url: format.url,
+          contentType: format.mimeType || `audio/${format.container}`,
+          expiry: Date.now() + CACHE_TTL,
+        };
+        cache.set(videoId, entry);
+        pruneCache();
+        return entry;
+      }
+    }
+  } catch (error) {
+    console.log(`[Stream Proxy] ytdl-core failed for ${videoId}, trying Cobalt fallback...`);
   }
 
-  // Prefer high-quality audio; prefer mp4/m4a for widest browser compatibility
-  const format =
-    formats.find((f) => f.container === 'mp4' && (f.audioBitrate || 0) >= 128) ||
-    formats.find((f) => f.container === 'webm' && (f.audioBitrate || 0) >= 128) ||
-    formats[0];
+  // Fallback to Cobalt API
+  try {
+    const cobaltRes = await fetch('https://api.cobalt.tools/api/json', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+        isAudioOnly: true,
+        aFormat: "mp3"
+      }),
+    });
 
-  if (!format?.url) throw new Error('No stream URL in format');
+    if (cobaltRes.ok) {
+      const cobaltData = await cobaltRes.json();
+      if (cobaltData.url) {
+        const entry: CachedStream = {
+          url: cobaltData.url,
+          contentType: 'audio/mpeg',
+          expiry: Date.now() + CACHE_TTL,
+        };
+        cache.set(videoId, entry);
+        pruneCache();
+        return entry;
+      }
+    }
+  } catch (cobaltError) {
+    console.error('[Stream Proxy] Cobalt fallback also failed:', cobaltError);
+  }
 
-  const entry: CachedStream = {
-    url: format.url,
-    contentType: format.mimeType || `audio/${format.container}`,
-    expiry: Date.now() + CACHE_TTL,
-  };
-
-  cache.set(videoId, entry);
-  pruneCache();
-
-  return entry;
+  throw new Error('No audio format found from any source');
 }
 
 async function getStreamUrl(videoId: string): Promise<CachedStream> {

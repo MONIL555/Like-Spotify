@@ -18,7 +18,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     await connectDB();
 
-    const playlist = await Playlist.findOne({ _id: resolvedParams.id, userId: jwtUser.userId });
+    const playlist = await Playlist.findOne({
+      _id: resolvedParams.id,
+      $or: [{ userId: jwtUser.userId }, { collaborators: jwtUser.userId }]
+    });
     
     if (!playlist) {
       return NextResponse.json({ error: 'Playlist not found' }, { status: 404 });
@@ -50,7 +53,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     await connectDB();
 
-    const playlist = await Playlist.findOne({ _id: resolvedParams.id, userId: jwtUser.userId });
+    const playlist = await Playlist.findOne({
+      _id: resolvedParams.id,
+      $or: [{ userId: jwtUser.userId }, { collaborators: jwtUser.userId }]
+    });
     
     if (!playlist) {
       return NextResponse.json({ error: 'Playlist not found' }, { status: 404 });

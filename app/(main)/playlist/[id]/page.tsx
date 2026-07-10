@@ -1,8 +1,9 @@
 'use client';
 
-import { use } from 'react';
+import { use, useEffect, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import useSWR from 'swr';
-import { Play, Music } from 'lucide-react';
+import { Play, Music, Users, Check } from 'lucide-react';
 import { TrackRow } from '@/components/music/TrackRow';
 import { Button } from '@/components/ui/button';
 import { useQueueStore } from '@/store/queueStore';
@@ -15,9 +16,58 @@ const fetcher = (url: string) => fetch(url).then((res) => {
 
 export default function PlaylistPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
-  const { data: playlist, error, isLoading } = useSWR(`/api/playlists/${resolvedParams.id}`, fetcher);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const inviteToken = searchParams.get('invite');
+  const [isCopied, setIsCopied] = useState(false);
+  const [isJoining, setIsJoining] = useState(!!inviteToken);
+
+  const { data: playlist, error, isLoading, mutate } = useSWR(`/api/playlists/${resolvedParams.id}`, fetcher, {
+    refreshInterval: 3000 // Poll for real-time collaborative updates
+  });
+  
   const { loadPlaylist } = useQueueStore();
   const { setCurrentTrack } = usePlayerStore();
+
+  useEffect(() => {
+    if (inviteToken && resolvedParams.id) {
+      const joinPlaylist = async () => {
+        try {
+          const res = await fetch(`/api/playlists/${resolvedParams.id}/collaborate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: inviteToken })
+          });
+          if (res.ok) {
+            mutate();
+          }
+        } catch (error) {
+          console.error('Failed to join playlist', error);
+        } finally {
+          setIsJoining(false);
+          router.replace(`/playlist/${resolvedParams.id}`);
+        }
+      };
+      joinPlaylist();
+    }
+  }, [inviteToken, resolvedParams.id, mutate, router]);
+
+  const handleShare = async () => {
+    try {
+      const res = await fetch(`/api/playlists/${resolvedParams.id}/collaborate`, {
+        method: 'POST'
+      });
+      const data = await res.json();
+      if (data.inviteToken) {
+        const link = `${window.location.origin}/playlist/${resolvedParams.id}?invite=${data.inviteToken}`;
+        await navigator.clipboard.writeText(link);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      }
+    } catch (error) {
+      console.error('Failed to generate invite link', error);
+    }
+  };
 
   const handlePlayAll = () => {
     if (playlist?.tracks && playlist.tracks.length > 0) {
@@ -77,6 +127,15 @@ export default function PlaylistPage({ params }: { params: Promise<{ id: string 
           className="bg-brand-primary text-white rounded-full h-14 w-14 shadow-lg hover:scale-105 hover:bg-brand-hover disabled:opacity-50 disabled:hover:scale-100"
         >
           <Play className="h-6 w-6 fill-current ml-1" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleShare}
+          title="Invite Collaborators"
+          className="rounded-full h-12 w-12 border-border/50 text-foreground hover:scale-105 transition-transform"
+        >
+          {isCopied ? <Check className="h-5 w-5 text-green-500" /> : <Users className="h-5 w-5" />}
         </Button>
       </div>
 
