@@ -1,54 +1,38 @@
-import { Metadata } from 'next';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+'use client';
 
-export const metadata: Metadata = {
-  title: 'Forgot Password',
-  description: 'Reset your SpotTunes password',
-};
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function ForgotPasswordPage() {
   return (
-    <>
-      <div className="flex flex-col space-y-2 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Reset password
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Enter your email address and we will send you a link to reset your password.
+    <div className="w-full max-w-md mx-auto animate-fade-in">
+      <div className="clay-panel p-8">
+        <div className="flex flex-col items-center mb-8">
+          <h1 className="text-3xl font-bold text-foreground">Reset Password</h1>
+          <p className="text-muted-foreground font-semibold mt-2 text-center">
+            Enter your email and we'll send you a reset link.
+          </p>
+        </div>
+
+        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          <div>
+            <label className="block text-sm font-bold text-muted-foreground mb-2 ml-1">Email</label>
+            <Input type="email" placeholder="name@example.com" required />
+          </div>
+          
+          <Button variant="brand" className="w-full mt-6" type="submit">
+            Send Link
+          </Button>
+        </form>
+
+        <p className="text-center text-sm font-semibold text-muted-foreground mt-8">
+          Remember your password?{' '}
+          <Link href="/login" className="text-brand-primary hover:underline">
+            Log in
+          </Link>
         </p>
       </div>
-      <div className="grid gap-6">
-        <form>
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                placeholder="name@example.com"
-                type="email"
-                autoCapitalize="none"
-                autoComplete="email"
-                autoCorrect="off"
-              />
-            </div>
-            <Button type="submit" className="mt-2 bg-brand-primary hover:bg-brand-hover text-white">
-              Send reset link
-            </Button>
-          </div>
-        </form>
-      </div>
-      <p className="px-8 text-center text-sm text-muted-foreground">
-        Remember your password?{' '}
-        <Link
-          href="/login"
-          className="underline underline-offset-4 hover:text-brand-primary"
-        >
-          Sign in
-        </Link>
-      </p>
-    </>
+    </div>
   );
 }

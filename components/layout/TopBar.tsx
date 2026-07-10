@@ -1,22 +1,61 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, User, Settings, LogOut } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { ChevronLeft, ChevronRight, User, Settings, LogOut, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Avatar } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { SearchBar } from '@/components/search/SearchBar';
-import React, { Suspense } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+
+function SearchInput() {
+  const router = useRouter();
+  const [query, setQuery] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    // Auto-focus on mount
+    inputRef.current?.focus();
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setQuery(value);
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      if (value.trim()) {
+        router.push(`/search/${encodeURIComponent(value.trim())}`);
+      } else {
+        router.push('/search');
+      }
+    }, 400);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && query.trim()) {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      router.push(`/search/${encodeURIComponent(query.trim())}`);
+    }
+  };
+
+  return (
+    <div className="relative w-full max-w-sm">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+      <input
+        ref={inputRef}
+        type="text"
+        value={query}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        placeholder="What do you want to listen to?"
+        className="w-full h-10 clay-inset rounded-full pl-10 pr-4 bg-transparent text-foreground text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-primary/30 transition-all"
+      />
+    </div>
+  );
+}
 
 export function TopBar() {
   const router = useRouter();
@@ -24,89 +63,67 @@ export function TopBar() {
   const { user, isAuthenticated, logout } = useAuth();
 
   return (
-    <header className="sticky top-0 z-40 flex h-12 items-center justify-between px-3 bg-black/20 backdrop-blur-3xl border-b border-white/5 transition-all duration-300">
-      {/* Navigation History */}
+    <header className="sticky top-0 z-40 flex h-16 items-center justify-between px-4 md:px-6 pt-2 pb-2 transition-all duration-300">
+      {/* Navigation History (Removed) */}
       <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.back()}
-          className="rounded-full h-8 w-8 bg-black/40 hover:bg-black/60 border border-white/5 hidden sm:flex transition-all duration-300 text-white/80 hover:text-white"
-        >
-          <ChevronLeft className="h-5 w-5" />
-          <span className="sr-only">Go back</span>
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.forward()}
-          className="rounded-full h-8 w-8 bg-black/40 hover:bg-black/60 border border-white/5 hidden sm:flex transition-all duration-300 text-white/80 hover:text-white"
-        >
-          <ChevronRight className="h-5 w-5" />
-          <span className="sr-only">Go forward</span>
-        </Button>
       </div>
 
-      {/* Center: Search Bar (only visible on /search routes) */}
-      <div className="flex-1 flex justify-center max-w-2xl px-3">
-        {pathname.startsWith('/search') && (
-          <React.Suspense fallback={<div className="h-12 w-full max-w-sm rounded-full bg-white/5 border border-white/10 animate-pulse" />}>
-            <SearchBar />
+      {/* Center: Search Bar (visible on all routes, navigates to /search) */}
+      <div className="flex-1 flex justify-center max-w-lg px-4">
+        {pathname.startsWith('/search') ? (
+          <React.Suspense fallback={<div className="h-10 w-full max-w-sm rounded-full clay-inset animate-pulse" />}>
+            <SearchInput />
           </React.Suspense>
-        )}
+        ) : null}
       </div>
 
       {/* User Actions */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         {!isAuthenticated ? (
           <>
-            <Button variant="ghost" className="hidden sm:flex text-white/70 hover:text-white hover:bg-white/10 rounded-full px-6">
+            <Button variant="ghost" className="hidden sm:flex rounded-full px-5 font-bold text-sm">
               <Link href="/register">Sign up</Link>
             </Button>
-            <Button className="rounded-full px-8 bg-white text-black hover:bg-white/90 font-semibold shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all">
+            <Button variant="brand" className="rounded-full px-6 font-bold text-white text-sm">
               <Link href="/login">Log in</Link>
             </Button>
           </>
         ) : (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 border border-white/10 hover:border-white/30 transition-colors">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={user?.avatarUrl || ''} alt={user?.displayName || ''} />
-                  <AvatarFallback style={{ backgroundColor: user?.avatarColor || '#3B82F6', color: 'white' }}>
-                    {user?.displayName?.[0]?.toUpperCase() || <User className="h-4 w-4" />}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 glass-panel border-white/10 shadow-glass text-white bg-black/60" align="end">
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none text-white">{user?.displayName}</p>
-                  <p className="text-xs leading-none text-white/60">
-                    {user?.email}
-                  </p>
+          <DropdownMenu 
+            trigger={
+              <div className="h-10 w-10 rounded-full clay-btn flex items-center justify-center p-0.5 cursor-pointer hover:scale-105 transition-transform">
+                <Avatar 
+                  size="sm" 
+                  src={user?.avatarUrl || ''} 
+                  alt={user?.displayName || ''} 
+                  fallbackColor={user?.avatarColor}
+                  className="h-full w-full shadow-none border-none"
+                />
+              </div>
+            }
+          >
+            <div className="p-1 min-w-[200px]">
+              <DropdownMenuLabel>
+                <div className="flex flex-col space-y-1 py-1">
+                  <p className="text-sm font-bold text-foreground">{user?.displayName}</p>
+                  <p className="text-xs text-muted-foreground">{user?.email}</p>
                 </div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-white/10" />
-              <DropdownMenuItem className="focus:bg-white/10 focus:text-white">
-                <Link href="/profile" className="cursor-pointer flex items-center w-full">
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </Link>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => router.push('/profile')}>
+                <User className="mr-3 h-4 w-4" />
+                <span className="font-semibold">Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="focus:bg-white/10 focus:text-white">
-                <Link href="/settings" className="cursor-pointer flex items-center w-full">
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </Link>
+              <DropdownMenuItem onClick={() => router.push('/settings')}>
+                <Settings className="mr-3 h-4 w-4" />
+                <span className="font-semibold">Settings</span>
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-white/10" />
-              <DropdownMenuItem onClick={logout} className="cursor-pointer text-red-400 focus:bg-red-400/10 focus:text-red-300">
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={logout} className="text-destructive hover:text-destructive">
+                <LogOut className="mr-3 h-4 w-4" />
+                <span className="font-semibold">Log out</span>
               </DropdownMenuItem>
-            </DropdownMenuContent>
+            </div>
           </DropdownMenu>
         )}
       </div>

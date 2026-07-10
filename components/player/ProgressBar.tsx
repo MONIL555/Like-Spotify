@@ -1,50 +1,48 @@
 'use client';
 
-import { useYouTubePlayer } from '@/hooks/useYouTubePlayer';
+import { usePlayerStore } from '@/store/playerStore';
 import { Slider } from '@/components/ui/slider';
 import { formatDuration } from '@/lib/utils';
-import { useState, useEffect } from 'react';
-import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 
 export function ProgressBar() {
-  const { currentTime, duration, seekTo, isPlayerReady } = useYouTubePlayer();
-  const [localValue, setLocalValue] = useState(0);
+  const { currentTime, duration } = usePlayerStore();
+  const [localTime, setLocalTime] = useState(currentTime);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Sync with store when not dragging
+  // Sync local time with store time unless we're actively dragging
   useEffect(() => {
     if (!isDragging) {
-      setLocalValue(currentTime);
+      setLocalTime(currentTime);
     }
   }, [currentTime, isDragging]);
 
-  const handleValueChange = (value: number | readonly number[]) => {
+  const handleChange = (val: number) => {
     setIsDragging(true);
-    setLocalValue(Array.isArray(value) ? value[0] : value);
+    setLocalTime(val);
   };
 
-  const handleValueCommit = (value: number | readonly number[]) => {
+  const handleCommit = (val: number) => {
     setIsDragging(false);
-    seekTo(Array.isArray(value) ? value[0] : value);
+    if (typeof window !== 'undefined' && (window as any).seekTo) {
+      (window as any).seekTo(val);
+    }
   };
 
   return (
-    <div className="flex items-center gap-3 w-full max-w-[600px] group">
-      <span className="text-xs font-medium text-white/50 min-w-[40px] text-right">
-        {formatDuration(isDragging ? localValue : currentTime)}
+    <div className="flex items-center gap-3 w-full">
+      <span className="text-xs font-semibold text-muted-foreground min-w-[40px] text-right">
+        {formatDuration(localTime)}
       </span>
-      
       <Slider
-        value={[isDragging ? localValue : currentTime]}
+        value={localTime}
         max={duration || 100}
         step={1}
-        onValueChange={handleValueChange}
-        onValueCommitted={handleValueCommit}
-        disabled={!isPlayerReady || duration === 0}
-        className="flex-1 cursor-pointer [&_[role=slider]]:opacity-0 group-hover:[&_[role=slider]]:opacity-100 [&_[role=slider]]:transition-opacity [&_[role=slider]]:bg-white [&>.bg-primary]:bg-white"
+        onChange={handleChange}
+        onValueCommit={handleCommit}
+        className="flex-1"
       />
-      
-      <span className="text-xs font-medium text-white/50 min-w-[40px]">
+      <span className="text-xs font-semibold text-muted-foreground min-w-[40px]">
         {formatDuration(duration)}
       </span>
     </div>

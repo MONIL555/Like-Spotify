@@ -1,7 +1,11 @@
+'use client';
+
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { Player } from '@/components/player/Player';
+import { Toaster } from 'sonner';
+import { SWRConfig } from 'swr';
 
 export default function MainLayout({
   children,
@@ -9,24 +13,47 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative flex flex-col h-screen overflow-hidden bg-background text-foreground">
-      {/* Animated Glowing Background */}
-      {/* Background - Clean Light Theme */}
-      <div className="absolute inset-0 bg-background pointer-events-none z-0" />
+    <SWRConfig 
+      value={{
+        revalidateOnFocus: false, // Don't fetch when switching tabs
+        revalidateIfStale: false, // Don't fetch on remount if we already have data
+        dedupingInterval: 1000 * 60 * 5, // Deduplicate requests with same key within 5 minutes
+        errorRetryCount: 2,
+      }}
+    >
+      <div className="flex h-screen flex-col overflow-hidden bg-background selection:bg-brand-primary/30">
+        <div className="flex flex-1 overflow-hidden">
+          {/* Desktop Sidebar */}
+          <Sidebar />
 
-      <div className="relative z-10 flex flex-1 overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 flex flex-col min-w-0">
-          <TopBar />
-          <main className="flex-1 overflow-y-auto hide-scrollbar pb-[100px] md:pb-[120px] px-4 md:px-8 py-6">
-            <div className="max-w-[1600px] mx-auto w-full">
-              {children}
-            </div>
-          </main>
-          <MobileNav />
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col min-w-0 relative h-full">
+            {/* Top Navigation */}
+            <TopBar />
+
+            {/* Page Content */}
+            <main className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar pb-36 md:pb-28 px-4 md:px-8 pt-4">
+              <div className="mx-auto max-w-7xl h-full">
+                {children}
+              </div>
+            </main>
+          </div>
         </div>
+
+        {/* Mobile Navigation */}
+        <MobileNav />
+
+        {/* Global Player Dock */}
+        <Player />
+
+        {/* Notifications */}
+        <Toaster 
+          theme="system" 
+          toastOptions={{
+            className: 'clay-card !bg-surface !border-none !text-foreground !shadow-2xl font-bold',
+          }}
+        />
       </div>
-      <Player />
-    </div>
+    </SWRConfig>
   );
 }

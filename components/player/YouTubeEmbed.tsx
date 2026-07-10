@@ -12,6 +12,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { usePlayerStore } from '@/store/playerStore';
 import { useQueueStore } from '@/store/queueStore';
+import { useHistoryStore } from '@/store/historyStore';
 
 declare global {
   interface Window {
@@ -58,6 +59,7 @@ export function YouTubeEmbed() {
   } = usePlayerStore();
 
   const { playNext, playPrevious } = useQueueStore();
+  const { addToHistory } = useHistoryStore();
 
   const advanceToNext = useCallback(async () => {
     currentVideoIdRef.current = null; // Allow next track to load
@@ -388,6 +390,10 @@ export function YouTubeEmbed() {
     if (currentVideoIdRef.current === videoId) return;
     currentVideoIdRef.current = videoId;
     fallbackRef.current = null;
+
+    if (currentTrack) {
+      addToHistory(currentTrack);
+    }
 
     // Stop any current playback
     switchingRef.current = true;

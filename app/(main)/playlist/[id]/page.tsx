@@ -1,193 +1,130 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
 import useSWR from 'swr';
-import { Play, Music, Users, Check } from 'lucide-react';
+import { useParams } from 'next/navigation';
 import { TrackRow } from '@/components/music/TrackRow';
+import { Play, Shuffle, Clock, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQueueStore } from '@/store/queueStore';
 import { usePlayerStore } from '@/store/playerStore';
 
-const fetcher = (url: string) => fetch(url).then((res) => {
-  if (!res.ok) throw new Error('Failed to fetch');
-  return res.json();
-});
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
-export default function PlaylistPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const inviteToken = searchParams.get('invite');
-  const [isCopied, setIsCopied] = useState(false);
-  const [isJoining, setIsJoining] = useState(!!inviteToken);
-
-  const { data: playlist, error, isLoading, mutate } = useSWR(`/api/playlists/${resolvedParams.id}`, fetcher, {
-    refreshInterval: 3000 // Poll for real-time collaborative updates
-  });
+export default function PlaylistPage() {
+  const params = useParams();
+  const id = params.id as string;
   
-  const { loadPlaylist } = useQueueStore();
+  const { data: playlist, error, isLoading } = useSWR(id ? `/api/playlists/${id}` : null, fetcher);
+  const { loadPlaylist, shuffleQueue } = useQueueStore();
   const { setCurrentTrack } = usePlayerStore();
-
-  useEffect(() => {
-    if (inviteToken && resolvedParams.id) {
-      const joinPlaylist = async () => {
-        try {
-          const res = await fetch(`/api/playlists/${resolvedParams.id}/collaborate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: inviteToken })
-          });
-          if (res.ok) {
-            mutate();
-          }
-        } catch (error) {
-          console.error('Failed to join playlist', error);
-        } finally {
-          setIsJoining(false);
-          router.replace(`/playlist/${resolvedParams.id}`);
-        }
-      };
-      joinPlaylist();
-    }
-  }, [inviteToken, resolvedParams.id, mutate, router]);
-
-  const handleShare = async () => {
-    try {
-      const res = await fetch(`/api/playlists/${resolvedParams.id}/collaborate`, {
-        method: 'POST'
-      });
-      const data = await res.json();
-      if (data.inviteToken) {
-        const link = `${window.location.origin}/playlist/${resolvedParams.id}?invite=${data.inviteToken}`;
-        await navigator.clipboard.writeText(link);
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000);
-      }
-    } catch (error) {
-      console.error('Failed to generate invite link', error);
-    }
-  };
 
   const handlePlayAll = () => {
     if (playlist?.tracks && playlist.tracks.length > 0) {
-      const firstTrack = loadPlaylist(playlist.tracks, 0);
-      if (firstTrack) setCurrentTrack(firstTrack);
+      const nextTrack = loadPlaylist(playlist.tracks, 0);
+      if (nextTrack) setCurrentTrack(nextTrack);
     }
   };
 
-  const handleRemoveTrack = async (videoId: string) => {
-    try {
-      const res = await fetch(`/api/playlists/${resolvedParams.id}/tracks?videoId=${videoId}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        // Optimistic UI update could be done here or just revalidate via SWR mutate
-        // But for simplicity, the next SWR fetch or mutate will update it
-      }
-    } catch (error) {
-      console.error('Failed to remove track', error);
+  const handleShuffle = () => {
+    if (playlist?.tracks && playlist.tracks.length > 0) {
+      const shuffledTracks = [...playlist.tracks].sort(() => Math.random() - 0.5);
+      const nextTrack = loadPlaylist(shuffledTracks, 0);
+      shuffleQueue();
+      if (nextTrack) setCurrentTrack(nextTrack);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-brand-primary">
+        <Loader2 className="h-12 w-12 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !playlist) {
+    return (
+      <div className="clay-card p-12 text-center mt-12">
+        <h3 className="text-xl font-bold text-destructive">Playlist not found or error loading.</h3>
+      </div>
+    );
+  }
+
+  const hasTracks = playlist.tracks && playlist.tracks.length > 0;
+  const firstTrack = hasTracks ? playlist.tracks[0] : null;
+  const imgSrc = firstTrack ? (typeof firstTrack.thumbnails?.high === 'string' ? firstTrack.thumbnails.high : (firstTrack.thumbnails?.high as any)?.url || typeof firstTrack.thumbnails?.default === 'string' ? firstTrack.thumbnails.default : (firstTrack.thumbnails?.default as any)?.url || '') : null;
 
   return (
-    <div className="flex flex-col animate-fade-in min-h-full">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row items-end gap-4 p-4 md:p-6 bg-gradient-to-b from-purple-800/80 to-background">
-        <div className="w-48 h-48 md:w-60 md:h-60 shadow-2xl flex-shrink-0 bg-gradient-to-br from-purple-500 to-purple-300 flex items-center justify-center rounded-sm overflow-hidden">
-          {playlist?.tracks && playlist.tracks.length > 0 ? (
-            <img 
-              src={playlist.tracks[0].thumbnails?.high?.url || playlist.tracks[0].thumbnails?.default?.url || playlist.tracks[0].thumbnails?.high || playlist.tracks[0].thumbnails?.default || playlist.tracks[0].thumbnail} 
-              alt={playlist.name} 
-              className="object-cover w-full h-full opacity-80" 
-            />
+    <div className="py-6 flex flex-col gap-8 animate-fade-in">
+      
+      {/* Header */}
+      <div className="flex flex-col md:flex-row items-end gap-6 md:gap-10">
+        <div className="relative h-48 w-48 md:h-64 md:w-64 shrink-0 clay-panel overflow-hidden">
+          {imgSrc ? (
+            <img src={imgSrc} alt={playlist.name} className="h-full w-full object-cover" />
           ) : (
-            <Music className="w-24 h-24 text-white fill-white" />
+            <div className="h-full w-full flex items-center justify-center bg-brand-primary/10">
+              <Play className="h-20 w-20 text-brand-primary/30" />
+            </div>
           )}
         </div>
-        <div className="flex flex-col gap-2 w-full">
-          <span className="text-sm font-bold uppercase tracking-wider hidden md:block">Playlist</span>
-          <h1 className="text-4xl md:text-7xl font-bold tracking-tighter text-foreground mb-2">
-            {playlist?.name || 'Loading...'}
-          </h1>
-          <div className="flex items-center gap-2 text-sm font-semibold">
-            <span>You</span>
-            <span className="w-1 h-1 bg-foreground rounded-full hidden sm:block" />
-            <span className="text-muted-foreground">{playlist?.tracks?.length || 0} songs</span>
-          </div>
+        <div className="flex flex-col flex-1 pb-2">
+          <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Playlist</span>
+          <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-6 line-clamp-2">{playlist.name}</h1>
+          <p className="text-muted-foreground font-semibold">
+            {playlist.tracks?.length || 0} tracks
+          </p>
         </div>
       </div>
 
       {/* Action Bar */}
-      <div className="px-4 md:px-6 py-3 flex items-center gap-4">
+      <div className="flex items-center gap-4 py-4">
         <Button 
           size="icon" 
+          className="h-14 w-14 rounded-full bg-brand-primary text-white shadow-brand hover:scale-105"
           onClick={handlePlayAll}
-          disabled={!playlist?.tracks || playlist.tracks.length === 0}
-          className="bg-brand-primary text-white rounded-full h-14 w-14 shadow-lg hover:scale-105 hover:bg-brand-hover disabled:opacity-50 disabled:hover:scale-100"
+          disabled={!hasTracks}
         >
           <Play className="h-6 w-6 fill-current ml-1" />
         </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={handleShare}
-          title="Invite Collaborators"
-          className="rounded-full h-12 w-12 border-border/50 text-foreground hover:scale-105 transition-transform"
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-14 w-14 rounded-full text-muted-foreground hover:text-brand-primary"
+          onClick={handleShuffle}
+          disabled={!hasTracks}
         >
-          {isCopied ? <Check className="h-5 w-5 text-green-500" /> : <Users className="h-5 w-5" />}
+          <Shuffle className="h-6 w-6" />
         </Button>
       </div>
 
-      {/* Track List Header */}
-      <div className="px-4 md:px-6">
-        <div className="flex items-center gap-4 px-3 py-1.5 border-b border-border/50 text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-2">
+      {/* Track List */}
+      <div>
+        <div className="flex items-center px-4 py-2 text-sm font-bold text-muted-foreground border-b border-border/50 mb-4">
           <div className="w-8 text-center">#</div>
           <div className="flex-1">Title</div>
-          <div className="w-12 text-right hidden sm:block">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 ml-auto inline-block"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </div>
+          <div className="w-12 text-center hidden sm:block"><Clock className="h-4 w-4 mx-auto" /></div>
+          <div className="w-10"></div>
         </div>
-
-        {/* Tracks */}
-        {isLoading ? (
-          <div className="flex flex-col gap-2 pb-8">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-3 py-1.5 opacity-50">
-                <div className="w-8 h-4 bg-muted rounded animate-pulse" />
-                <div className="w-10 h-10 bg-muted rounded animate-pulse shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-1/3 bg-muted rounded animate-pulse" />
-                  <div className="h-3 w-1/4 bg-muted rounded animate-pulse" />
-                </div>
-                <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />
-              </div>
-            ))}
+        
+        {!hasTracks ? (
+          <div className="clay-card p-12 text-center mt-4">
+            <h3 className="text-xl font-bold text-muted-foreground">This playlist is empty.</h3>
           </div>
-        ) : error ? (
-          <div className="text-center p-12 text-muted-foreground">
-            Failed to load playlist.
-          </div>
-        ) : playlist?.tracks && playlist.tracks.length > 0 ? (
-          <div className="flex flex-col pb-8">
-            {playlist.tracks.map((track: any, index: number) => (
+        ) : (
+          <div className="flex flex-col gap-2">
+            {playlist.tracks.map((track: any, i: number) => (
               <TrackRow 
-                key={`${track.videoId}-${index}`} 
+                key={`${track.videoId}-${i}`} 
                 track={track} 
-                index={index}
+                index={i}
                 contextTracks={playlist.tracks}
-                // Optional: onRemove={() => handleRemoveTrack(track.videoId)}
               />
             ))}
           </div>
-        ) : (
-          <div className="text-center p-12 text-muted-foreground flex flex-col items-center gap-4">
-            <Music className="h-12 w-12" />
-            <h3 className="text-xl font-bold text-foreground">This playlist is empty</h3>
-            <p>Add some songs to get started.</p>
-          </div>
         )}
       </div>
+
     </div>
   );
 }

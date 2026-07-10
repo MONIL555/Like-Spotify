@@ -17,14 +17,10 @@ export function LikeButton({ videoId, initialLiked = false, className }: LikeBut
   const [isLiked, setIsLiked] = useState(initialLiked);
   const [isLoading, setIsLoading] = useState(false);
 
-  // In a real app, you would fetch the initial state via SWR based on user's liked tracks
-  // and sync the toggle with the backend.
-
   const toggleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isAuthenticated) return; // Or show login modal
+    if (!isAuthenticated) return;
 
-    // Optimistic update
     setIsLiked(!isLiked);
     setIsLoading(true);
 
@@ -34,16 +30,10 @@ export function LikeButton({ videoId, initialLiked = false, className }: LikeBut
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ videoId }),
       });
-      
-      if (!res.ok) {
-        throw new Error('Failed to toggle like');
-      }
-      
+      if (!res.ok) throw new Error('Failed to toggle like');
       const data = await res.json();
       setIsLiked(data.liked);
     } catch (error) {
-      console.error(error);
-      // Revert optimistic update on failure
       setIsLiked(isLiked);
     } finally {
       setIsLoading(false);
@@ -57,13 +47,12 @@ export function LikeButton({ videoId, initialLiked = false, className }: LikeBut
       onClick={toggleLike}
       disabled={isLoading || !isAuthenticated}
       className={cn(
-        "text-muted-foreground hover:text-foreground transition-colors",
-        isLiked && "text-brand-primary hover:text-brand-hover",
+        "h-10 w-10 text-muted-foreground hover:text-brand-primary transition-all duration-300",
+        isLiked && "text-brand-primary",
         className
       )}
     >
-      <Heart className={cn("h-5 w-5", isLiked && "fill-current")} />
-      <span className="sr-only">{isLiked ? 'Unlike' : 'Like'}</span>
+      <Heart className={cn("h-5 w-5 transition-transform", isLiked && "fill-current scale-110")} />
     </Button>
   );
 }

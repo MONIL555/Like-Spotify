@@ -1,33 +1,29 @@
 'use client';
 
 import useSWR from 'swr';
-import { Loader2, Play } from 'lucide-react';
+import { Play, Plus, Heart, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQueueStore } from '@/store/queueStore';
 import { usePlayerStore } from '@/store/playerStore';
-import { CreatePlaylistModal } from '@/components/modals/CreatePlaylistModal';
-import { Shuffle, Plus, Heart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { useState, useEffect } from 'react';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function HomeDashboard() {
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { data, error, isLoading } = useSWR('/api/recommendations', fetcher);
-  const { data: playlists, isLoading: playlistsLoading } = useSWR('/api/playlists', fetcher);
+  const { data: playlists } = useSWR('/api/playlists', fetcher);
   const { loadPlaylist, shuffleQueue } = useQueueStore();
   const { setCurrentTrack } = usePlayerStore();
   const router = useRouter();
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-8 animate-fade-in p-6">
-        <div className="h-10 w-64 bg-white/5 rounded-lg animate-pulse mb-2" />
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="flex flex-col gap-8">
+        <div className="h-10 w-64 bg-surface rounded-xl animate-pulse" />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="aspect-square bg-white/5 rounded-2xl animate-pulse" />
+            <div key={i} className="aspect-square bg-surface rounded-3xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -36,7 +32,7 @@ export function HomeDashboard() {
 
   if (error || !data) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh] text-white/50">
+      <div className="flex items-center justify-center min-h-[50vh] text-muted-foreground font-semibold">
         Failed to load recommendations.
       </div>
     );
@@ -59,63 +55,48 @@ export function HomeDashboard() {
   };
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in-up p-3 sm:p-4 lg:p-6 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-10">
 
-      {/* Bento Grid: Made for You */}
+      {/* Made for You Grid */}
       {madeForYou && madeForYou.length > 0 && (
         <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold tracking-tight text-white/90">Based on your recent listening</h2>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground mb-4">Based on your recent listening</h2>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {madeForYou.map((item: any, index: number) => (
               <div
                 key={`made-${item.id}`}
                 onClick={() => handlePlayTrack(item.data)}
-                className={cn(
-                  "group relative overflow-hidden rounded-3xl glass-card cursor-pointer flex flex-col hover:shadow-neon",
-                  index === 0 && "col-span-2 row-span-2 sm:col-span-2 sm:row-span-2"
-                )}
+                className="group relative overflow-hidden rounded-xl clay-card cursor-pointer flex flex-col p-2"
               >
-                <div className="relative aspect-square w-full bg-black/20">
-                  {item.imageUrl ? (
-                    <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110 opacity-80 group-hover:opacity-100" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Play className="h-12 w-12 text-white/20" />
-                    </div>
+                <div className="relative aspect-square w-full rounded-lg overflow-hidden clay-inset bg-brand-primary/10 flex items-center justify-center">
+                  <Play className="absolute h-12 w-12 text-brand-primary/30 z-0" />
+                  {item.imageUrl && (
+                    <img 
+                      src={item.imageUrl} 
+                      alt={item.title} 
+                      onError={(e) => { e.currentTarget.style.opacity = '0'; }}
+                      className="absolute inset-0 object-cover w-full h-full transition-all duration-500 group-hover:scale-105 z-10" 
+                    />
                   )}
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90"></div>
-
-                  {/* Content Overlay */}
-                  <div className="absolute inset-x-0 bottom-0 p-3 md:p-4 flex flex-col justify-end">
-                    <h3 className={cn(
-                      "font-bold text-white drop-shadow-md truncate",
-                      index === 0 ? "text-2xl md:text-3xl mb-1" : "text-base md:text-lg"
-                    )}>{item.title}</h3>
-                    <p className={cn(
-                      "text-white/70 line-clamp-1",
-                      index === 0 ? "text-sm md:text-base" : "text-xs md:text-sm"
-                    )}>
-                      {item.description}
-                    </p>
-                  </div>
-
+                  
                   {/* Play Button Overlay */}
-                  <div className="absolute top-4 right-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                  <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <Button
                       size="icon"
-                      className={cn(
-                        "bg-white text-black rounded-full shadow-[0_0_20px_rgba(255,255,255,0.4)] hover:scale-105 hover:bg-white/90",
-                        index === 0 ? "h-14 w-14" : "h-10 w-10"
-                      )}
+                      className="h-16 w-16 bg-white text-brand-primary rounded-full shadow-xl hover:scale-110 transition-transform"
                       onClick={(e) => { e.stopPropagation(); handlePlayTrack(item.data); }}
                     >
-                      <Play className={cn("fill-current ml-1", index === 0 ? "h-6 w-6" : "h-4 w-4")} />
+                      <Play className="fill-current h-8 w-8 ml-1" />
                     </Button>
                   </div>
+                </div>
+
+                <div className="p-4 flex flex-col">
+                  <h3 className="font-bold text-foreground truncate text-base mb-1">{item.title}</h3>
+                  <p className="text-muted-foreground font-semibold line-clamp-2 text-xs">
+                    {item.description}
+                  </p>
                 </div>
               </div>
             ))}
@@ -123,54 +104,23 @@ export function HomeDashboard() {
         </section>
       )}
 
-      {/* Bento Grid: Your Playlists */}
+      {/* Your Playlists Grid */}
       <section>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold tracking-tight text-white/90">Your Playlists</h2>
-        </div>
+        <h2 className="text-2xl font-bold tracking-tight text-foreground mb-4">Your Playlists</h2>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-          {/* Create New Playlist Card */}
-          <div
-            onClick={() => setIsCreateModalOpen(true)}
-            className="group aspect-square rounded-3xl glass-card cursor-pointer flex flex-col items-center justify-center gap-4 hover:shadow-neon border-dashed border-2 border-white/10 hover:border-accent-coral/50 transition-colors bg-white/5"
-          >
-            <div className="h-14 w-14 rounded-full bg-white/10 flex items-center justify-center text-white/50 group-hover:text-accent-coral group-hover:scale-110 group-hover:bg-accent-coral/20 transition-all duration-300">
-              <Plus className="h-6 w-6" />
-            </div>
-            <span className="font-bold text-white/50 group-hover:text-white transition-colors">Create New</span>
-          </div>
-
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          
           {/* Liked Songs Card */}
           <div
             onClick={() => router.push('/collection/tracks')}
-            className="group relative aspect-square overflow-hidden rounded-3xl glass-card cursor-pointer flex flex-col hover:shadow-neon"
+            className="group relative rounded-xl clay-card cursor-pointer flex flex-col p-2 bg-gradient-to-br from-brand-primary/20 to-brand-secondary/20"
           >
-            <div className="relative w-full h-full bg-gradient-to-br from-indigo-500 to-indigo-300 flex items-center justify-center">
-              <Heart className="h-12 w-12 text-white fill-white drop-shadow-md" />
-
-              {/* Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
-
-              {/* Content */}
-              <div className="absolute inset-x-0 bottom-0 p-4 md:p-6 flex flex-col justify-end">
-                <h3 className="font-bold text-white drop-shadow-md text-base md:text-lg truncate">Liked Songs</h3>
-                <p className="text-white/70 text-xs md:text-sm">
-                  Your favorite tracks
-                </p>
-              </div>
-
-              {/* Play Button Overlay */}
-              <div className="absolute top-4 right-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                <Button
-                  size="icon"
-                  className="bg-white text-black rounded-full h-10 w-10 shadow-[0_0_20px_rgba(255,255,255,0.4)] hover:scale-105 hover:bg-white/90"
-                  onClick={(e) => { e.stopPropagation(); router.push('/collection/tracks'); }}
-                  title="Go to Liked Songs"
-                >
-                  <Play className="h-4 w-4 fill-current ml-0.5" />
-                </Button>
-              </div>
+            <div className="relative aspect-square w-full rounded-lg overflow-hidden flex items-center justify-center">
+              <Heart className="h-12 w-12 text-brand-primary fill-brand-primary drop-shadow-md group-hover:scale-110 transition-transform" />
+            </div>
+            <div className="p-3 flex flex-col">
+              <h3 className="font-bold text-foreground text-base truncate">Liked Songs</h3>
+              <p className="text-muted-foreground font-semibold text-xs">Your favorite tracks</p>
             </div>
           </div>
 
@@ -179,54 +129,60 @@ export function HomeDashboard() {
             <div
               key={`pl-${pl._id}`}
               onClick={() => router.push(`/playlist/${pl._id}`)}
-              className="group relative aspect-square overflow-hidden rounded-3xl glass-card cursor-pointer flex flex-col hover:shadow-neon"
+              className="group relative rounded-xl clay-card cursor-pointer flex flex-col p-2"
             >
-              <div className="relative w-full h-full bg-gradient-brand flex items-center justify-center">
+              <div className="relative aspect-square w-full rounded-lg overflow-hidden clay-inset bg-brand-secondary/10 flex items-center justify-center">
+                <Play className="absolute h-12 w-12 text-brand-secondary/30 z-0" />
                 {(() => {
                   const hasTracks = pl.tracks && pl.tracks.length > 0;
                   const firstTrack = hasTracks ? pl.tracks[0] : null;
-                  const imgSrc = firstTrack ? (firstTrack.thumbnails?.high?.url || firstTrack.thumbnails?.default?.url || firstTrack.thumbnails?.high || firstTrack.thumbnails?.default || firstTrack.thumbnail) : null;
+                  const imgSrc = firstTrack ? (typeof firstTrack.thumbnails?.high === 'string' ? firstTrack.thumbnails.high : (firstTrack.thumbnails?.high as any)?.url || typeof firstTrack.thumbnails?.default === 'string' ? firstTrack.thumbnails.default : (firstTrack.thumbnails?.default as any)?.url || '') : null;
 
                   return imgSrc ? (
-                    <img src={imgSrc} alt={pl.name} className="object-cover w-full h-full mix-blend-overlay opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
-                  ) : (
-                    <Play className="h-12 w-12 text-white/20" />
-                  );
+                    <img 
+                      src={imgSrc} 
+                      alt={pl.name} 
+                      onError={(e) => { e.currentTarget.style.opacity = '0'; }}
+                      className="absolute inset-0 object-cover w-full h-full opacity-90 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105 z-10" 
+                    />
+                  ) : null;
                 })()}
 
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
-
-                {/* Content */}
-                <div className="absolute inset-x-0 bottom-0 p-4 md:p-6 flex flex-col justify-end">
-                  <h3 className="font-bold text-white drop-shadow-md text-base md:text-lg truncate">{pl.name}</h3>
-                  <p className="text-white/70 text-xs md:text-sm">
-                    {pl.tracks?.length || 0} tracks
-                  </p>
-                </div>
-
-                {/* Play Button Overlay */}
-                <div className="absolute top-4 right-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <Button
                     size="icon"
-                    className="bg-white text-black rounded-full h-10 w-10 shadow-[0_0_20px_rgba(255,255,255,0.4)] hover:scale-105 hover:bg-white/90"
+                    className="h-12 w-12 bg-white text-brand-secondary rounded-full shadow-xl hover:scale-110 transition-transform"
                     onClick={(e) => { e.stopPropagation(); handleShufflePlaylist(pl); }}
-                    title="Shuffle Play"
                     disabled={!pl.tracks || pl.tracks.length === 0}
                   >
-                    <Shuffle className="h-4 w-4" />
+                    <Shuffle className="h-5 w-5" />
                   </Button>
                 </div>
               </div>
+              <div className="p-3 flex flex-col">
+                <h3 className="font-bold text-foreground text-base truncate">{pl.name}</h3>
+                <p className="text-muted-foreground font-semibold text-xs">
+                  {pl.tracks?.length || 0} tracks
+                </p>
+              </div>
             </div>
           ))}
+          
+          {/* Create New Playlist Card */}
+          <div className="group rounded-xl clay-card cursor-pointer flex flex-col p-2 border-2 border-dashed border-border hover:border-brand-primary bg-transparent shadow-none">
+            <div className="relative aspect-square w-full rounded-lg overflow-hidden flex items-center justify-center">
+              <div className="h-12 w-12 rounded-full clay-btn flex items-center justify-center text-muted-foreground group-hover:text-brand-primary group-hover:scale-110 transition-all duration-300">
+                <Plus className="h-6 w-6" />
+              </div>
+            </div>
+            <div className="p-3 flex flex-col items-center">
+              <h3 className="font-bold text-muted-foreground group-hover:text-brand-primary text-base transition-colors">Create New</h3>
+            </div>
+          </div>
+          
         </div>
       </section>
 
-      <CreatePlaylistModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-      />
     </div>
   );
 }

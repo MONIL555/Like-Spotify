@@ -1,129 +1,122 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import Image from 'next/image';
-import { Minimize2, Maximize2 } from 'lucide-react';
-import { useYouTubePlayer } from '@/hooks/useYouTubePlayer';
-import { Button } from '@/components/ui/button';
+import { usePlayerStore } from '@/store/playerStore';
 import { PlayerControls } from './PlayerControls';
 import { ProgressBar } from './ProgressBar';
 import { VolumeControl } from './VolumeControl';
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { ChevronDown, ListMusic, Mic2 } from 'lucide-react';
+import { LikeButton } from '@/components/music/LikeButton';
+import { cn, formatDuration } from '@/lib/utils';
+import { useEffect } from 'react';
 
 export function FullscreenPlayer() {
-  const { currentTrack, toggleFullscreen } = useYouTubePlayer();
+  const { currentTrack, isFullscreen, toggleFullscreen, isLyricsOpen, toggleLyrics, isQueueOpen, toggleQueue } = usePlayerStore();
 
-  // Handle escape key to exit fullscreen
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        toggleFullscreen();
-      }
+    if (isFullscreen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
     };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleFullscreen]);
+  }, [isFullscreen]);
 
-  if (!currentTrack) return null;
+  if (!currentTrack || !isFullscreen) return null;
 
-  // Use the highest resolution thumbnail available
-  const thumbnail = 
-    currentTrack.thumbnails?.maxres || 
-    currentTrack.thumbnails?.high || 
-    currentTrack.thumbnails?.medium || 
-    '';
+  const thumbnail = typeof currentTrack.thumbnails?.high === 'string' 
+    ? currentTrack.thumbnails.high 
+    : (currentTrack.thumbnails?.high as any)?.url || 
+      (typeof currentTrack.thumbnails?.default === 'string' 
+        ? currentTrack.thumbnails.default 
+        : (currentTrack.thumbnails?.default as any)?.url) || '';
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black animate-in fade-in zoom-in-95 duration-500">
-      {/* Blurred background image */}
+    <div className="fixed inset-0 z-[100] bg-black animate-slide-up flex flex-col">
+      {/* Dynamic Background Blur */}
       <div 
-        className="absolute inset-0 opacity-40 bg-cover bg-center bg-no-repeat blur-[100px] scale-150 saturate-150"
-        style={{ backgroundImage: `url(${thumbnail})` }}
+        className="absolute inset-0 opacity-40 blur-[100px] scale-110 z-0 pointer-events-none"
+        style={{
+          backgroundImage: `url(${thumbnail})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
       />
       
-      {/* Gradient overlay for better contrast */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/30 pointer-events-none" />
+      {/* Top Bar */}
+      <div className="relative z-10 flex items-center justify-between p-6">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={toggleFullscreen}
+          className="hover:bg-white/10 rounded-full h-12 w-12 text-white"
+        >
+          <ChevronDown className="h-8 w-8" />
+        </Button>
+        <div className="flex flex-col items-center">
+          <span className="text-xs font-bold uppercase tracking-widest text-white/70">Now Playing</span>
+          <span className="text-sm font-semibold text-white">{currentTrack.title}</span>
+        </div>
+        <div className="w-12" /> {/* Spacer */}
+      </div>
 
-      {/* Content */}
-      <div className="relative h-full flex flex-col p-4 sm:p-8 md:p-12">
-        {/* Top bar */}
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-3 text-white">
-            <div className="bg-gradient-brand p-1.5 rounded-lg shadow-neon">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-6 w-6 text-white"
-              >
-                <path d="M9 18V5l12-2v13" />
-                <circle cx="6" cy="18" r="3" />
-                <circle cx="18" cy="16" r="3" />
-              </svg>
-            </div>
-            <span className="font-extrabold text-xl tracking-tight text-white drop-shadow-md">SpotTunes</span>
+      {/* Main Content */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 max-w-lg mx-auto w-full gap-8">
+        
+        {/* Cover Art */}
+        <div className="w-full aspect-square rounded-lg overflow-hidden shadow-2xl relative">
+          <img 
+            src={thumbnail} 
+            alt={currentTrack.title} 
+            className="w-full h-full object-cover"
+          />
+        </div>
+
+        {/* Track Info */}
+        <div className="w-full flex items-center justify-between">
+          <div className="flex flex-col overflow-hidden">
+            <h1 className="text-2xl md:text-3xl font-bold text-white truncate">
+              {currentTrack.title}
+            </h1>
+            <h2 className="text-lg md:text-xl font-medium text-white/70 truncate">
+              {currentTrack.artist || currentTrack.channelTitle}
+            </h2>
+          </div>
+          <LikeButton videoId={currentTrack.videoId} className="h-10 w-10 text-white shrink-0" />
+        </div>
+
+        {/* Progress & Controls */}
+        <div className="w-full flex flex-col gap-2">
+          <ProgressBar />
+          
+          <div className="w-full pt-4 pb-2">
+            <PlayerControls />
           </div>
           
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleFullscreen}
-            className="text-white/50 hover:text-white transition-colors"
-          >
-            <Minimize2 className="h-6 w-6" />
-          </Button>
-        </div>
-
-        {/* Center content (Album Art) */}
-        <div className="flex-1 flex items-center justify-center min-h-0 mb-4 md:mb-8 w-full max-w-2xl mx-auto">
-          <div className="relative w-full aspect-video rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.8)] ring-1 ring-white/10 group">
-            {thumbnail && (
-              <Image
-                src={thumbnail}
-                alt={currentTrack.title}
-                fill
-                className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                sizes="(max-width: 768px) 100vw, 800px"
-                priority
-              />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-          </div>
-        </div>
-
-        {/* Bottom controls area */}
-        <div className="w-full max-w-4xl mx-auto space-y-8 pb-4">
-          {/* Track Info */}
-          <div className="flex justify-between items-end mb-2">
-            <div className="w-full text-center md:text-left">
-              <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-2 line-clamp-1 tracking-tight drop-shadow-lg">
-                {currentTrack.title}
-              </h1>
-              <p className="text-lg md:text-xl text-white/70 line-clamp-1 font-medium drop-shadow-md">
-                {currentTrack.artist}
-              </p>
+          <div className="w-full flex items-center justify-between mt-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleLyrics}
+              className={cn("h-12 w-12 rounded-full", isLyricsOpen ? "bg-brand-primary text-black hover:bg-brand-primary/90" : "text-white/70 hover:text-white hover:bg-white/10")}
+            >
+              <Mic2 className="h-5 w-5" />
+            </Button>
+            
+            <div className="w-1/3 min-w-[100px] hidden sm:block">
+              <VolumeControl />
             </div>
-          </div>
 
-          {/* Controls */}
-          <div className="flex flex-col gap-6">
-            <ProgressBar />
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-0 mt-4">
-              <div className="hidden sm:block w-[30%] min-w-[180px]">
-                {/* Empty space to balance VolumeControl */}
-              </div>
-              <div className="flex-1 flex justify-center w-full scale-110 sm:scale-[1.35] origin-center my-4 sm:my-0">
-                <PlayerControls />
-              </div>
-              <div className="w-full sm:w-auto flex justify-center sm:justify-end">
-                <VolumeControl />
-              </div>
-            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleQueue}
+              className={cn("h-12 w-12 rounded-full", isQueueOpen ? "bg-brand-primary text-black hover:bg-brand-primary/90" : "text-white/70 hover:text-white hover:bg-white/10")}
+            >
+              <ListMusic className="h-5 w-5" />
+            </Button>
           </div>
         </div>
       </div>

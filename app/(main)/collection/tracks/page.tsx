@@ -1,106 +1,120 @@
 'use client';
 
 import useSWR from 'swr';
-import { Loader2, Play, Heart } from 'lucide-react';
 import { TrackRow } from '@/components/music/TrackRow';
+import { Play, Shuffle, Clock, Loader2, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQueueStore } from '@/store/queueStore';
+import { usePlayerStore } from '@/store/playerStore';
+import { formatTotalDuration } from '@/lib/utils';
 
-const fetcher = (url: string) => fetch(url).then((res) => {
-  if (!res.ok) throw new Error('Failed to fetch');
-  return res.json();
-});
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export default function LikedSongsPage() {
-  const { data: tracks, error, isLoading } = useSWR('/api/library/liked', fetcher);
-  const { loadPlaylist } = useQueueStore();
+  const { data, error, isLoading } = useSWR('/api/library/liked', fetcher);
+  const { loadPlaylist, shuffleQueue } = useQueueStore();
+  const { setCurrentTrack } = usePlayerStore();
+
+  const tracks = Array.isArray(data) ? data : (data?.items?.map((item: any) => item.track) || []);
+  const totalDuration = tracks.reduce((acc: number, track: any) => acc + (track.duration || 0), 0);
 
   const handlePlayAll = () => {
-    if (tracks && tracks.length > 0) {
-      loadPlaylist(tracks, 0);
+    if (tracks.length > 0) {
+      const nextTrack = loadPlaylist(tracks, 0);
+      if (nextTrack) setCurrentTrack(nextTrack);
     }
   };
 
+  const handleShuffle = () => {
+    if (tracks.length > 0) {
+      const shuffledTracks = [...tracks].sort(() => Math.random() - 0.5);
+      const nextTrack = loadPlaylist(shuffledTracks, 0);
+      shuffleQueue();
+      if (nextTrack) setCurrentTrack(nextTrack);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-brand-primary">
+        <Loader2 className="h-12 w-12 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="clay-card p-12 text-center mt-12">
+        <h3 className="text-xl font-bold text-destructive">Error loading Liked Songs.</h3>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col animate-fade-in min-h-full">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row items-end gap-4 p-4 md:p-6 bg-gradient-to-b from-indigo-800/80 to-background">
-        <div className="w-48 h-48 md:w-60 md:h-60 shadow-2xl flex-shrink-0 bg-gradient-to-br from-indigo-500 to-indigo-300 flex items-center justify-center rounded-sm">
-          <Heart className="w-24 h-24 text-white fill-white" />
+    <div className="py-6 flex flex-col gap-8 animate-fade-in">
+      
+      {/* Header */}
+      <div className="flex flex-col md:flex-row items-end gap-6 md:gap-10">
+        <div className="relative h-48 w-48 md:h-64 md:w-64 shrink-0 rounded-3xl overflow-hidden bg-gradient-to-br from-brand-primary/80 to-brand-secondary/80 flex items-center justify-center shadow-lg">
+          <Heart className="h-24 w-24 text-white fill-white drop-shadow-md" />
         </div>
-        <div className="flex flex-col gap-2 w-full">
-          <span className="text-sm font-bold uppercase tracking-wider hidden md:block">Playlist</span>
-          <h1 className="text-4xl md:text-7xl font-bold tracking-tighter text-foreground mb-2">
-            Liked Songs
-          </h1>
-          <div className="flex items-center gap-2 text-sm font-semibold">
-            <span>You</span>
-            <span className="w-1 h-1 bg-foreground rounded-full hidden sm:block" />
-            <span className="text-muted-foreground">{tracks?.length || 0} songs</span>
-          </div>
+        <div className="flex flex-col flex-1 pb-2">
+          <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Playlist</span>
+          <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-6 line-clamp-2">Liked Songs</h1>
+          <p className="text-muted-foreground font-semibold">
+            {tracks.length} songs • {formatTotalDuration(totalDuration)}
+          </p>
         </div>
       </div>
 
       {/* Action Bar */}
-      <div className="px-4 md:px-6 py-3 flex items-center gap-4">
+      <div className="flex items-center gap-4 py-4">
         <Button 
           size="icon" 
+          className="h-14 w-14 rounded-full bg-brand-primary text-white shadow-brand hover:scale-105"
           onClick={handlePlayAll}
-          disabled={!tracks || tracks.length === 0}
-          className="bg-brand-primary text-white rounded-full h-14 w-14 shadow-lg hover:scale-105 hover:bg-brand-hover disabled:opacity-50 disabled:hover:scale-100"
+          disabled={tracks.length === 0}
         >
           <Play className="h-6 w-6 fill-current ml-1" />
         </Button>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-14 w-14 rounded-full text-muted-foreground hover:text-brand-primary"
+          onClick={handleShuffle}
+          disabled={tracks.length === 0}
+        >
+          <Shuffle className="h-6 w-6" />
+        </Button>
       </div>
 
-      {/* Track List Header */}
-      <div className="px-4 md:px-6">
-        <div className="flex items-center gap-4 px-3 py-1.5 border-b border-border/50 text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-2">
-          <div className="w-8 text-center">#</div>
+      {/* Track List */}
+      <div>
+        <div className="flex items-center px-3 py-2 text-xs font-bold text-muted-foreground border-b border-border/50 mb-3">
+          <div className="w-11 shrink-0 mr-3"></div>
           <div className="flex-1">Title</div>
-          <div className="w-12 text-right hidden sm:block">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 ml-auto inline-block"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </div>
+          <div className="w-10 text-center hidden sm:block"><Clock className="h-3.5 w-3.5 mx-auto" /></div>
+          <div className="w-8"></div>
         </div>
-
-        {/* Tracks */}
-        {isLoading ? (
-          <div className="flex flex-col gap-2 pb-8">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-3 py-1.5 opacity-50">
-                <div className="w-8 h-4 bg-muted rounded animate-pulse" />
-                <div className="w-10 h-10 bg-muted rounded animate-pulse shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-1/3 bg-muted rounded animate-pulse" />
-                  <div className="h-3 w-1/4 bg-muted rounded animate-pulse" />
-                </div>
-                <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />
-              </div>
-            ))}
+        
+        {tracks.length === 0 ? (
+          <div className="clay-card p-12 text-center mt-4">
+            <h3 className="text-xl font-bold text-muted-foreground">You haven't liked any songs yet.</h3>
           </div>
-        ) : error ? (
-          <div className="text-center p-12 text-muted-foreground">
-            Failed to load liked songs.
-          </div>
-        ) : tracks && tracks.length > 0 ? (
-          <div className="flex flex-col pb-8">
-            {tracks.map((track: any, index: number) => (
+        ) : (
+          <div className="flex flex-col gap-2">
+            {tracks.map((track: any, i: number) => (
               <TrackRow 
-                key={`${track.videoId}-${index}`} 
+                key={`${track.videoId}-${i}`} 
                 track={track} 
-                index={index}
-                contextTracks={tracks} 
+                index={i}
+                contextTracks={tracks}
               />
             ))}
           </div>
-        ) : (
-          <div className="text-center p-12 text-muted-foreground flex flex-col items-center gap-4">
-            <Heart className="h-12 w-12" />
-            <h3 className="text-xl font-bold text-foreground">Songs you like will appear here</h3>
-            <p>Save songs by tapping the heart icon.</p>
-          </div>
         )}
       </div>
+
     </div>
   );
 }

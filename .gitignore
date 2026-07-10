@@ -22,6 +22,8 @@
 
 # misc
 .DS_Store
+# distube ytdl-core cache
+*-player-script.js
 *.pem
 
 # debug
