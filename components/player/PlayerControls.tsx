@@ -1,22 +1,18 @@
 'use client';
 
-import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward } from 'lucide-react';
 import { usePlayerStore } from '@/store/playerStore';
 import { useQueueStore } from '@/store/queueStore';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 export function PlayerControls() {
   const { 
     isPlaying, togglePlay, 
-    shuffle, toggleShuffle,
-    repeat, cycleRepeat,
-    currentTrack,
-    advanceToNext
+    advanceToNext,
+    setCurrentTrack
   } = usePlayerStore();
   
   const { playPrevious } = useQueueStore();
-  const { setCurrentTrack } = usePlayerStore();
 
   const handleNext = () => {
     advanceToNext();
@@ -28,38 +24,27 @@ export function PlayerControls() {
   };
 
   return (
-    <div className="flex items-center gap-4">
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={toggleShuffle}
-        className={cn(
-          "h-10 w-10 transition-colors",
-          shuffle ? "text-brand-primary" : "text-muted-foreground hover:text-foreground"
-        )}
-      >
-        <Shuffle className="h-4 w-4" />
-      </Button>
-
+    <div className="flex items-center justify-center gap-8 md:gap-12 w-full">
       <Button
         variant="ghost"
         size="icon"
         onClick={handlePrev}
-        className="h-10 w-10 text-muted-foreground hover:text-foreground"
+        className="h-12 w-12 text-muted-foreground hover:text-foreground hover:bg-white/10 rounded-full transition-all hover:scale-105"
       >
-        <SkipBack className="h-5 w-5 fill-current" />
+        <SkipBack className="h-6 w-6 fill-current" />
       </Button>
 
       <Button
         size="icon"
         onClick={togglePlay}
         active={isPlaying}
-        className="h-14 w-14 rounded-full"
+        className="h-16 w-16 rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.4)] hover:scale-105 transition-transform border-0 !bg-white !text-black hover:!bg-white/90"
+        style={{ backgroundColor: '#ffffff', color: '#000000' }}
       >
         {isPlaying ? (
-          <Pause className="h-6 w-6 fill-current text-brand-primary" />
+          <Pause className="h-7 w-7 fill-current" />
         ) : (
-          <Play className="h-6 w-6 fill-current text-foreground ml-1" />
+          <Play className="h-7 w-7 fill-current ml-1" />
         )}
       </Button>
 
@@ -67,26 +52,9 @@ export function PlayerControls() {
         variant="ghost"
         size="icon"
         onClick={handleNext}
-        className="h-10 w-10 text-muted-foreground hover:text-foreground"
+        className="h-12 w-12 text-muted-foreground hover:text-foreground hover:bg-white/10 rounded-full transition-all hover:scale-105"
       >
-        <SkipForward className="h-5 w-5 fill-current" />
-      </Button>
-
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={cycleRepeat}
-        className={cn(
-          "h-10 w-10 transition-colors relative",
-          repeat !== 'off' ? "text-brand-primary" : "text-muted-foreground hover:text-foreground"
-        )}
-      >
-        <Repeat className="h-4 w-4" />
-        {repeat === 'one' && (
-          <span className="absolute -top-1 -right-1 text-[8px] font-bold bg-brand-primary text-white rounded-full h-3 w-3 flex items-center justify-center">
-            1
-          </span>
-        )}
+        <SkipForward className="h-6 w-6 fill-current" />
       </Button>
     </div>
   );

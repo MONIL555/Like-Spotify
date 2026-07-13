@@ -15,6 +15,7 @@ interface AuthState {
   setUser: (user: UserPublic | null) => void;
   setLoading: (loading: boolean) => void;
   logout: () => void;
+  toggleLikedTrackId: (videoId: string, isLiked: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -36,5 +37,21 @@ export const useAuthStore = create<AuthState>((set) => ({
       user: null,
       isAuthenticated: false,
       isLoading: false,
+    }),
+
+  toggleLikedTrackId: (videoId, isLiked) =>
+    set((state) => {
+      if (!state.user) return state;
+      const likedTrackIds = state.user.likedTrackIds || [];
+      const newLikedTrackIds = isLiked
+        ? [...new Set([...likedTrackIds, videoId])]
+        : likedTrackIds.filter((id) => id !== videoId);
+
+      return {
+        user: {
+          ...state.user,
+          likedTrackIds: newLikedTrackIds,
+        },
+      };
     }),
 }));

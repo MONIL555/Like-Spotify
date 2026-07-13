@@ -128,17 +128,21 @@ export function YouTubeEmbed() {
   // 3. Sync Current Track (Load new video)
   // ══════════════════════════════════════════════════════════════
   useEffect(() => {
-    if (!currentTrack || !playerRef.current) return;
+    if (!currentTrack) return;
     
     // Add to recently played history
     useHistoryStore.getState().addToHistory(currentTrack);
+  }, [currentTrack]);
 
-    // Always load by ID when the track changes
+  useEffect(() => {
+    if (!currentTrack || !playerRef.current) return;
+
+    // Always load by ID when the track changes or player becomes ready
     if (typeof playerRef.current.loadVideoById === 'function') {
       playerRef.current.loadVideoById(currentTrack.videoId);
       // Wait for it to play, the onStateChange will handle the isPlaying state update
     }
-  }, [currentTrack]);
+  }, [currentTrack, isApiReady]);
 
   // ══════════════════════════════════════════════════════════════
   // 4. Sync Play/Pause State (Global toggle)

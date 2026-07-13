@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 import { Play, Pause, MoreHorizontal, ListPlus, User } from 'lucide-react';
 import { usePlayerStore } from '@/store/playerStore';
@@ -25,6 +25,7 @@ interface TrackRowProps {
 
 export function TrackRow({ track, index, showCover = true, onRemove, contextTracks }: TrackRowProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const { currentTrack, isPlaying, togglePlay, setCurrentTrack } = usePlayerStore();
   const { loadPlaylist, addToQueue } = useQueueStore();
   const { data: playlists } = useSWR('/api/playlists', fetcher);
@@ -37,6 +38,8 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
   const durationText = track.durationText || (track.duration ? formatDuration(track.duration) : '');
 
   const handlePlay = () => {
+    if (isDragging) return; // Prevent click if we just finished dragging
+    
     if (typeof window !== 'undefined' && (window as any).playVideoSync) {
       if (isCurrentTrack) {
         if (!isPlaying) (window as any).playVideoSync();
@@ -106,7 +109,9 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={{ left: 0, right: 0.5 }}
+        onDragStart={() => setIsDragging(true)}
         onDragEnd={(e, info) => {
+          setTimeout(() => setIsDragging(false), 100); // delay so onClick can check it
           if (info.offset.x > 80) {
             const trackData = {
               videoId: track.videoId, title, artist,
@@ -180,7 +185,7 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
         >
           <div className="py-1 w-48">
             <DropdownMenuItem onClick={(e) => {
-              e.stopPropagation();
+              // Intentionally NOT calling e.stopPropagation() so that the DropdownMenu's close handler triggers.
               const trackData = {
                 videoId: track.videoId, title, artist,
                 channelId: track.channelId || '',
@@ -222,7 +227,7 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
           </div>
         </DropdownMenu>
       </div>
-    </motion.div>
+      </motion.div>
     </div>
   );
 }

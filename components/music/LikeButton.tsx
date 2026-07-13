@@ -4,24 +4,27 @@ import { useState } from 'react';
 import { Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/store/authStore';
 
 interface LikeButtonProps {
   videoId: string;
-  initialLiked?: boolean;
+  initialLiked?: boolean; // Kept for backwards compatibility but ignored for state
   className?: string;
 }
 
-export function LikeButton({ videoId, initialLiked = false, className }: LikeButtonProps) {
-  const { isAuthenticated } = useAuth();
-  const [isLiked, setIsLiked] = useState(initialLiked);
+export function LikeButton({ videoId, className }: LikeButtonProps) {
+  const { user, isAuthenticated, toggleLikedTrackId } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
+
+  const isLiked = user?.likedTrackIds?.includes(videoId) || false;
 
   const toggleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isAuthenticated) return;
 
-    setIsLiked(!isLiked);
+    // Optimistic UI update
+    const newLikedState = !isLiked;
+    toggleLikedTrackId(videoId, newLikedState);
     setIsLoading(true);
 
     try {
@@ -32,9 +35,14 @@ export function LikeButton({ videoId, initialLiked = false, className }: LikeBut
       });
       if (!res.ok) throw new Error('Failed to toggle like');
       const data = await res.json();
-      setIsLiked(data.liked);
+      
+      // If server disagrees with our optimistic update, correct it
+      if (data.liked !== newLikedState) {
+        toggleLikedTrackId(videoId, data.liked);
+      }
     } catch (error) {
-      setIsLiked(isLiked);
+      // Revert optimistic update on error
+      toggleLikedTrackId(videoId, isLiked);
     } finally {
       setIsLoading(false);
     }

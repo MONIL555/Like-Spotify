@@ -36,7 +36,7 @@ const Slider = React.forwardRef<HTMLInputElement, SliderProps>(
         <div className="absolute top-1/2 -translate-y-1/2 left-0 h-1.5 w-full rounded-full bg-surface overflow-hidden">
           {/* Active Fill */}
           <div 
-            className="absolute h-full left-0 top-0 transition-all duration-100 ease-out bg-white group-hover:bg-brand-primary"
+            className="absolute h-full left-0 top-0 transition-colors duration-100 bg-white group-hover:bg-brand-primary"
             style={{ 
               width: `${percentage}%`
             }}
@@ -60,7 +60,7 @@ const Slider = React.forwardRef<HTMLInputElement, SliderProps>(
         
         {/* Custom Thumb */}
         <div 
-          className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full bg-white shadow-md z-0 pointer-events-none transition-transform opacity-0 group-hover:opacity-100"
+          className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full bg-white shadow-md z-0 pointer-events-none transition-opacity opacity-0 group-hover:opacity-100"
           style={{ 
             left: `calc(${percentage}% - 6px)`
           }}

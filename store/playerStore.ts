@@ -15,8 +15,6 @@ interface PlayerState {
   isPlaying: boolean;
   volume: number;
   isMuted: boolean;
-  shuffle: boolean;
-  repeat: RepeatMode;
   currentTime: number;
   duration: number;
   isLyricsOpen: boolean;
@@ -31,8 +29,6 @@ interface PlayerState {
   togglePlay: () => void;
   setVolume: (volume: number) => void;
   toggleMute: () => void;
-  toggleShuffle: () => void;
-  cycleRepeat: () => void;
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
   toggleLyrics: () => void;
@@ -49,8 +45,6 @@ const initialState = {
   isPlaying: false,
   volume: 100,
   isMuted: false,
-  shuffle: false,
-  repeat: 'off' as RepeatMode,
   currentTime: 0,
   duration: 0,
   isLyricsOpen: false,
@@ -74,16 +68,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   toggleMute: () =>
     set((state) => ({ isMuted: !state.isMuted })),
-
-  toggleShuffle: () =>
-    set((state) => ({ shuffle: !state.shuffle })),
-
-  cycleRepeat: () =>
-    set((state) => {
-      const modes: RepeatMode[] = ['off', 'all', 'one'];
-      const currentIndex = modes.indexOf(state.repeat);
-      return { repeat: modes[(currentIndex + 1) % modes.length] };
-    }),
 
   setCurrentTime: (time) => set({ currentTime: time }),
 

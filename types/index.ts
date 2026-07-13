@@ -170,8 +170,6 @@ export interface PlayerState {
   isPlaying: boolean;
   volume: number; // 0-100
   isMuted: boolean;
-  shuffle: boolean;
-  repeat: RepeatMode;
   currentTime: number; // seconds
   duration: number; // seconds
   isLyricsOpen: boolean;
@@ -186,8 +184,6 @@ export interface PlayerActions {
   togglePlay: () => void;
   setVolume: (volume: number) => void;
   toggleMute: () => void;
-  toggleShuffle: () => void;
-  cycleRepeat: () => void;
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
   toggleLyrics: () => void;
