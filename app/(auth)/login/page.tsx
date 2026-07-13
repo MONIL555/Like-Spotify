@@ -25,60 +25,71 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto animate-fade-in">
-      <div className="clay-panel p-8">
-        <div className="flex flex-col items-center mb-8">
-          <div className="h-16 w-16 rounded-2xl clay-btn flex items-center justify-center bg-brand-primary text-white shadow-brand mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8">
+    <div className="w-full max-w-md mx-auto p-4 animate-slide-up">
+      <div className="relative rounded-[1.5rem] bg-white/5 border border-white/10 backdrop-blur-2xl shadow-2xl p-5 sm:p-6 overflow-hidden">
+        {/* Subtle inner glow */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-50 pointer-events-none" />
+        
+        <div className="relative z-10 flex flex-col items-center mb-4">
+          <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-brand-primary to-brand-secondary text-white shadow-[0_0_20px_rgba(29,185,84,0.4)] mb-3 transform transition-transform hover:scale-110">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
               <path d="M9 18V5l12-2v13" />
               <circle cx="6" cy="18" r="3" />
               <circle cx="18" cy="16" r="3" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-foreground">Welcome Back</h1>
-          <p className="text-muted-foreground font-semibold mt-2">Log in to SpotTunes</p>
+          <h1 className="text-2xl font-black text-white tracking-tight drop-shadow-md">Welcome Back</h1>
+          <p className="text-white/60 text-sm font-medium mt-1">Log in to SpotTunes</p>
         </div>
 
         {error && (
-          <div className="bg-destructive/10 text-destructive p-3 rounded-xl mb-6 text-sm font-bold text-center">
+          <div className="relative z-10 bg-destructive/10 border border-destructive/20 text-destructive p-3 rounded-lg mb-4 text-xs font-bold text-center backdrop-blur-md">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-bold text-muted-foreground mb-2 ml-1">Email</label>
-            <Input 
-              type="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com" 
-              required
-            />
+        <form onSubmit={handleSubmit} className="relative z-10 space-y-3">
+          <div className="space-y-1.5 animate-fade-in" style={{ animationDelay: '100ms', animationFillMode: 'both' }}>
+            <label className="block text-xs font-bold text-white/70 ml-1">Email</label>
+            <div className="relative group">
+              <Input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com" 
+                className="bg-white/5 border-white/10 focus:border-brand-primary/50 focus:bg-white/10 text-white placeholder:text-white/30 h-10 rounded-lg text-sm transition-all"
+                required
+              />
+            </div>
           </div>
-          <div>
-            <div className="flex justify-between items-center mb-2 px-1">
-              <label className="block text-sm font-bold text-muted-foreground">Password</label>
-              <Link href="/forgot-password" className="text-xs font-bold text-brand-primary hover:underline">
+          <div className="space-y-1.5 animate-fade-in" style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
+            <div className="flex justify-between items-center px-1">
+              <label className="block text-xs font-bold text-white/70">Password</label>
+              <Link href="/forgot-password" className="text-[10px] font-bold text-brand-primary hover:text-brand-secondary hover:underline transition-colors">
                 Forgot password?
               </Link>
             </div>
-            <Input 
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required 
-            />
+            <div className="relative group">
+              <Input 
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="bg-white/5 border-white/10 focus:border-brand-primary/50 focus:bg-white/10 text-white h-10 rounded-lg text-sm transition-all"
+                required 
+              />
+            </div>
           </div>
           
-          <Button variant="brand" className="w-full mt-6" type="submit">
-            Log In
-          </Button>
+          <div className="pt-2 animate-fade-in" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
+            <Button className="w-full h-10 rounded-lg bg-gradient-to-r from-brand-primary to-brand-secondary text-white font-bold text-sm hover:scale-[1.02] transition-all shadow-[0_0_15px_rgba(29,185,84,0.3)] hover:shadow-[0_0_20px_rgba(29,185,84,0.5)] border-none" type="submit">
+              Log In
+            </Button>
+          </div>
         </form>
 
-        <p className="text-center text-sm font-semibold text-muted-foreground mt-8">
+        <p className="relative z-10 text-center text-xs font-medium text-white/50 mt-5 animate-fade-in" style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
           Don't have an account?{' '}
-          <Link href="/register" className="text-brand-primary hover:underline">
+          <Link href="/register" className="text-white font-bold hover:text-brand-primary transition-colors">
             Sign up
           </Link>
         </p>
