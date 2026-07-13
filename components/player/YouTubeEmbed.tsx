@@ -96,12 +96,17 @@ export function YouTubeEmbed() {
           if (state === YT.PlayerState.PLAYING) {
             setIsPlaying(true);
             setDuration(event.target.getDuration());
-          } else if (state === YT.PlayerState.PAUSED || state === YT.PlayerState.CUED) {
+          } else if (state === YT.PlayerState.PAUSED) {
             if (document.hidden && usePlayerStore.getState().isPlaying) {
               // Try to force play if it was paused while backgrounded
               event.target.playVideo();
             } else {
               setIsPlaying(false);
+            }
+          } else if (state === YT.PlayerState.CUED) {
+            // When cued, if we intend to play, force play it
+            if (usePlayerStore.getState().isPlaying) {
+              event.target.playVideo();
             }
           } else if (state === YT.PlayerState.ENDED) {
             setIsPlaying(false);

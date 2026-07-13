@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabe
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import { Avatar } from '@/components/ui/avatar';
+import { useRouter } from 'next/navigation';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -24,6 +25,7 @@ interface TrackRowProps {
 }
 
 export function TrackRow({ track, index, showCover = true, onRemove, contextTracks }: TrackRowProps) {
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const { currentTrack, isPlaying, togglePlay, setCurrentTrack } = usePlayerStore();
@@ -212,7 +214,7 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
             )}
             
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => {}}>
+            <DropdownMenuItem onClick={() => router.push(`/artist/${encodeURIComponent(artist)}`)}>
               <User className="mr-3 h-4 w-4" /> Go to artist
             </DropdownMenuItem>
             

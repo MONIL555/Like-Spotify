@@ -11,13 +11,22 @@ import { cn } from '@/lib/utils';
 import { LikeButton } from '@/components/music/LikeButton';
 
 export function PlayerBar() {
-  const { currentTrack, toggleQueue, toggleLyrics, isQueueOpen, isLyricsOpen, isPlaying, togglePlay, toggleFullscreen } = usePlayerStore();
+  const { currentTrack, toggleQueue, toggleLyrics, isQueueOpen, isLyricsOpen, isPlaying, togglePlay, toggleFullscreen, advanceToNext } = usePlayerStore();
 
   if (!currentTrack) return null;
 
   const thumbnail = typeof currentTrack.thumbnails?.default === 'string' 
     ? currentTrack.thumbnails.default 
     : (currentTrack.thumbnails?.default as any)?.url || '';
+
+  const handleNext = () => {
+    if (typeof window !== 'undefined' && (window as any).playVideoSync) {
+      (window as any).playVideoSync();
+    } else if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
+      (window as any).playSilentAudio();
+    }
+    advanceToNext();
+  };
 
   return (
     <>
@@ -55,7 +64,7 @@ export function PlayerBar() {
             size="icon"
             onClick={(e) => {
               e.stopPropagation();
-              // In future: playNext()
+              handleNext();
             }}
             className="h-10 w-10 text-muted-foreground shrink-0 hover:bg-transparent"
           >

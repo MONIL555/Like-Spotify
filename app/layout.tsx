@@ -3,7 +3,7 @@ import { UnregisterSW } from "@/components/UnregisterSW";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: 'SpotTunes (Rebuild)',
+  title: 'SpotTunes',
 };
 
 export const viewport = {

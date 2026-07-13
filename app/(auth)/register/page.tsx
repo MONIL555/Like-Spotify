@@ -14,9 +14,11 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       await register({
         email,
@@ -27,6 +29,7 @@ export default function RegisterPage() {
       router.push('/');
     } catch (err: any) {
       setError(err.message || 'Failed to register');
+      setIsLoading(false);
     }
   };
 
@@ -96,8 +99,26 @@ export default function RegisterPage() {
           </div>
           
           <div className="pt-2 animate-fade-in" style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
-            <Button className="w-full h-10 rounded-lg bg-gradient-to-r from-brand-secondary to-brand-primary text-white font-bold text-sm hover:scale-[1.02] transition-all shadow-[0_0_15px_rgba(29,215,96,0.3)] hover:shadow-[0_0_20px_rgba(29,215,96,0.5)] border-none" type="submit">
-              Sign Up
+            <Button 
+              className={`w-full h-10 rounded-lg text-white font-bold text-sm transition-all shadow-[0_0_15px_rgba(29,215,96,0.3)] border-none ${
+                isLoading 
+                  ? 'bg-white/10 cursor-not-allowed opacity-70' 
+                  : 'bg-gradient-to-r from-brand-secondary to-brand-primary hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(29,215,96,0.5)]'
+              }`} 
+              type="submit"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Signing up...
+                </span>
+              ) : (
+                'Sign Up'
+              )}
             </Button>
           </div>
         </form>

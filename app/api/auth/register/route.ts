@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Hash password
-    const passwordHash = await bcrypt.hash(password, 12);
+    const passwordHash = await bcrypt.hash(password, 10);
     const avatarColor = generateAvatarColor(email);
 
     // Create user

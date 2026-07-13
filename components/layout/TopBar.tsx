@@ -51,7 +51,7 @@ function SearchInput() {
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         placeholder="What do you want to listen to?"
-        className="w-full h-10 clay-inset rounded-full pl-10 pr-4 bg-transparent text-foreground text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-primary/30 transition-all"
+        className="w-full h-10 clay-inset rounded-full pl-10 pr-4 bg-transparent text-foreground text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-primary/30 transition-all text-ellipsis overflow-hidden whitespace-nowrap"
       />
     </div>
   );
@@ -65,7 +65,7 @@ export function TopBar() {
   return (
     <header className="sticky top-2 md:top-4 z-40 flex h-16 items-center justify-between px-4 md:px-6 pt-2 pb-2 transition-all duration-300 mx-2 md:mx-4 rounded-2xl bg-background/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
       {/* Navigation / Brand */}
-      <div className="flex items-center gap-2 flex-1 pl-1">
+      <div className={`flex items-center gap-2 pl-1 ${pathname.startsWith('/search') ? 'hidden md:flex md:flex-1' : 'flex-1'}`}>
         {!pathname.startsWith('/search') && (
           <div className="flex items-center gap-2 md:hidden animate-fade-in">
             <div className="h-8 w-8 rounded-lg bg-brand-primary flex items-center justify-center text-white shadow-brand">
@@ -81,7 +81,7 @@ export function TopBar() {
       </div>
 
       {/* Center: Search Bar (visible on all routes, navigates to /search) */}
-      <div className="flex-1 flex justify-center max-w-lg px-4">
+      <div className={`flex-1 flex justify-center max-w-lg ${pathname.startsWith('/search') ? 'px-1 md:px-4' : 'px-4'}`}>
         {pathname.startsWith('/search') ? (
           <React.Suspense fallback={<div className="h-10 w-full max-w-sm rounded-full clay-inset animate-pulse" />}>
             <SearchInput />

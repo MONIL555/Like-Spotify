@@ -2,11 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { apiLimiter, checkRateLimit, getClientIp } from '@/lib/ratelimit';
 
 function cleanTitle(title: string) {
-  return title
+  let cleaned = title
     .replace(/\[.*?\]/g, '') // remove brackets
     .replace(/\(.*?\)/g, '') // remove parentheses
     .replace(/\|.*/g, '') // remove anything after pipe
-    .replace(/-.*/g, '') // remove anything after dash
+    .trim();
+    
+  // Only remove things after dash if it's clearly a video suffix
+  cleaned = cleaned.replace(/-(?:\s)*(?:Official|Lyrical|Audio|Video|8K|4K|HD|HQ).*/i, '');
+  
+  return cleaned.trim();
+}
+
+function cleanArtist(artist: string) {
+  if (!artist) return '';
+  return artist
+    .replace(/ - Topic/i, '')
+    .replace(/VEVO/i, '')
     .trim();
 }
 
@@ -49,11 +61,12 @@ export async function GET(req: NextRequest) {
     }
 
     const track = cleanTitle(rawTrack);
+    const cleanArt = cleanArtist(artist || '');
 
     // 1. Try exact match first
     let fetchUrl = `https://lrclib.net/api/get?track_name=${encodeURIComponent(track)}`;
-    if (artist) {
-      fetchUrl += `&artist_name=${encodeURIComponent(artist)}`;
+    if (cleanArt) {
+      fetchUrl += `&artist_name=${encodeURIComponent(cleanArt)}`;
     }
 
     const headers = { 'User-Agent': 'SpotTunes-NextJS/0.1.0' };
@@ -67,7 +80,7 @@ export async function GET(req: NextRequest) {
 
     // 2. Fallback to search if not found or bad request
     if (!foundData && (res.status === 404 || res.status === 400)) {
-      const query = artist ? `${track} ${artist}` : track;
+      const query = cleanArt ? `${track} ${cleanArt}` : track;
       const searchUrl = `https://lrclib.net/api/search?q=${encodeURIComponent(query)}`;
       const searchRes = await fetch(searchUrl, { headers, next: { revalidate: 86400 } });
       

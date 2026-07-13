@@ -16,14 +16,14 @@ function cleanStr(str: string): string {
     .trim();
 }
 
-// Extract the base core of a title to detect exact same songs
-// e.g. "Song (Official Video)" and "Song Lyrical" both become "song"
-function getBaseTitle(title: string): string {
+function getTokens(title: string): Set<string> {
   let base = title.toLowerCase();
-  base = base.split(/[\-–|]/)[0]; // Real title is usually before the first dash
+  // Remove content in brackets/parentheses
   base = base.replace(/\s*[\(\[].+?[\)\]]/g, '');
-  base = base.replace(/\b(official|video|audio|lyrical|lyric|full|song|hd|4k|remix|mashup)\b/gi, '');
-  return base.replace(/[^a-z0-9]/g, '');
+  // Remove known noise words
+  base = base.replace(/\b(official|video|audio|lyrical|lyric|full|song|hd|4k|remix|mashup|mix|beat|lofi|slowed|reverb|instrumental|cover|karaoke|live|studio|feat|ft|featuring|version|edit|tiktok|viral|trend|bass|boosted|chill|vibes|music|bgm|trap|dj|8d|3d)\b/gi, '');
+  // Split by non-alphanumeric and filter small words
+  return new Set(base.split(/[^a-z0-9]+/).filter(t => t.length > 2));
 }
 
 function toTrack(item: any) {
@@ -57,18 +57,10 @@ export async function GET(req: NextRequest) {
     const cleanTitle = cleanStr(title);
 
     // ── FALLBACK ALGORITHM (Since relatedToVideoId is deprecated) ────────────
-    // Because YouTube deprecated the 'relatedToVideoId' endpoint in August 2023,
-    // we cannot use it directly. To simulate a YouTube Mix and capture the mood/vibe,
-    // we query YouTube with natural language searches that emulate related tracks.
-    // 
-    // bucket 0 → "songs like [Title] by [Artist]" (Captures the specific mood)
-    // bucket 1 → "[Artist] best songs" (Familiar hits)
-    // bucket 2 → "songs similar to [Artist]" (Discovery/Similar artists)
-    // bucket 3 → "[Artist] new songs" (Recent catalog)
     const queries = [
       `songs like ${cleanTitle} by ${cleanArtist}`,
-      `${cleanArtist} best songs`,
-      `songs similar to ${cleanArtist}`,
+      `${cleanArtist} hit songs`,
+      `${cleanTitle} similar songs`,
       `${cleanArtist} new songs`,
     ];
 
@@ -80,9 +72,8 @@ export async function GET(req: NextRequest) {
       r.status === 'fulfilled' ? (r.value?.items ?? []) : []
     );
 
-    // Round-robin interleave to weave the mood and artists together
     const seenIds = new Set<string>([videoId]);
-    const seenTitles = new Set<string>([getBaseTitle(cleanTitle)]);
+    const seenTitlesTokens: Set<string>[] = [getTokens(title)];
     const mixTracks: any[] = [];
     const maxLen = Math.max(...buckets.map(b => b.length));
 
@@ -91,14 +82,31 @@ export async function GET(req: NextRequest) {
         const item = bucket[i];
         if (!item) continue;
 
-        const baseTitle = getBaseTitle(item.title);
-
         if (seenIds.has(item.videoId)) continue;
-        if (seenTitles.has(baseTitle) && baseTitle.length > 2) continue; // Skip same songs!
         if (isCompilation(item.title)) continue;
 
+        const tokens = getTokens(item.title);
+        if (tokens.size === 0) continue;
+
+        let isDuplicate = false;
+        for (const seenTokens of seenTitlesTokens) {
+          let intersection = 0;
+          for (const t of tokens) {
+            if (seenTokens.has(t)) intersection++;
+          }
+          const union = new Set([...tokens, ...seenTokens]).size;
+          const similarity = intersection / union;
+          
+          if (similarity >= 0.5) {
+            isDuplicate = true;
+            break;
+          }
+        }
+
+        if (isDuplicate) continue;
+
         seenIds.add(item.videoId);
-        seenTitles.add(baseTitle);
+        seenTitlesTokens.push(tokens);
         mixTracks.push(item);
       }
     }

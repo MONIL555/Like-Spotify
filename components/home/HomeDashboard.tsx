@@ -19,18 +19,18 @@ const MOODS = ['Romance', 'Party', '90s Hits', 'Workout', 'Ghazal', 'Chill', 'Su
 
 const HERO_ARTISTS = [
   {
-    name: "Arijit Singh",
-    subtitle: "The voice of modern Bollywood romance.",
-    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0IamAfa5vg6zRnazZsiSmIGjy8RrMoK6e6dzABL9LbQ&s=10",
-    query: "Arijit Singh Best Songs",
-    style: { width: "102%", height: "102%", top: "-1%", left: "-1%" }
-  },
-  {
     name: "Yo Yo Honey Singh",
     subtitle: "The pioneer of Indian Pop & Rap.",
     image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSQC_jJBJXA9iaswCSjjhgRsYRRoezhq3zaO769BUGJ7g&s=10",
     query: "Yo Yo Honey Singh Hits",
     style: { objectPosition: "center 6%" }
+  },
+  {
+    name: "Arijit Singh",
+    subtitle: "The voice of modern Bollywood romance.",
+    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0IamAfa5vg6zRnazZsiSmIGjy8RrMoK6e6dzABL9LbQ&s=10",
+    query: "Arijit Singh Best Songs",
+    style: { width: "102%", height: "102%", top: "-1%", left: "-1%" }
   },
   {
     name: "Karan Aujla",
