@@ -41,6 +41,11 @@ export function HomeDashboard() {
   const { madeForYou } = data;
 
   const handlePlayTrack = (track: any) => {
+    if (typeof window !== 'undefined' && (window as any).playVideoSync) {
+      (window as any).playVideoSync(track.videoId);
+    } else if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
+      (window as any).playSilentAudio();
+    }
     const nextTrack = loadPlaylist([track], 0);
     if (nextTrack) setCurrentTrack(nextTrack);
   };
@@ -50,7 +55,14 @@ export function HomeDashboard() {
       const shuffledTracks = [...playlist.tracks].sort(() => Math.random() - 0.5);
       const nextTrack = loadPlaylist(shuffledTracks, 0);
       shuffleQueue();
-      if (nextTrack) setCurrentTrack(nextTrack);
+      if (nextTrack) {
+        if (typeof window !== 'undefined' && (window as any).playVideoSync) {
+          (window as any).playVideoSync(nextTrack.videoId);
+        } else if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
+          (window as any).playSilentAudio();
+        }
+        setCurrentTrack(nextTrack);
+      }
     }
   };
 

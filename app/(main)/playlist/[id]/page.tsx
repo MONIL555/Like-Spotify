@@ -55,56 +55,56 @@ export default function PlaylistPage() {
   const imgSrc = firstTrack ? (typeof firstTrack.thumbnails?.high === 'string' ? firstTrack.thumbnails.high : (firstTrack.thumbnails?.high as any)?.url || typeof firstTrack.thumbnails?.default === 'string' ? firstTrack.thumbnails.default : (firstTrack.thumbnails?.default as any)?.url || '') : null;
 
   return (
-    <div className="py-6 flex flex-col gap-8 animate-fade-in">
+    <div className="py-4 flex flex-col gap-6 animate-fade-in">
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row items-end gap-6 md:gap-10">
-        <div className="relative h-48 w-48 md:h-64 md:w-64 shrink-0 clay-panel overflow-hidden">
+      <div className="flex flex-row items-center md:items-end gap-4 md:gap-8">
+        <div className="relative h-28 w-28 md:h-56 md:w-56 shrink-0 clay-panel overflow-hidden">
           {imgSrc ? (
             <img src={imgSrc} alt={playlist.name} className="h-full w-full object-cover" />
           ) : (
             <div className="h-full w-full flex items-center justify-center bg-brand-primary/10">
-              <Play className="h-20 w-20 text-brand-primary/30" />
+              <Play className="h-12 w-12 md:h-20 md:w-20 text-brand-primary/30" />
             </div>
           )}
         </div>
-        <div className="flex flex-col flex-1 pb-2">
-          <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">Playlist</span>
-          <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-6 line-clamp-2">{playlist.name}</h1>
-          <p className="text-muted-foreground font-semibold">
+        <div className="flex flex-col flex-1 pb-1 md:pb-2">
+          <span className="text-xs md:text-sm font-bold text-muted-foreground uppercase tracking-wider mb-1">Playlist</span>
+          <h1 className="text-2xl md:text-5xl lg:text-6xl font-bold text-foreground mb-2 md:mb-4 line-clamp-2">{playlist.name}</h1>
+          <p className="text-sm md:text-base text-muted-foreground font-semibold">
             {playlist.tracks?.length || 0} tracks
           </p>
         </div>
       </div>
 
       {/* Action Bar */}
-      <div className="flex items-center gap-4 py-4">
+      <div className="flex items-center gap-3 py-2 md:py-4">
         <Button 
           size="icon" 
-          className="h-14 w-14 rounded-full bg-brand-primary text-white shadow-brand hover:scale-105"
+          className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-brand-primary text-white shadow-brand hover:scale-105"
           onClick={handlePlayAll}
           disabled={!hasTracks}
         >
-          <Play className="h-6 w-6 fill-current ml-1" />
+          <Play className="h-5 w-5 md:h-6 md:w-6 fill-current ml-1" />
         </Button>
         <Button 
           variant="ghost" 
           size="icon" 
-          className="h-14 w-14 rounded-full text-muted-foreground hover:text-brand-primary"
+          className="h-12 w-12 md:h-14 md:w-14 rounded-full text-muted-foreground hover:text-brand-primary"
           onClick={handleShuffle}
           disabled={!hasTracks}
         >
-          <Shuffle className="h-6 w-6" />
+          <Shuffle className="h-5 w-5 md:h-6 md:w-6" />
         </Button>
       </div>
 
       {/* Track List */}
       <div>
-        <div className="flex items-center px-4 py-2 text-sm font-bold text-muted-foreground border-b border-border/50 mb-4">
+        <div className="flex items-center px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm font-bold text-muted-foreground border-b border-border/50 mb-2 md:mb-4">
           <div className="w-8 text-center">#</div>
           <div className="flex-1">Title</div>
-          <div className="w-12 text-center hidden sm:block"><Clock className="h-4 w-4 mx-auto" /></div>
-          <div className="w-10"></div>
+          <div className="w-12 text-center hidden sm:block"><Clock className="h-3 w-3 md:h-4 md:w-4 mx-auto" /></div>
+          <div className="w-8 md:w-10"></div>
         </div>
         
         {!hasTracks ? (

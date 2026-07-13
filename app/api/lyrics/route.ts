@@ -10,6 +10,31 @@ function cleanTitle(title: string) {
     .trim();
 }
 
+async function transliterate(text: string) {
+  if (!text || !/[^\x00-\x7F]/.test(text)) {
+    // If empty or only contains ASCII characters, no need to transliterate
+    return text;
+  }
+  
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=rm&q=${encodeURIComponent(text)}`;
+    const res = await fetch(url);
+    if (!res.ok) return text;
+    
+    const data = await res.json();
+    if (data && data[0] && Array.isArray(data[0])) {
+      const romanized = data[0].map((item: any) => item[3] || '').join('');
+      if (romanized.trim().length > 0) {
+        return romanized;
+      }
+    }
+    return text;
+  } catch (error) {
+    console.error("Transliteration error:", error);
+    return text;
+  }
+}
+
 export async function GET(req: NextRequest) {
   try {
     const ip = getClientIp(req);
@@ -34,13 +59,14 @@ export async function GET(req: NextRequest) {
     const headers = { 'User-Agent': 'SpotTunes-NextJS/0.1.0' };
     let res = await fetch(fetchUrl, { headers, next: { revalidate: 86400 } });
 
+    let foundData = null;
+
     if (res.ok) {
-      const data = await res.json();
-      return NextResponse.json(data);
+      foundData = await res.json();
     }
 
     // 2. Fallback to search if not found or bad request
-    if (res.status === 404 || res.status === 400) {
+    if (!foundData && (res.status === 404 || res.status === 400)) {
       const query = artist ? `${track} ${artist}` : track;
       const searchUrl = `https://lrclib.net/api/search?q=${encodeURIComponent(query)}`;
       const searchRes = await fetch(searchUrl, { headers, next: { revalidate: 86400 } });
@@ -49,13 +75,23 @@ export async function GET(req: NextRequest) {
         const searchData = await searchRes.json();
         if (Array.isArray(searchData) && searchData.length > 0) {
           // Return the first best match
-          return NextResponse.json(searchData[0]);
+          foundData = searchData[0];
         }
       }
-      return NextResponse.json({ error: 'Lyrics not found' }, { status: 404 });
     }
 
-    throw new Error(`lrclib error: ${res.status}`);
+    if (foundData) {
+      // Transliterate lyrics if needed
+      if (foundData.plainLyrics) {
+        foundData.plainLyrics = await transliterate(foundData.plainLyrics);
+      }
+      if (foundData.syncedLyrics) {
+        foundData.syncedLyrics = await transliterate(foundData.syncedLyrics);
+      }
+      return NextResponse.json(foundData);
+    }
+
+    return NextResponse.json({ error: 'Lyrics not found' }, { status: 404 });
 
   } catch (error: any) {
     console.error('Lyrics API Error:', error);

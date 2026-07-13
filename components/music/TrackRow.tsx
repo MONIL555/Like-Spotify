@@ -125,7 +125,7 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
           }
         }}
         className={cn(
-          "relative bg-background group flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer transition-colors duration-200",
+          "relative bg-background group flex items-center gap-2 md:gap-3 px-2 md:px-3 py-1.5 md:py-2 rounded-xl cursor-pointer transition-colors duration-200",
           menuOpen ? "z-50" : "z-10",
           isCurrentTrack 
             ? "clay-inset bg-brand-primary/10" 
@@ -135,18 +135,18 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
       >
       {/* Thumbnail with play overlay */}
       {showCover && (
-        <div className="relative shrink-0 rounded-lg overflow-hidden h-11 w-11">
+        <div className="relative shrink-0 rounded-lg overflow-hidden h-9 w-9 md:h-11 md:w-11">
           <Avatar 
             size="md" 
             src={thumbnail} 
             alt={title}
-            className="rounded-lg h-11 w-11 border-none shadow-none" 
+            className="rounded-lg h-9 w-9 md:h-11 md:w-11 border-none shadow-none" 
           />
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
             {isCurrentTrack && isPlaying ? (
-              <Pause className="h-4 w-4 text-white fill-white" />
+              <Pause className="h-3 w-3 md:h-4 md:w-4 text-white fill-white" />
             ) : (
-              <Play className="h-4 w-4 text-white fill-white ml-0.5" />
+              <Play className="h-3 w-3 md:h-4 md:w-4 text-white fill-white ml-0.5" />
             )}
           </div>
         </div>
@@ -155,12 +155,12 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
       {/* Title & Artist — takes maximum space */}
       <div className="flex-1 min-w-0 flex flex-col justify-center">
         <div className={cn(
-          "font-bold truncate text-sm",
+          "font-bold truncate text-xs md:text-sm",
           isCurrentTrack ? "text-brand-primary" : "text-foreground group-hover:text-brand-primary transition-colors"
         )}>
           {title}
         </div>
-        <div className="text-xs font-semibold text-muted-foreground truncate">
+        <div className="text-[10px] md:text-xs font-semibold text-muted-foreground truncate">
           {artist}
         </div>
       </div>

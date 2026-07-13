@@ -334,7 +334,7 @@ export function YouTubeEmbed() {
     <>
       <audio
         ref={silentAudioRef}
-        src="/silence.mp3"
+        src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="
         loop
         playsInline
         preload="auto"

@@ -21,7 +21,7 @@ export default function MainLayout({
         errorRetryCount: 2,
       }}
     >
-      <div className="flex h-screen flex-col overflow-hidden bg-background selection:bg-brand-primary/30">
+      <div className="flex h-[100dvh] flex-col overflow-hidden bg-background selection:bg-brand-primary/30">
         <div className="flex flex-1 overflow-hidden">
           {/* Desktop Sidebar */}
           <Sidebar />
@@ -32,7 +32,7 @@ export default function MainLayout({
             <TopBar />
 
             {/* Page Content */}
-            <main className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar pb-36 md:pb-28 px-4 md:px-8 pt-4">
+            <main className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar pb-32 md:pb-28 px-3 md:px-8 pt-2 md:pt-4">
               <div className="mx-auto max-w-7xl h-full">
                 {children}
               </div>

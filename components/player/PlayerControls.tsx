@@ -15,12 +15,24 @@ export function PlayerControls() {
   const { playPrevious } = useQueueStore();
 
   const handleNext = () => {
+    if (typeof window !== 'undefined' && (window as any).playVideoSync) {
+      (window as any).playVideoSync();
+    } else if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
+      (window as any).playSilentAudio();
+    }
     advanceToNext();
   };
 
   const handlePrev = () => {
     const prev = playPrevious();
-    if (prev) setCurrentTrack(prev);
+    if (prev) {
+      if (typeof window !== 'undefined' && (window as any).playVideoSync) {
+        (window as any).playVideoSync(prev.videoId);
+      } else if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
+        (window as any).playSilentAudio();
+      }
+      setCurrentTrack(prev);
+    }
   };
 
   return (

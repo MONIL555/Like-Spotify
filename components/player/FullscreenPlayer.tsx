@@ -30,7 +30,7 @@ export function FullscreenPlayer() {
   }, [isFullscreen]);
 
   const { data: lyricsData, isLoading: lyricsLoading } = useSWR(
-    viewMode === 'lyrics' && currentTrack ? `/api/lyrics?track=${encodeURIComponent(currentTrack.title)}&artist=${encodeURIComponent(currentTrack.artist || currentTrack.channelTitle || '')}` : null,
+    currentTrack ? `/api/lyrics?track=${encodeURIComponent(currentTrack.title)}&artist=${encodeURIComponent(currentTrack.artist || currentTrack.channelTitle || '')}` : null,
     fetcher
   );
 
@@ -83,72 +83,76 @@ export function FullscreenPlayer() {
       {/* Main Content */}
       <div className="relative z-10 flex-1 flex flex-col p-6 max-w-md mx-auto w-full gap-8">
         
-        {/* Swipeable Area (Cover / Lyrics) */}
-        <div className="w-full flex-1 flex items-center justify-center min-h-0 relative [perspective:1000px]">
-          <AnimatePresence mode="wait">
-            {viewMode === 'cover' ? (
-              <motion.div
-                key="cover"
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={{ left: 0.1, right: 0.8 }} // Harder to drag right, easier to drag left to go to lyrics
-                onDragEnd={(e, info) => {
-                  if (info.offset.x < -80) {
-                    setViewMode('lyrics');
-                  }
+        {/* 3D Flip Card (Cover / Lyrics) */}
+        <div className="w-full flex-1 flex items-center justify-center min-h-0 relative [perspective:1200px]">
+          <motion.div
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragEnd={(e, info) => {
+              if (info.offset.x < -60 && viewMode === 'cover') {
+                setViewMode('lyrics');
+              } else if (info.offset.x > 60 && viewMode === 'lyrics') {
+                setViewMode('cover');
+              }
+            }}
+            initial={false}
+            animate={{ rotateY: viewMode === 'lyrics' ? 180 : 0 }}
+            transition={{ type: "spring", stiffness: 200, damping: 25 }}
+            style={{ transformStyle: 'preserve-3d' }}
+            className="w-full aspect-square relative cursor-grab active:cursor-grabbing"
+          >
+            {/* Front Face: Cover */}
+            <div 
+              className="absolute inset-0 w-full h-full rounded-[32px] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.6)]"
+              style={{ backfaceVisibility: 'hidden' }}
+            >
+              <img 
+                src={thumbnail} 
+                alt={currentTrack.title} 
+                className="w-full h-full object-cover"
+                draggable={false}
+              />
+              <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] rounded-[32px] pointer-events-none" />
+              <div className="absolute bottom-4 right-6 pointer-events-none">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-white/70 bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-md">
+                  Swipe for Lyrics
+                </span>
+              </div>
+            </div>
+
+            {/* Back Face: Lyrics */}
+            <div 
+              className="absolute inset-0 w-full h-full rounded-[32px] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.6)] bg-white/5 backdrop-blur-3xl flex flex-col p-6 border border-white/10"
+              style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-white tracking-tight">Lyrics</h3>
+                <span className="text-xs font-bold uppercase tracking-wider text-white/50">Swipe Back</span>
+              </div>
+              <div 
+                className="flex-1 overflow-y-auto hide-scrollbar scroll-smooth"
+                onPointerDown={(e) => {
+                  // Stop drag propagation when scrolling vertically
+                  e.stopPropagation();
                 }}
-                initial={{ opacity: 0, x: 50, scale: 0.95 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, x: -50, scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className="w-full aspect-square rounded-[32px] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.6)] cursor-grab active:cursor-grabbing relative"
               >
-                <img 
-                  src={thumbnail} 
-                  alt={currentTrack.title} 
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] rounded-[32px] pointer-events-none" />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="lyrics"
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={{ left: 0.8, right: 0.1 }} // Harder to drag left, easier to drag right to go back to cover
-                onDragEnd={(e, info) => {
-                  if (info.offset.x > 80) {
-                    setViewMode('cover');
-                  }
-                }}
-                initial={{ opacity: 0, x: -50, scale: 0.95 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, x: 50, scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className="w-full h-full max-h-[500px] rounded-[32px] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.6)] bg-white/5 backdrop-blur-3xl relative flex flex-col p-6 cursor-grab active:cursor-grabbing border border-white/10"
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-white tracking-tight">Lyrics</h3>
-                  <span className="text-xs font-bold uppercase tracking-wider text-white/50">Swipe →</span>
-                </div>
-                <div className="flex-1 overflow-y-auto hide-scrollbar">
-                  {lyricsLoading ? (
-                    <div className="h-full flex flex-col items-center justify-center space-y-4">
-                      <div className="h-8 w-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                  ) : lyricsData && (lyricsData.plainLyrics || lyricsData.syncedLyrics) ? (
-                    <div className="whitespace-pre-wrap text-2xl font-bold leading-[1.4] text-white/90">
-                      {lyricsData.plainLyrics || "Synced lyrics coming soon..."}
-                    </div>
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-white/50 font-medium text-center">
-                      Looks like we don't have lyrics for this track yet.
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                {lyricsLoading ? (
+                  <div className="h-full flex flex-col items-center justify-center space-y-4">
+                    <div className="h-8 w-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : lyricsData && (lyricsData.plainLyrics || lyricsData.syncedLyrics) ? (
+                  <div className="whitespace-pre-wrap text-xl md:text-2xl font-bold leading-[1.6] text-white/90 pb-8 text-center pt-2">
+                    {lyricsData.plainLyrics || "Synced lyrics coming soon..."}
+                  </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-white/50 font-medium text-center">
+                    Looks like we don't have lyrics for this track yet.
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
         </div>
 
         {/* Info & Controls Wrapper (Bottom Area) */}

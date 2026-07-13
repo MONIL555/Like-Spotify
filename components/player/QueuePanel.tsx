@@ -23,6 +23,13 @@ export function QueuePanel() {
     const newUserQueue = [...state.userQueue];
     newUserQueue.splice(0, index + 1); // remove all up to and including this track
     useQueueStore.setState({ userQueue: newUserQueue });
+    
+    if (typeof window !== 'undefined' && (window as any).playVideoSync) {
+      (window as any).playVideoSync(track.videoId);
+    } else if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
+      (window as any).playSilentAudio();
+    }
+    
     setCurrentTrack(track);
   };
 
@@ -30,7 +37,14 @@ export function QueuePanel() {
     // In our queueStore, the 'queue' array represents the entire current playlist context.
     // To play a specific track, we just need to set it as current, and the queueStore handles the rest.
     const newTrack = loadPlaylist(queue, index);
-    if (newTrack) setCurrentTrack(newTrack);
+    if (newTrack) {
+      if (typeof window !== 'undefined' && (window as any).playVideoSync) {
+        (window as any).playVideoSync(newTrack.videoId);
+      } else if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
+        (window as any).playSilentAudio();
+      }
+      setCurrentTrack(newTrack);
+    }
   };
 
   const renderTrack = (track: any, index: number, isUserQueue: boolean) => {
