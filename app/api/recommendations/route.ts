@@ -75,9 +75,9 @@ export async function GET(req: NextRequest) {
       
       const artistsQuery = recentArtists.slice(0, 2).join(' ');
       // Search for a general mix of these artists and others
-      madeForYouSearch = await searchYouTube(`${artistsQuery} similar artists songs`, 25);
+      madeForYouSearch = await searchYouTube(`${artistsQuery} top bollywood punjabi hits`, 25);
     } else {
-      madeForYouSearch = await searchYouTube('trending pop songs', 15);
+      madeForYouSearch = await searchYouTube(`Top Bollywood Punjabi hits ${new Date().getFullYear()}`, 15);
     }
     
     // Filter out the exact artists we just listened to AND compilations

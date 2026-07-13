@@ -33,12 +33,10 @@ export async function GET(req: NextRequest) {
     }
 
     // 4. Fetch from YouTube API if not cached
-    // Currently searchYouTube from lib/youtube only takes 'q' and maxResults
-    // If type is specific, we might append it to the query, but 'all' just searches normally.
-    const ytQuery = validated.type !== 'all' ? `${validated.q} ${validated.type}` : validated.q;
+    const ytQuery = validated.q;
     
     // YouTube Data API has a max of 50 per request, we'll request 20 for standard searches
-    const youtubeData = await searchYouTube(ytQuery, 20);
+    const youtubeData = await searchYouTube(ytQuery, 20, undefined, validated.type);
 
     // 5. Cache the result
     await SearchCache.create({

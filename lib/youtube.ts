@@ -9,6 +9,7 @@ const YT_BASE = 'https://www.googleapis.com/youtube/v3';
 
 export interface YTSearchItem {
   videoId: string;
+  type?: string;
   title: string;
   channelId: string;
   channelName: string;
@@ -48,14 +49,14 @@ export interface YTVideoDetails {
 export async function searchYouTube(
   query: string,
   maxResults = 20,
-  pageToken?: string
+  pageToken?: string,
+  type = 'video'
 ): Promise<YTSearchResponse> {
   const params = new URLSearchParams({
     part: 'snippet',
-    q: `${query} official audio OR lyrics OR music video`,
-    type: 'video',
-    videoCategoryId: '10', // Music category
-    videoEmbeddable: 'true',
+    q: type === 'video' ? `${query} official audio OR lyrics OR music video` : query,
+    type: type === 'all' ? 'video,playlist,channel' : type,
+    ...(type === 'video' ? { videoCategoryId: '10', videoEmbeddable: 'true' } : {}),
     maxResults: String(maxResults),
     key: YT_API_KEY,
     ...(pageToken ? { pageToken } : {}),
@@ -77,10 +78,11 @@ export async function searchYouTube(
   return {
     items: data.items
       ?.filter(
-        (item: Record<string, Record<string, string>>) => item.id?.videoId
+        (item: Record<string, Record<string, string>>) => item.id?.videoId || item.id?.playlistId
       )
       .map((item: Record<string, Record<string, unknown>>) => ({
-        videoId: (item.id as Record<string, string>).videoId,
+        videoId: (item.id as Record<string, string>).videoId || (item.id as Record<string, string>).playlistId,
+        type: (item.id as Record<string, string>).kind?.replace('youtube#', '') || 'video',
         title: decodeHTMLEntities(
           (item.snippet as Record<string, string>).title
         ),

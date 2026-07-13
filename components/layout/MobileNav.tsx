@@ -17,34 +17,65 @@ export function MobileNav() {
   const { user } = useAuth();
   
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50">
-      <div className="clay-panel h-16 flex items-center justify-around px-2 pb-safe bg-surface/95 backdrop-blur-md shadow-2xl">
+    <nav className="md:hidden fixed bottom-4 left-4 right-4 z-50">
+      <div className="h-16 flex items-center justify-around px-2 rounded-2xl bg-surface/80 backdrop-blur-xl border border-white/10 shadow-[0_12px_32px_rgba(0,0,0,0.6)]">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={cn(
-                "flex flex-col items-center justify-center gap-1 w-16 h-12 rounded-full transition-all duration-300",
-                isActive ? "clay-inset text-brand-primary" : "text-muted-foreground hover:text-foreground hover:scale-110"
-              )}
+              className="relative flex flex-col items-center justify-center w-16 h-full group"
             >
-              <item.icon className={cn("h-5 w-5 transition-colors", isActive && "fill-brand-primary/20")} />
-              <span className="text-[10px] font-bold">{item.label}</span>
+              {/* Active Top Indicator */}
+              {isActive && (
+                <div className="absolute top-0 w-8 h-1 bg-brand-primary rounded-b-full shadow-[0_0_10px_rgba(29,185,84,0.6)]" />
+              )}
+              
+              {/* Animated Icon */}
+              <div className={cn("absolute transition-all duration-300 flex flex-col items-center", isActive ? "-translate-y-2.5" : "translate-y-0")}>
+                <item.icon 
+                  className={cn("h-6 w-6 transition-colors duration-300", isActive ? "text-brand-primary" : "text-muted-foreground group-hover:text-foreground")} 
+                  strokeWidth={isActive ? 2.5 : 2}
+                  fill={isActive ? "currentColor" : "none"}
+                />
+              </div>
+
+              {/* Animated Text */}
+              <span 
+                className={cn(
+                  "absolute bottom-2 text-[10px] font-bold text-brand-primary transition-all duration-300", 
+                  isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+                )}
+              >
+                {item.label}
+              </span>
             </Link>
           );
         })}
+        
         {user?.role === 'admin' && (
           <Link
             href="/admin"
-            className={cn(
-              "flex flex-col items-center justify-center gap-1 w-16 h-12 rounded-full transition-all duration-300",
-              pathname.startsWith('/admin') ? "clay-inset text-brand-primary" : "text-muted-foreground hover:text-foreground hover:scale-110"
-            )}
+            className="relative flex flex-col items-center justify-center w-16 h-full group"
           >
-            <ShieldAlert className={cn("h-5 w-5 transition-colors", pathname.startsWith('/admin') && "fill-brand-primary/20")} />
-            <span className="text-[10px] font-bold">Admin</span>
+            {pathname.startsWith('/admin') && (
+              <div className="absolute top-0 w-8 h-1 bg-brand-primary rounded-b-full shadow-[0_0_10px_rgba(29,185,84,0.6)]" />
+            )}
+            <div className={cn("absolute transition-all duration-300 flex flex-col items-center", pathname.startsWith('/admin') ? "-translate-y-2.5" : "translate-y-0")}>
+              <ShieldAlert 
+                className={cn("h-6 w-6 transition-colors duration-300", pathname.startsWith('/admin') ? "text-brand-primary" : "text-muted-foreground group-hover:text-foreground")} 
+                strokeWidth={pathname.startsWith('/admin') ? 2.5 : 2}
+              />
+            </div>
+            <span 
+              className={cn(
+                "absolute bottom-2 text-[10px] font-bold text-brand-primary transition-all duration-300", 
+                pathname.startsWith('/admin') ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+              )}
+            >
+              Admin
+            </span>
           </Link>
         )}
       </div>

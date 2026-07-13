@@ -63,9 +63,21 @@ export function TopBar() {
   const { user, isAuthenticated, logout } = useAuth();
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center justify-between px-4 md:px-6 pt-2 pb-2 transition-all duration-300">
-      {/* Navigation History (Removed) */}
-      <div className="flex items-center gap-2">
+    <header className="sticky top-2 md:top-4 z-40 flex h-16 items-center justify-between px-4 md:px-6 pt-2 pb-2 transition-all duration-300 mx-2 md:mx-4 rounded-2xl bg-background/80 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+      {/* Navigation / Brand */}
+      <div className="flex items-center gap-2 flex-1 pl-1">
+        {!pathname.startsWith('/search') && (
+          <div className="flex items-center gap-2 md:hidden animate-fade-in">
+            <div className="h-8 w-8 rounded-lg bg-brand-primary flex items-center justify-center text-white shadow-brand">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+              </svg>
+            </div>
+            <span className="font-bold text-lg tracking-tight text-foreground">SpotTunes</span>
+          </div>
+        )}
       </div>
 
       {/* Center: Search Bar (visible on all routes, navigates to /search) */}
