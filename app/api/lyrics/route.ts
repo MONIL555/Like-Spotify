@@ -3,6 +3,7 @@ import { apiLimiter, checkRateLimit, getClientIp } from '@/lib/ratelimit';
 
 function cleanTitle(title: string) {
   let cleaned = title
+    .replace(/^(?:Lyrical(?:\s*Video)?|Official(?:\s*Video|\s*Audio)?)[\s:-]+/i, '') // remove prefix Lyrical:
     .replace(/\[.*?\]/g, '') // remove brackets
     .replace(/\(.*?\)/g, '') // remove parentheses
     .replace(/\|.*/g, '') // remove anything after pipe
@@ -89,6 +90,18 @@ export async function GET(req: NextRequest) {
         if (Array.isArray(searchData) && searchData.length > 0) {
           // Return the first best match
           foundData = searchData[0];
+        }
+      }
+      
+      // 3. Last fallback: search without artist if artist search failed
+      if (!foundData && cleanArt) {
+        const fallbackUrl = `https://lrclib.net/api/search?q=${encodeURIComponent(track)}`;
+        const fallbackRes = await fetch(fallbackUrl, { headers, next: { revalidate: 86400 } });
+        if (fallbackRes.ok) {
+          const fallbackData = await fallbackRes.json();
+          if (Array.isArray(fallbackData) && fallbackData.length > 0) {
+            foundData = fallbackData[0];
+          }
         }
       }
     }

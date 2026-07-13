@@ -8,6 +8,8 @@ import { usePlayerStore } from '@/store/playerStore';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useCallback } from 'react';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -30,7 +32,7 @@ const HERO_ARTISTS = [
     subtitle: "The voice of modern Bollywood romance.",
     image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0IamAfa5vg6zRnazZsiSmIGjy8RrMoK6e6dzABL9LbQ&s=10",
     query: "Arijit Singh Best Songs",
-    style: { width: "102%", height: "102%", top: "-1%", left: "-1%" }
+    style: { objectPosition: "center" }
   },
   {
     name: "Karan Aujla",
@@ -66,7 +68,7 @@ export function HomeDashboard() {
   const { loadPlaylist, shuffleQueue } = useQueueStore();
   const { setCurrentTrack } = usePlayerStore();
 
-  const handlePlayTrack = (track: any, contextList?: any[], index?: number) => {
+  const handlePlayTrack = useCallback((track: any, contextList?: any[], index?: number) => {
     if (typeof window !== 'undefined' && (window as any).playVideoSync) {
       (window as any).playVideoSync(track.videoId || track.id);
     } else if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
@@ -80,9 +82,9 @@ export function HomeDashboard() {
       const nextTrack = loadPlaylist([track], 0);
       if (nextTrack) setCurrentTrack(nextTrack);
     }
-  };
+  }, [loadPlaylist, setCurrentTrack]);
 
-  const handleShufflePlaylist = (playlist: any) => {
+  const handleShufflePlaylist = useCallback((playlist: any) => {
     if (playlist.tracks && playlist.tracks.length > 0) {
       const shuffledTracks = [...playlist.tracks].sort(() => Math.random() - 0.5);
       const nextTrack = loadPlaylist(shuffledTracks, 0);
@@ -96,7 +98,7 @@ export function HomeDashboard() {
         setCurrentTrack(nextTrack);
       }
     }
-  };
+  }, [loadPlaylist, shuffleQueue, setCurrentTrack]);
 
   const SectionHeader = ({ title, onSeeAll }: { title: string, onSeeAll: () => void }) => (
     <div className="flex items-center justify-between mb-4 mt-2 px-2 md:px-0">
@@ -134,10 +136,12 @@ export function HomeDashboard() {
             className="relative min-w-full md:min-w-[85%] lg:min-w-[70%] h-48 md:h-72 rounded-[32px] overflow-hidden cursor-pointer group shadow-2xl snap-center shrink-0"
             onClick={() => router.push(`/search/${encodeURIComponent(artist.query)}`)}
           >
-            <img
+            <Image
               src={artist.image}
               alt={artist.name}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+              fill
+              sizes="(max-width: 768px) 100vw, 70vw"
+              className="object-cover transition-transform duration-1000 group-hover:scale-105"
               style={artist.style}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
@@ -176,10 +180,12 @@ export function HomeDashboard() {
                 >
                   <div className="relative aspect-square w-full rounded-[24px] overflow-hidden shadow-lg mb-3 bg-white/5">
                     {coverImg ? (
-                      <img
+                      <Image
                         src={coverImg}
                         alt={track.title}
-                        className="absolute inset-0 object-cover w-full h-full transition-transform duration-700 group-hover:scale-110"
+                        fill
+                        sizes="(max-width: 768px) 140px, 180px"
+                        className="object-cover transition-transform duration-700 group-hover:scale-110"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
@@ -216,10 +222,12 @@ export function HomeDashboard() {
               >
                 <div className="relative aspect-square w-full rounded-[24px] overflow-hidden shadow-lg mb-3 bg-white/5">
                   {item.imageUrl ? (
-                    <img
+                    <Image
                       src={item.imageUrl}
                       alt={item.title}
-                      className="absolute inset-0 object-cover w-full h-full transition-transform duration-700 group-hover:scale-110"
+                      fill
+                      sizes="(max-width: 768px) 140px, 180px"
+                      className="object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -273,10 +281,12 @@ export function HomeDashboard() {
                   const imgSrc = firstTrack ? (typeof firstTrack.thumbnails?.high === 'string' ? firstTrack.thumbnails.high : (firstTrack.thumbnails?.high as any)?.url || typeof firstTrack.thumbnails?.default === 'string' ? firstTrack.thumbnails.default : (firstTrack.thumbnails?.default as any)?.url || '') : null;
 
                   return imgSrc ? (
-                    <img
+                    <Image
                       src={imgSrc}
                       alt={pl.name}
-                      className="absolute inset-0 object-cover w-full h-full transition-transform duration-700 group-hover:scale-110"
+                      fill
+                      sizes="(max-width: 768px) 140px, 180px"
+                      className="object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                   ) : <Music2 className="w-10 h-10 text-white/30" />;
                 })()}

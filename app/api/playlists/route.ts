@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
     await connectDB();
 
-    const playlists = await Playlist.find({ userId: jwtUser.userId }).sort({ createdAt: -1 });
+    const playlists = await Playlist.find({ userId: jwtUser.userId }).sort({ createdAt: -1 }).lean();
 
     return NextResponse.json(playlists);
   } catch (error: any) {

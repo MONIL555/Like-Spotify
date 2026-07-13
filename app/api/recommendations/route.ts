@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 
       if (history.length > 0) {
         const videoIds = history.map((h: any) => h._id);
-        const tracks = await Track.find({ videoId: { $in: videoIds } });
+        const tracks = await Track.find({ videoId: { $in: videoIds } }).lean();
         
         // Map back to preserve sorted order
         recentlyPlayed = videoIds.map((id: string) => {

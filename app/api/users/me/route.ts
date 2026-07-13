@@ -21,7 +21,7 @@ export async function PUT(req: NextRequest) {
     
     // Check if email is being changed and if it already exists
     if (email) {
-      const existingEmailUser = await User.findOne({ email, _id: { $ne: jwtUser.userId } });
+      const existingEmailUser = await User.findOne({ email, _id: { $ne: jwtUser.userId } }).lean();
       if (existingEmailUser) {
         return NextResponse.json({ error: 'Email is already in use' }, { status: 400 });
       }

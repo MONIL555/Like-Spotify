@@ -23,7 +23,7 @@ export async function GET(
     await connectDB();
 
     // Check DB first
-    let track = await Track.findOne({ videoId });
+    let track = await Track.findOne({ videoId }).lean();
 
     if (!track) {
       // Fetch from YouTube

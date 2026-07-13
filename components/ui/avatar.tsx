@@ -1,5 +1,6 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import Image from "next/image"
 
 interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   src?: string | null;
@@ -29,10 +30,12 @@ export function Avatar({ src, alt, fallback, fallbackColor = "var(--brand-primar
       {...props}
     >
       {src && !error ? (
-        <img
+        <Image
           src={src}
           alt={alt || "Avatar"}
-          className="aspect-square h-full w-full object-cover"
+          fill
+          sizes="96px"
+          className="object-cover"
           onError={() => setError(true)}
         />
       ) : (

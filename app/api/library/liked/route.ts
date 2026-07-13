@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     }
 
     // 1. Fetch what we can from DB
-    const dbTracks = await Track.find({ videoId: { $in: likedIds } });
+    const dbTracks = await Track.find({ videoId: { $in: likedIds } }).lean();
     const dbTrackIds = dbTracks.map(t => t.videoId);
     
     // 2. Determine what's missing

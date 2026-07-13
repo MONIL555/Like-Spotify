@@ -9,6 +9,7 @@ import { ChevronDown } from 'lucide-react';
 import { LikeButton } from '@/components/music/LikeButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import useSWR from 'swr';
+import Image from 'next/image';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -107,11 +108,14 @@ export function FullscreenPlayer() {
               className="absolute inset-0 w-full h-full rounded-[32px] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.6)]"
               style={{ backfaceVisibility: 'hidden' }}
             >
-              <img 
+              <Image 
                 src={thumbnail} 
                 alt={currentTrack.title} 
-                className="w-full h-full object-cover"
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover"
                 draggable={false}
+                priority
               />
               <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] rounded-[32px] pointer-events-none" />
               <div className="absolute bottom-4 right-6 pointer-events-none">

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { formatDuration } from '@/lib/utils';
+import Image from 'next/image';
 
 export function QueuePanel() {
   const { isQueueOpen, toggleQueue, currentTrack, setCurrentTrack } = usePlayerStore();
@@ -59,10 +60,12 @@ export function QueuePanel() {
         onClick={() => isUserQueue ? handlePlayFromUserQueue(track, index) : handlePlayFromQueue(track, index)}
       >
         <div className="relative h-12 w-12 shrink-0 rounded-lg overflow-hidden shadow-sm">
-          <img 
+          <Image 
             src={typeof track.thumbnails?.default === 'string' ? track.thumbnails.default : (track.thumbnails?.default as any)?.url || ''} 
             alt={track.title}
-            className={cn("h-full w-full object-cover transition-opacity", !isCurrent && "group-hover:opacity-50")}
+            fill
+            sizes="48px"
+            className={cn("object-cover transition-opacity", !isCurrent && "group-hover:opacity-50")}
           />
           {!isCurrent && (
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">

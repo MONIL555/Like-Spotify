@@ -21,7 +21,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const playlist = await Playlist.findOne({
       _id: resolvedParams.id,
       $or: [{ userId: jwtUser.userId }, { collaborators: jwtUser.userId }]
-    });
+    }).lean();
     
     if (!playlist) {
       return NextResponse.json({ error: 'Playlist not found' }, { status: 404 });

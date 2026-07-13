@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     await connectDB();
 
     // Ensure the track metadata exists in the DB so it can be populated in recommendations
-    const existingTrack = await Track.findOne({ videoId });
+    const existingTrack = await Track.findOne({ videoId }).lean();
     if (!existingTrack && body.trackData) {
       // Create it if we passed the trackData
       await Track.create({

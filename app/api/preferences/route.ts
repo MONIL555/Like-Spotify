@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
     await connectDB();
     
-    let prefs = await UserPreferences.findOne({ userId: jwtUser.userId });
+    let prefs = await UserPreferences.findOne({ userId: jwtUser.userId }).lean();
     
     if (!prefs) {
       prefs = await UserPreferences.create({ userId: jwtUser.userId });

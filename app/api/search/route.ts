@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     const cachedResult = await SearchCache.findOne({ 
       query: validated.q, 
       type: validated.type 
-    });
+    }).lean();
 
     if (cachedResult) {
       return NextResponse.json(JSON.parse(cachedResult.results));
