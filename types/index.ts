@@ -13,7 +13,10 @@ export interface TrackThumbnails {
 
 export interface Track {
   _id?: string;
-  videoId: string;
+  videoId: string; // Used as fallback / YouTube ID
+  saavnId?: string; // JioSaavn ID
+  source?: 'youtube' | 'jiosaavn';
+  streamUrl?: string; // Direct audio URL
   title: string;
   artist: string;
   channelId: string;

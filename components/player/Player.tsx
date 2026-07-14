@@ -1,6 +1,7 @@
 'use client';
 
 import { YouTubeEmbed } from './YouTubeEmbed';
+import { NativeAudioPlayer } from './NativeAudioPlayer';
 import { PlayerBar } from './PlayerBar';
 import { QueuePanel } from './QueuePanel';
 import { LyricsPanel } from './LyricsPanel';
@@ -17,6 +18,7 @@ export function Player() {
         wake locks, and state synchronization, even if no track is playing yet.
       */}
       <YouTubeEmbed />
+      <NativeAudioPlayer />
 
       {/* Render the visible UI only if a track is active */}
       {currentTrack && (

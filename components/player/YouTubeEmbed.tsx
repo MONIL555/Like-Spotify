@@ -25,6 +25,7 @@ export function YouTubeEmbed() {
     isPlaying,
     volume,
     isMuted,
+    activePlayer, // New
     setPlayerReady,
     setIsPlaying,
     setCurrentTime,
@@ -34,6 +35,7 @@ export function YouTubeEmbed() {
   } = usePlayerStore();
 
   const { playNext, playPrevious } = useQueueStore();
+  const isActive = activePlayer === 'youtube'; // New
 
   const handleAdvanceToNext = useCallback(async () => {
     await advanceToNext();
@@ -155,7 +157,7 @@ export function YouTubeEmbed() {
   useEffect(() => {
     if (!playerRef.current) return;
 
-    if (isPlaying) {
+    if (isPlaying && isActive) {
       if (typeof playerRef.current.playVideo === 'function') {
         playerRef.current.playVideo();
       }
@@ -164,7 +166,7 @@ export function YouTubeEmbed() {
         playerRef.current.pauseVideo();
       }
     }
-  }, [isPlaying]);
+  }, [isPlaying, isActive]);
 
   // ══════════════════════════════════════════════════════════════
   // 5. Sync Volume
@@ -182,7 +184,7 @@ export function YouTubeEmbed() {
   // 6. Time Tracking Loop
   // ══════════════════════════════════════════════════════════════
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying || !isActive) return;
 
     const id = setInterval(() => {
       if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
@@ -194,7 +196,7 @@ export function YouTubeEmbed() {
     }, 250);
 
     return () => clearInterval(id);
-  }, [isPlaying, setCurrentTime]);
+  }, [isPlaying, isActive, setCurrentTime]);
 
   // ══════════════════════════════════════════════════════════════
   // 7. Global Expose for Seek and Sync Play (TrackRow.tsx)
@@ -269,7 +271,7 @@ export function YouTubeEmbed() {
   }, []);
 
   useEffect(() => {
-    if (isPlaying) {
+    if (isPlaying && isActive) {
       silentAudioRef.current?.play().catch(() => {});
       audioContextRef.current?.resume().catch(() => {});
 
@@ -288,7 +290,7 @@ export function YouTubeEmbed() {
       wakeLockRef.current?.release().then(() => { wakeLockRef.current = null; }).catch(() => {});
     }
 
-    if ('mediaSession' in navigator && currentTrack) {
+    if ('mediaSession' in navigator && currentTrack && isActive) {
       const art = currentTrack.thumbnails?.high || currentTrack.thumbnails?.default;
       const artwork = art ? [{ src: art, sizes: '512x512', type: 'image/jpeg' }] : [];
 

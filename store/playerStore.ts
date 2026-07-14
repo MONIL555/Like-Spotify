@@ -22,6 +22,7 @@ interface PlayerState {
   isFullscreen: boolean;
   contextPlaylistId: string | null;
   isPlayerReady: boolean;
+  activePlayer: 'native' | 'youtube'; // New
 
   // Actions
   setCurrentTrack: (track: Track | null) => void;
@@ -36,6 +37,7 @@ interface PlayerState {
   toggleFullscreen: () => void;
   setContextPlaylistId: (id: string | null) => void;
   setPlayerReady: (ready: boolean) => void;
+  setActivePlayer: (player: 'native' | 'youtube') => void;
   reset: () => void;
   advanceToNext: () => Promise<void>;
 }
@@ -52,13 +54,21 @@ const initialState = {
   isFullscreen: false,
   contextPlaylistId: null,
   isPlayerReady: false,
+  activePlayer: 'youtube' as const,
 };
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
   ...initialState,
 
-  setCurrentTrack: (track) =>
-    set({ currentTrack: track, currentTime: 0, duration: 0, isPlaying: !!track }),
+  setActivePlayer: (player) => set({ activePlayer: player }),
+
+  setCurrentTrack: (track) => {
+    let activePlayer: 'native' | 'youtube' = 'youtube';
+    if (track && (track.streamUrl || track.saavnId)) {
+      activePlayer = 'native';
+    }
+    set({ currentTrack: track, currentTime: 0, duration: 0, isPlaying: !!track, activePlayer });
+  },
 
   setIsPlaying: (playing) => set({ isPlaying: playing }),
 

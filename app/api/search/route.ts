@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { searchLimiter, checkRateLimit, getClientIp } from '@/lib/ratelimit';
 import { searchYouTube } from '@/lib/youtube';
+import { searchSaavn } from '@/lib/jiosaavn';
 import SearchCache from '@/models/SearchCache';
 import { SearchSchema } from '@/lib/validations';
 import { ZodError } from 'zod';
@@ -32,20 +33,37 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(JSON.parse(cachedResult.results));
     }
 
-    // 4. Fetch from YouTube API if not cached
-    const ytQuery = validated.q;
-    
-    // YouTube Data API has a max of 50 per request, we'll request 20 for standard searches
-    const youtubeData = await searchYouTube(ytQuery, 20, undefined, validated.type);
+    // 4. Try JioSaavn API First
+    let searchData;
+    let source = 'jiosaavn';
+    try {
+      // Saavn only supports basic query search, not specialized 'album' or 'artist' queries via this endpoint directly,
+      // but we will use the general song search for all for now.
+      const saavnTracks = await searchSaavn(validated.q, 20);
+      
+      if (saavnTracks.length === 0) {
+        throw new Error('No results from JioSaavn');
+      }
+
+      searchData = {
+        items: saavnTracks,
+        nextPageToken: null,
+        totalResults: saavnTracks.length,
+      };
+    } catch (error) {
+      console.warn('JioSaavn search failed or returned 0 results, falling back to YouTube:', error);
+      source = 'youtube';
+      searchData = await searchYouTube(validated.q, 20, undefined, validated.type);
+    }
 
     // 5. Cache the result
     await SearchCache.create({
       query: validated.q,
       type: validated.type,
-      results: JSON.stringify(youtubeData),
+      results: JSON.stringify(searchData),
     });
 
-    return NextResponse.json(youtubeData);
+    return NextResponse.json({ ...searchData, source });
 
   } catch (error: any) {
     if (error instanceof ZodError) {
