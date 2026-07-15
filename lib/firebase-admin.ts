@@ -7,8 +7,13 @@ import { getAuth } from 'firebase-admin/auth';
 
 if (!getApps().length) {
   try {
-    // Using the downloaded service account key
-    const serviceAccount = require('../spottunes-baf0c-firebase-adminsdk-fbsvc-fc011e10c2.json');
+    // VERCEL FIX: We must use environment variables instead of the .json file 
+    // because the .json file is gitignored and won't exist on Vercel's servers.
+    const serviceAccount = {
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    };
 
     initializeApp({
       credential: cert(serviceAccount),
