@@ -33,6 +33,19 @@ export const LoginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+export const SendOtpSchema = z.object({
+  phoneNumber: z.string().min(10, 'Invalid phone number').max(15, 'Invalid phone number'),
+});
+
+export const VerifyOtpSchema = z.object({
+  phoneNumber: z.string().min(10).max(15),
+  code: z.string().length(6, 'OTP must be 6 digits'),
+});
+
+export const CompleteSignupSchema = RegisterSchema.extend({
+  setupToken: z.string().min(1, 'Setup token is required'),
+});
+
 // ─── Playlist Schemas ────────────────────────────────────────
 
 export const CreatePlaylistSchema = z.object({
@@ -134,6 +147,9 @@ export const UpdatePreferencesSchema = z.object({
 
 export type RegisterInput = z.infer<typeof RegisterSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
+export type SendOtpInput = z.infer<typeof SendOtpSchema>;
+export type VerifyOtpInput = z.infer<typeof VerifyOtpSchema>;
+export type CompleteSignupInput = z.infer<typeof CompleteSignupSchema>;
 export type CreatePlaylistInput = z.infer<typeof CreatePlaylistSchema>;
 export type UpdatePlaylistInput = z.infer<typeof UpdatePlaylistSchema>;
 export type AddTrackInput = z.infer<typeof AddTrackSchema>;

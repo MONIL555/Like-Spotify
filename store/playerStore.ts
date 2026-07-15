@@ -8,6 +8,8 @@ import { create } from 'zustand';
 import type { Track, RepeatMode } from '@/types';
 import { useQueueStore } from './queueStore';
 import { useAuthStore } from './authStore';
+import { useConfigStore } from './configStore';
+import { toast } from 'sonner';
 
 interface PlayerState {
   // State
@@ -63,10 +65,31 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   setActivePlayer: (player) => set({ activePlayer: player }),
 
   setCurrentTrack: (track) => {
+    if (!track) {
+      set({ currentTrack: null, currentTime: 0, duration: 0, isPlaying: false, activePlayer: 'youtube' });
+      return;
+    }
+
     let activePlayer: 'native' | 'youtube' = 'youtube';
-    if (track && (track.streamUrl || track.saavnId)) {
+    if (track.streamUrl || track.saavnId) {
       activePlayer = 'native';
     }
+
+    // Check Feature Flag for YouTube Fallback
+    if (activePlayer === 'youtube') {
+      const { youtubeFallbackEnabled } = useConfigStore.getState();
+      if (!youtubeFallbackEnabled) {
+        toast.error(`Cannot play "${track.title}" - YouTube streaming is disabled by admin.`);
+        
+        // Use a timeout to avoid deep recursion if many tracks are skipped in a row
+        setTimeout(() => {
+          get().advanceToNext();
+        }, 1000);
+        
+        return; // Don't set the track
+      }
+    }
+
     set({ currentTrack: track, currentTime: 0, duration: 0, isPlaying: !!track, activePlayer });
   },
 

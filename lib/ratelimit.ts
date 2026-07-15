@@ -42,7 +42,7 @@ export const searchLimiter = new Ratelimit({
 // ─── Rate Limit Check Helper ─────────────────────────────────
 
 export async function checkRateLimit(
-  limiter: Ratelimit,
+  limiter: any,
   identifier: string
 ): Promise<number> {
   const { success, reset, remaining } = await limiter.limit(identifier);
