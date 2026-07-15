@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-export interface IAppConfig extends mongoose.Document {
+export interface IAppConfig {
   _id: string; // We will use a static ID 'global_config'
   phoneAuthEnabled: boolean;
   youtubeFallbackEnabled: boolean;
