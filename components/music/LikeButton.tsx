@@ -19,6 +19,7 @@ export function LikeButton({ videoId, className }: LikeButtonProps) {
   const isLiked = user?.likedTrackIds?.includes(videoId) || false;
 
   const toggleLike = async (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     if (!isAuthenticated) return;
 

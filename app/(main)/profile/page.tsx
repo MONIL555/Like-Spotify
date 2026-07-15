@@ -8,11 +8,14 @@ import { Settings, Heart, ListMusic, History, ArrowRightLeft } from 'lucide-reac
 import Link from 'next/link';
 import { TrackRow } from '@/components/music/TrackRow';
 import useSWR from 'swr';
+import { CreatePlaylistModal } from '@/components/layout/CreatePlaylistModal';
+import { Plus } from 'lucide-react';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export default function ProfilePage() {
   const [activeView, setActiveView] = useState<'recent' | 'playlists'>('recent');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const recentlyPlayed = useHistoryStore((state) => state.recentlyPlayed);
   const { data: playlists } = useSWR('/api/playlists', fetcher);
@@ -53,9 +56,21 @@ export default function ProfilePage() {
       {/* Content Section */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl md:text-2xl font-bold">
-            {activeView === 'recent' ? 'Recently Played' : 'Your Playlists'}
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl md:text-2xl font-bold">
+              {activeView === 'recent' ? 'Recently Played' : 'Your Playlists'}
+            </h2>
+            {activeView === 'playlists' && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setIsCreateModalOpen(true)}
+                className="h-8 w-8 rounded-full text-brand-primary hover:bg-brand-primary/20"
+              >
+                <Plus className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
           <Button 
             variant="ghost" 
             size="icon" 
@@ -110,6 +125,10 @@ export default function ProfilePage() {
           )
         )}
       </div>
+      <CreatePlaylistModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
+      />
     </div>
   );
 }

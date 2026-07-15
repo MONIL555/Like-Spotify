@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
         // Map back to preserve sorted order
         recentlyPlayed = videoIds.map((id: string) => {
           const track = tracks.find(t => t.videoId === id);
-          return track ? track.toObject() : null;
+          return track ? track : null;
         }).filter(Boolean);
       }
     }
@@ -61,7 +61,21 @@ export async function GET(req: NextRequest) {
       description: item.channelTitle || item.channelName,
       imageUrl: item.thumbnail,
       type: 'track',
-      data: item
+      data: {
+        videoId: item.videoId,
+        title: item.title,
+        artist: item.channelName || item.channelTitle,
+        channelId: item.channelId,
+        channelTitle: item.channelName || item.channelTitle,
+        thumbnails: {
+          default: item.thumbnail,
+          high: item.thumbnail
+        },
+        duration: 0,
+        durationText: '',
+        playCount: 0,
+        likeCount: 0
+      }
     }));
 
     // "Made For You" (Similar songs based on recent listening or general vibes)
@@ -104,7 +118,21 @@ export async function GET(req: NextRequest) {
       description: item.channelTitle || item.channelName,
       imageUrl: item.thumbnail,
       type: 'track',
-      data: item
+      data: {
+        videoId: item.videoId,
+        title: item.title,
+        artist: item.channelName || item.channelTitle,
+        channelId: item.channelId,
+        channelTitle: item.channelName || item.channelTitle,
+        thumbnails: {
+          default: item.thumbnail,
+          high: item.thumbnail
+        },
+        duration: 0,
+        durationText: '',
+        playCount: 0,
+        likeCount: 0
+      }
     }));
 
     return NextResponse.json({

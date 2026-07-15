@@ -3,20 +3,53 @@
 import useSWR from 'swr';
 import { useParams } from 'next/navigation';
 import { TrackRow } from '@/components/music/TrackRow';
-import { Play, Shuffle, Clock, Loader2 } from 'lucide-react';
+import { Play, Shuffle, Clock, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQueueStore } from '@/store/queueStore';
 import { usePlayerStore } from '@/store/playerStore';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { useState } from 'react';
+import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export default function PlaylistPage() {
   const params = useParams();
   const id = params.id as string;
+  const router = useRouter();
+  const { user } = useAuth();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const { data: playlist, error, isLoading } = useSWR(id ? `/api/playlists/${id}` : null, fetcher);
   const { loadPlaylist, shuffleQueue } = useQueueStore();
   const { setCurrentTrack } = usePlayerStore();
+
+  const handleDelete = () => {
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/playlists/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Playlist deleted');
+        router.push('/');
+      } else {
+        toast.error('Failed to delete playlist');
+        setIsDeleting(false);
+        setIsDeleteDialogOpen(false);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('An error occurred');
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+    }
+  };
 
   const handlePlayAll = () => {
     if (playlist?.tracks && playlist.tracks.length > 0) {
@@ -78,24 +111,38 @@ export default function PlaylistPage() {
       </div>
 
       {/* Action Bar */}
-      <div className="flex items-center gap-3 py-2 md:py-4">
-        <Button 
-          size="icon" 
-          className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-brand-primary text-white shadow-brand hover:scale-105"
-          onClick={handlePlayAll}
-          disabled={!hasTracks}
-        >
-          <Play className="h-5 w-5 md:h-6 md:w-6 fill-current ml-1" />
-        </Button>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="h-12 w-12 md:h-14 md:w-14 rounded-full text-muted-foreground hover:text-brand-primary"
-          onClick={handleShuffle}
-          disabled={!hasTracks}
-        >
-          <Shuffle className="h-5 w-5 md:h-6 md:w-6" />
-        </Button>
+      <div className="flex items-center justify-between py-2 md:py-4">
+        <div className="flex items-center gap-3">
+          <Button 
+            size="icon" 
+            className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-brand-primary text-white shadow-brand hover:scale-105"
+            onClick={handlePlayAll}
+            disabled={!hasTracks}
+          >
+            <Play className="h-5 w-5 md:h-6 md:w-6 fill-current ml-1" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-12 w-12 md:h-14 md:w-14 rounded-full text-muted-foreground hover:text-brand-primary"
+            onClick={handleShuffle}
+            disabled={!hasTracks}
+          >
+            <Shuffle className="h-5 w-5 md:h-6 md:w-6" />
+          </Button>
+        </div>
+        
+        {user?._id === playlist.userId && (
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={handleDelete}
+            className="h-10 w-10 md:h-12 md:w-12 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            title="Delete Playlist"
+          >
+            <Trash2 className="h-5 w-5" />
+          </Button>
+        )}
       </div>
 
       {/* Track List */}
@@ -125,6 +172,22 @@ export default function PlaylistPage() {
         )}
       </div>
 
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogHeader>
+          <DialogTitle>Delete Playlist</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete "{playlist.name}"? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setIsDeleteDialogOpen(false)} disabled={isDeleting}>
+            Cancel
+          </Button>
+          <Button variant="default" className="bg-red-600 hover:bg-red-700 text-white" onClick={confirmDelete} disabled={isDeleting}>
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogFooter>
+      </Dialog>
     </div>
   );
 }

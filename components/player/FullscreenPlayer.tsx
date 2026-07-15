@@ -43,7 +43,22 @@ export function FullscreenPlayer() {
   const thumbnail = highThumb || defaultThumb || '';
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#121212] animate-slide-up flex flex-col font-sans">
+    <motion.div 
+      initial={{ y: "100%" }}
+      animate={{ y: 0 }}
+      exit={{ y: "100%" }}
+      transition={{ type: "spring", damping: 25, stiffness: 200 }}
+      drag="y"
+      dragDirectionLock
+      dragConstraints={{ top: 0, bottom: 0 }}
+      dragElastic={{ top: 0, bottom: 0.7 }}
+      onDragEnd={(e, info) => {
+        if (info.offset.y > 100 || info.velocity.y > 500) {
+          toggleFullscreen();
+        }
+      }}
+      className="fixed inset-0 z-[100] bg-[#121212] flex flex-col font-sans"
+    >
       {/* Dynamic Background Blur - More premium scale and opacity */}
       <div className="absolute inset-0 z-0">
         <div 
@@ -86,6 +101,7 @@ export function FullscreenPlayer() {
         <div className="w-full flex-1 flex items-center justify-center min-h-0 relative [perspective:1200px]">
           <motion.div
             drag="x"
+            dragDirectionLock
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.2}
             onDragEnd={(e, info) => {
@@ -189,6 +205,6 @@ export function FullscreenPlayer() {
         </div>
 
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -13,9 +13,9 @@ import { useCallback } from 'react';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
-// Cache configuration: 5 hours (deduping interval)
-const FIVE_HOURS = 5 * 60 * 60 * 1000;
-const SWR_OPTIONS = { dedupingInterval: FIVE_HOURS, focusThrottleInterval: FIVE_HOURS };
+// Cache configuration: 2.5 hours (deduping interval)
+const CACHE_HOURS = 2.5 * 60 * 60 * 1000;
+const SWR_OPTIONS = { dedupingInterval: CACHE_HOURS, focusThrottleInterval: CACHE_HOURS };
 
 const MOODS = ['Romance', 'Party', '90s Hits', 'Workout', 'Ghazal', 'Chill', 'Sufi', 'Indie'];
 
@@ -62,8 +62,8 @@ export function HomeDashboard() {
   const { data: recentData, isLoading: recentLoading } = useSWR('/api/recommendations', fetcher, SWR_OPTIONS);
   const { data: playlists } = useSWR('/api/playlists', fetcher, SWR_OPTIONS);
 
-  // New Trending Bollywood data (Playlists!)
-  const { data: trendingData, isLoading: trendingLoading } = useSWR(`/api/search?q=Top+Bollywood+Hits+${currentYear}&type=playlist`, fetcher, SWR_OPTIONS);
+  // Trending Bollywood data (Tracks)
+  const { data: trendingData, isLoading: trendingLoading } = useSWR(`/api/search?q=Top+Bollywood+Hits+${currentYear}&type=video`, fetcher, SWR_OPTIONS);
 
   const { loadPlaylist, shuffleQueue } = useQueueStore();
   const { setCurrentTrack } = usePlayerStore();
@@ -171,11 +171,13 @@ export function HomeDashboard() {
         ) : (
           <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-4 -mx-4 px-4 md:mx-0 md:px-0">
             {validTrendingTracks.slice(0, 5).map((track: any, idx: number) => {
-              const coverImg = track.thumbnail || track.thumbnails?.[1]?.url || track.thumbnails?.[0]?.url;
+              const coverImg = track.thumbnail || 
+                (Array.isArray(track.thumbnails) ? track.thumbnails[1]?.url || track.thumbnails[0]?.url : undefined) ||
+                track.thumbnails?.high || track.thumbnails?.default || track.thumbnails?.high?.url;
               return (
                 <div
-                  key={`trend-${track.videoId}`}
-                  onClick={() => router.push(`/yt-playlist/${track.videoId}`)}
+                  key={`trend-${track.videoId || idx}`}
+                  onClick={() => handlePlayTrack(track, validTrendingTracks.slice(0, 5), idx)}
                   className="group w-[140px] md:w-[180px] shrink-0 cursor-pointer flex flex-col"
                 >
                   <div className="relative aspect-square w-full rounded-[24px] overflow-hidden shadow-lg mb-3 bg-white/5">

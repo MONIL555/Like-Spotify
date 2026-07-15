@@ -58,10 +58,10 @@ export async function GET(req: NextRequest) {
 
     // ── FALLBACK ALGORITHM (Since relatedToVideoId is deprecated) ────────────
     const queries = [
-      `songs like ${cleanTitle} by ${cleanArtist}`,
-      `${cleanArtist} hit songs`,
-      `${cleanTitle} similar songs`,
-      `${cleanArtist} new songs`,
+      `${cleanTitle} ${cleanArtist} similar vibe songs`,
+      `trending hits like ${cleanTitle}`,
+      `popular songs radio mix ${cleanArtist}`,
+      `top tracks same genre as ${cleanTitle}`,
     ];
 
     const settled = await Promise.allSettled(
@@ -74,6 +74,7 @@ export async function GET(req: NextRequest) {
 
     const seenIds = new Set<string>([videoId]);
     const seenTitlesTokens: Set<string>[] = [getTokens(title)];
+    const channelCounts = new Map<string, number>();
     const mixTracks: any[] = [];
     const maxLen = Math.max(...buckets.map(b => b.length));
 
@@ -84,6 +85,10 @@ export async function GET(req: NextRequest) {
 
         if (seenIds.has(item.videoId)) continue;
         if (isCompilation(item.title)) continue;
+        
+        // Limit to max 2 tracks from the same channel/artist to ensure a varied vibe
+        const cName = item.channelName?.toLowerCase() || '';
+        if ((channelCounts.get(cName) || 0) >= 2) continue;
 
         const tokens = getTokens(item.title);
         if (tokens.size === 0) continue;
@@ -107,6 +112,9 @@ export async function GET(req: NextRequest) {
 
         seenIds.add(item.videoId);
         seenTitlesTokens.push(tokens);
+        if (cName) {
+          channelCounts.set(cName, (channelCounts.get(cName) || 0) + 1);
+        }
         mixTracks.push(item);
       }
     }

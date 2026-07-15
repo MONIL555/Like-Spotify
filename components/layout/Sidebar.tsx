@@ -8,9 +8,7 @@ import { Button } from '@/components/ui/button';
 import useSWR from 'swr';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-
-// Placeholder modal so it doesn't break
-const CreatePlaylistModal = ({ isOpen, onClose }: any) => null;
+import { CreatePlaylistModal } from '@/components/layout/CreatePlaylistModal';
 
 const NAV_ITEMS = [
   { icon: Home, label: 'Home', href: '/' },
@@ -109,12 +107,10 @@ export function Sidebar() {
         </div>
       </div>
       
-      {/* 
       <CreatePlaylistModal  
         isOpen={isCreateModalOpen} 
         onClose={() => setIsCreateModalOpen(false)} 
       />
-      */}
     </aside>
   );
 }

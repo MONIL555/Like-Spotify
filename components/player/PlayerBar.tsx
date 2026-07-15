@@ -9,9 +9,10 @@ import { Button } from '@/components/ui/button';
 import { ListMusic, Mic2, Maximize2, Play, Pause, SkipForward } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LikeButton } from '@/components/music/LikeButton';
+import { motion } from 'framer-motion';
 
 export function PlayerBar() {
-  const { currentTrack, toggleQueue, toggleLyrics, isQueueOpen, isLyricsOpen, isPlaying, togglePlay, toggleFullscreen, advanceToNext } = usePlayerStore();
+  const { currentTrack, toggleQueue, toggleLyrics, isQueueOpen, isLyricsOpen, isPlaying, togglePlay, toggleFullscreen, advanceToNext, setCurrentTrack } = usePlayerStore();
 
   if (!currentTrack) return null;
 
@@ -31,9 +32,18 @@ export function PlayerBar() {
   return (
     <>
       {/* Mobile Mini Player — sits above MobileNav */}
-      <div 
+      <motion.div 
         className="md:hidden fixed bottom-[88px] left-2 right-2 z-50 cursor-pointer" 
         onClick={toggleFullscreen}
+        drag="y"
+        dragDirectionLock
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={{ top: 0, bottom: 0.8 }}
+        onDragEnd={(e, info) => {
+          if (info.offset.y > 50 || info.velocity.y > 300) {
+            setCurrentTrack(null);
+          }
+        }}
       >
         <div className="flex items-center gap-3 h-14 px-3 bg-[#282828] hover:bg-[#3E3E3E] rounded-md overflow-hidden transition-colors shadow-lg">
           <Avatar 
@@ -71,7 +81,7 @@ export function PlayerBar() {
             <SkipForward className="h-5 w-5 fill-current" />
           </Button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Desktop Full Player Bar */}
       <div className="hidden md:flex fixed bottom-0 left-0 right-0 z-50 h-24 bg-black border-t border-border px-4 items-center justify-between">
