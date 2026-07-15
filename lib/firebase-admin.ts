@@ -9,18 +9,25 @@ if (!getApps().length) {
   try {
     // VERCEL FIX: We must use environment variables instead of the .json file 
     // because the .json file is gitignored and won't exist on Vercel's servers.
-    const serviceAccount = {
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    };
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
-    initializeApp({
-      credential: cert(serviceAccount),
-    });
+    if (projectId && clientEmail && privateKey) {
+      const serviceAccount = { projectId, clientEmail, privateKey };
+      initializeApp({ credential: cert(serviceAccount) });
+    } else {
+      console.warn('Firebase Admin env vars missing. Skipping initialization at build time.');
+    }
   } catch (error) {
     console.error('Firebase admin initialization error', error);
   }
 }
 
-export const authAdmin = getAuth();
+// Lazily invoke getAuth() at runtime to prevent Next.js build-time crashes 
+// when environment variables are not yet injected by Vercel.
+export const authAdmin = {
+  verifyIdToken: async (idToken: string) => {
+    return getAuth().verifyIdToken(idToken);
+  }
+};
