@@ -32,6 +32,11 @@ const nextConfig: NextConfig = {
         hostname: 'encrypted-tbn0.gstatic.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'c.saavncdn.com',
+        pathname: '/**',
+      },
     ],
   },
   async headers() {

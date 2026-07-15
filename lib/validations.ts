@@ -96,10 +96,11 @@ export const SearchSchema = z.object({
     .min(1, 'Search query is required')
     .max(200, 'Search query too long'),
   type: z
-    .enum(['track', 'artist', 'album', 'playlist', 'all'])
+    .enum(['track', 'artist', 'album', 'playlist', 'all', 'channel', 'video'])
     .default('all'),
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(50).default(20),
+  source: z.enum(['jiosaavn', 'youtube']).optional(),
 });
 
 // ─── User Schemas ────────────────────────────────────────────

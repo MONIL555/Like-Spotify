@@ -1,0 +1,1 @@
+import { NextResponse } from 'next/server'; import { searchYouTube } from '@/lib/youtube'; export async function GET(req) { const { searchParams } = new URL(req.url); const q = searchParams.get('q'); const type = searchParams.get('type'); const data = await searchYouTube(q, 2, undefined, type); return NextResponse.json(data); }

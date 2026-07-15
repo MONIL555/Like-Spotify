@@ -6,7 +6,7 @@ import Track from '@/models/Track';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ videoId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const ip = getClientIp(req);
@@ -14,7 +14,7 @@ export async function GET(
     
     // Await params as required in Next.js 15
     const resolvedParams = await params;
-    const { videoId } = resolvedParams;
+    const { id: videoId } = resolvedParams;
 
     if (!videoId) {
       return NextResponse.json({ error: 'Video ID is required' }, { status: 400 });

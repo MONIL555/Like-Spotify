@@ -1,12 +1,19 @@
 'use client';
 
+import { useEffect } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { Player } from '@/components/player/Player';
 import { Toaster } from 'sonner';
 import { SWRConfig } from 'swr';
+import { useConfigStore } from '@/store/configStore';
 
+function ConfigLoader() {
+  const fetchConfig = useConfigStore((s) => s.fetchConfig);
+  useEffect(() => { fetchConfig(); }, [fetchConfig]);
+  return null;
+}
 export default function MainLayout({
   children,
 }: {
@@ -21,6 +28,7 @@ export default function MainLayout({
         errorRetryCount: 2,
       }}
     >
+      <ConfigLoader />
       <div className="flex h-[100dvh] flex-col overflow-hidden bg-background selection:bg-brand-primary/30">
         <div className="flex flex-1 overflow-hidden">
           {/* Desktop Sidebar */}

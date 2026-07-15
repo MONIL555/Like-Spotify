@@ -8,8 +8,8 @@ interface ConfigState {
 }
 
 export const useConfigStore = create<ConfigState>((set) => ({
-  phoneAuthEnabled: true, // Default optimistic
-  youtubeFallbackEnabled: true,
+  phoneAuthEnabled: false, // Safe default — don't show until API confirms
+  youtubeFallbackEnabled: true, // Safe default — allow playback until API says otherwise
   isLoading: true,
   fetchConfig: async () => {
     try {

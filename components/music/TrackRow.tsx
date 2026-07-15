@@ -42,14 +42,28 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
   const handlePlay = () => {
     if (isDragging) return; // Prevent click if we just finished dragging
     
-    if (typeof window !== 'undefined' && (window as any).playVideoSync) {
+    const isNativeTrack = !!(track.streamUrl || track.saavnId);
+    
+    if (typeof window !== 'undefined') {
       if (isCurrentTrack) {
-        if (!isPlaying) (window as any).playVideoSync();
+        // Toggle play/pause for current track
+        if (!isPlaying) {
+          if (isNativeTrack) {
+            // Just unlock audio context for native tracks
+            (window as any).playSilentAudio?.();
+          } else {
+            (window as any).playVideoSync?.();
+          }
+        }
       } else {
-        (window as any).playVideoSync(track.videoId);
+        if (isNativeTrack) {
+          // Native track — only unlock audio context, don't touch YouTube
+          (window as any).playSilentAudio?.();
+        } else {
+          // YouTube track — load into YouTube player
+          (window as any).playVideoSync?.(track.videoId);
+        }
       }
-    } else if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
-      (window as any).playSilentAudio();
     }
     
     if (isCurrentTrack) {
@@ -58,10 +72,14 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
       if (contextTracks && contextTracks.length > 0) {
         const playlist = contextTracks.map(t => ({
           videoId: t.videoId,
+          saavnId: t.saavnId,
+          source: t.source,
+          streamUrl: t.streamUrl,
           title: t.title || 'Unknown Title',
           artist: t.artist || t.channelName || t.channelTitle || 'Unknown Artist',
           channelId: t.channelId || '',
-          thumbnails: { default: typeof t.thumbnails?.default === 'string' ? t.thumbnails.default : (t.thumbnails?.default as any)?.url || '' },
+          albumName: t.albumName,
+          thumbnails: { default: typeof t.thumbnails?.default === 'string' ? t.thumbnails.default : (t.thumbnails?.default as any)?.url || '', high: typeof t.thumbnails?.high === 'string' ? t.thumbnails.high : (t.thumbnails?.high as any)?.url || '' },
           duration: t.duration || 0,
           durationText: t.durationText || (t.duration ? formatDuration(t.duration) : ''),
           tags: [], playCount: 0, likeCount: 0, cachedAt: new Date().toISOString()
@@ -72,9 +90,14 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
         if (currentTrackToPlay) setCurrentTrack(currentTrackToPlay);
       } else {
         const trackData = {
-          videoId: track.videoId, title, artist,
+          videoId: track.videoId,
+          saavnId: track.saavnId,
+          source: track.source,
+          streamUrl: track.streamUrl,
+          title, artist,
           channelId: track.channelId || '',
-          thumbnails: { default: thumbnail },
+          albumName: track.albumName,
+          thumbnails: { default: thumbnail, high: typeof track.thumbnails?.high === 'string' ? track.thumbnails.high : '' },
           duration: track.duration || 0, durationText,
           tags: [], playCount: 0, likeCount: 0, cachedAt: new Date().toISOString()
         };

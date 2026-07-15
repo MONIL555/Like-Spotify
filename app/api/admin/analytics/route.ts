@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import { verifyAccessToken, handleApiError } from '@/lib/auth';
+import { withAuth, handleApiError, ApiError } from '@/lib/auth';
 import User from '@/models/User';
+import Playlist from '@/models/Playlist';
 import ListeningHistory from '@/models/ListeningHistory';
 import Track from '@/models/Track';
 import { getVideoDetails } from '@/lib/youtube';
 
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get('access_token')?.value || req.headers.get('Authorization')?.replace('Bearer ', '');
-    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    
-    const jwtUser = verifyAccessToken(token);
+    const jwtUser = await withAuth(req);
     if (jwtUser.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      throw new ApiError(403, 'Forbidden: Admin access required');
     }
 
     await connectDB();
@@ -21,22 +19,36 @@ export async function GET(req: NextRequest) {
     // 1. Total Users
     const totalUsers = await User.countDocuments();
 
-    // 2. Global Listening Time (in seconds)
+    // 2. Total Playlists
+    const totalPlaylists = await Playlist.countDocuments();
+
+    // 3. Active Users (listened in last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const activeUsersResult = await ListeningHistory.distinct('userId', {
+      listenedAt: { $gte: sevenDaysAgo },
+    });
+    const activeUsers = activeUsersResult.length;
+
+    // 4. Total unique tracks played
+    const totalTracksPlayed = await ListeningHistory.distinct('videoId');
+
+    // 5. Global Listening Time (in seconds)
     const globalListeningResult = await ListeningHistory.aggregate([
       { $group: { _id: null, totalDuration: { $sum: '$duration' } } }
     ]);
     const totalListeningSeconds = globalListeningResult.length > 0 ? globalListeningResult[0].totalDuration : 0;
 
-    // 3. Top Users by Listening Time
+    // 6. Top Users by Listening Time
     const topUsersAggregate = await ListeningHistory.aggregate([
       { $group: { _id: '$userId', totalDuration: { $sum: '$duration' } } },
       { $sort: { totalDuration: -1 } },
-      { $limit: 20 }
+      { $limit: 10 }
     ]);
 
     // Populate user details for top users
     const topUsers = await Promise.all(topUsersAggregate.map(async (item) => {
-      const user = await User.findById(item._id).select('username email displayName avatarUrl plan');
+      const user = await User.findById(item._id).select('username email displayName avatarUrl avatarColor plan');
       return {
         _id: item._id,
         user: user ? user.toObject() : null,
@@ -47,7 +59,7 @@ export async function GET(req: NextRequest) {
     // Filter out null users (deleted users)
     const validTopUsers = topUsers.filter(u => u.user !== null);
 
-    // 4. Top Tracks
+    // 7. Top Tracks
     const topTracksAggregate = await ListeningHistory.aggregate([
       { $group: { _id: '$videoId', playCount: { $sum: 1 }, totalDuration: { $sum: '$duration' } } },
       { $sort: { playCount: -1 } },
@@ -100,6 +112,9 @@ export async function GET(req: NextRequest) {
       success: true,
       data: {
         totalUsers,
+        totalPlaylists,
+        activeUsers,
+        totalTracksPlayed: totalTracksPlayed.length,
         totalListeningSeconds,
         topUsers: validTopUsers,
         topTracks
@@ -108,9 +123,6 @@ export async function GET(req: NextRequest) {
 
   } catch (error: any) {
     console.error('Admin Analytics Error:', error);
-    if (error.name === 'ApiError') {
-      return handleApiError(error);
-    }
-    return NextResponse.json({ error: 'Failed to fetch analytics' }, { status: 500 });
+    return handleApiError(error);
   }
 }

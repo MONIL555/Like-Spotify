@@ -54,7 +54,7 @@ export async function searchYouTube(
 ): Promise<YTSearchResponse> {
   const params = new URLSearchParams({
     part: 'snippet',
-    q: type === 'video' ? `${query} official audio OR lyrics OR music video` : query,
+    q: type === 'video' ? `${query} official audio` : query,
     type: type === 'all' ? 'video,playlist,channel' : type,
     ...(type === 'video' ? { videoCategoryId: '10', videoEmbeddable: 'true' } : {}),
     maxResults: String(maxResults),
@@ -78,10 +78,10 @@ export async function searchYouTube(
   return {
     items: data.items
       ?.filter(
-        (item: Record<string, Record<string, string>>) => item.id?.videoId || item.id?.playlistId
+        (item: Record<string, Record<string, string>>) => item.id?.videoId || item.id?.playlistId || item.id?.channelId
       )
       .map((item: Record<string, Record<string, unknown>>) => ({
-        videoId: (item.id as Record<string, string>).videoId || (item.id as Record<string, string>).playlistId,
+        videoId: (item.id as Record<string, string>).videoId || (item.id as Record<string, string>).playlistId || (item.id as Record<string, string>).channelId,
         type: (item.id as Record<string, string>).kind?.replace('youtube#', '') || 'video',
         title: decodeHTMLEntities(
           (item.snippet as Record<string, string>).title

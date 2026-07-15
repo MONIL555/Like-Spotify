@@ -1,50 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiLimiter, checkRateLimit, getClientIp } from '@/lib/ratelimit';
 
+const SAAVN_API_BASE = 'https://saavn.dev/api';
+
 function cleanTitle(title: string) {
-  let cleaned = title
-    .replace(/^(?:Lyrical(?:\s*Video)?|Official(?:\s*Video|\s*Audio)?)[\s:-]+/i, '') // remove prefix Lyrical:
-    .replace(/\[.*?\]/g, '') // remove brackets
-    .replace(/\(.*?\)/g, '') // remove parentheses
-    .replace(/\|.*/g, '') // remove anything after pipe
-    .trim();
-    
-  // Only remove things after dash if it's clearly a video suffix
-  cleaned = cleaned.replace(/-(?:\s)*(?:Official|Lyrical|Audio|Video|8K|4K|HD|HQ).*/i, '');
+  if (!title) return '';
   
-  return cleaned.trim();
+  let cleaned = title
+    // Decode common HTML entities first
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    // Remove common video/audio prefixes
+    .replace(/^(?:Lyrical(?:\s*Video)?|Official(?:\s*Video|\s*Audio)?|Full\s*Song)[\s:-]+/i, '')
+    // Remove JioSaavn-style album references: (From "Album Name"), (From 'Album')
+    .replace(/\(From\s*["'][^"']*["']\)/gi, '')
+    // Remove brackets with content like [Official Video], [HD], [Lyric Video]
+    .replace(/\[.*?\]/g, '')
+    // Remove parenthetical content like (Official Video), (Audio), (Lyric), (Full Song)
+    .replace(/\(\s*(?:Official|Lyrical?|Audio|Video|Full|HD|HQ|4K|8K|Remix|Version|Original|Motion\s*Picture)[^)]*\)/gi, '')
+    // Remove remaining empty parentheses
+    .replace(/\(\s*\)/g, '')
+    // Remove quality suffixes like "- 320 Kbps", "- 128kbps"
+    .replace(/-\s*\d+\s*kbps/gi, '')
+    // Remove things after dash that are clearly video suffixes
+    .replace(/-(?:\s)*(?:Official|Lyrical|Audio|Video|8K|4K|HD|HQ).*/i, '')
+    // Remove anything after pipe
+    .replace(/\|.*/g, '')
+    .trim();
+
+  return cleaned;
 }
 
 function cleanArtist(artist: string) {
   if (!artist) return '';
   return artist
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
     .replace(/ - Topic/i, '')
     .replace(/VEVO/i, '')
     .trim();
 }
 
-async function transliterate(text: string) {
-  if (!text || !/[^\x00-\x7F]/.test(text)) {
-    // If empty or only contains ASCII characters, no need to transliterate
-    return text;
-  }
-  
+// Try to fetch lyrics from JioSaavn API
+async function fetchSaavnLyrics(saavnId: string): Promise<string | null> {
   try {
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=rm&q=${encodeURIComponent(text)}`;
-    const res = await fetch(url);
-    if (!res.ok) return text;
+    const res = await fetch(`${SAAVN_API_BASE}/songs/${saavnId}/lyrics`, {
+      next: { revalidate: 86400 },
+    });
     
-    const data = await res.json();
-    if (data && data[0] && Array.isArray(data[0])) {
-      const romanized = data[0].map((item: any) => item[3] || '').join('');
-      if (romanized.trim().length > 0) {
-        return romanized;
-      }
+    if (!res.ok) return null;
+    
+    const json = await res.json();
+    if (json.success && json.data?.lyrics) {
+      return json.data.lyrics;
     }
-    return text;
+    return null;
   } catch (error) {
-    console.error("Transliteration error:", error);
-    return text;
+    console.error('JioSaavn lyrics fetch error:', error);
+    return null;
   }
 }
 
@@ -56,30 +73,45 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const rawTrack = url.searchParams.get('track');
     const artist = url.searchParams.get('artist');
+    const saavnId = url.searchParams.get('saavnId');
+    const source = url.searchParams.get('source');
 
     if (!rawTrack) {
       return NextResponse.json({ error: 'Track title is required' }, { status: 400 });
     }
 
+    // 0. Try JioSaavn lyrics first if we have a saavnId
+    if (saavnId && (source === 'jiosaavn' || saavnId)) {
+      const saavnLyrics = await fetchSaavnLyrics(saavnId);
+      if (saavnLyrics) {
+        return NextResponse.json({
+          plainLyrics: saavnLyrics,
+          syncedLyrics: null,
+          source: 'jiosaavn',
+        });
+      }
+    }
+
+    // 1. Clean title and artist for lrclib lookup
     const track = cleanTitle(rawTrack);
     const cleanArt = cleanArtist(artist || '');
 
-    // 1. Try exact match first
+    const headers = { 'User-Agent': 'SpotTunes-NextJS/0.1.0' };
+
+    // 2. Try exact match first
     let fetchUrl = `https://lrclib.net/api/get?track_name=${encodeURIComponent(track)}`;
     if (cleanArt) {
       fetchUrl += `&artist_name=${encodeURIComponent(cleanArt)}`;
     }
 
-    const headers = { 'User-Agent': 'SpotTunes-NextJS/0.1.0' };
     let res = await fetch(fetchUrl, { headers, next: { revalidate: 86400 } });
-
     let foundData = null;
 
     if (res.ok) {
       foundData = await res.json();
     }
 
-    // 2. Fallback to search if not found or bad request
+    // 3. Fallback to search if not found or bad request
     if (!foundData && (res.status === 404 || res.status === 400)) {
       const query = cleanArt ? `${track} ${cleanArt}` : track;
       const searchUrl = `https://lrclib.net/api/search?q=${encodeURIComponent(query)}`;
@@ -93,7 +125,7 @@ export async function GET(req: NextRequest) {
         }
       }
       
-      // 3. Last fallback: search without artist if artist search failed
+      // 4. Last fallback: search without artist if artist search failed
       if (!foundData && cleanArt) {
         const fallbackUrl = `https://lrclib.net/api/search?q=${encodeURIComponent(track)}`;
         const fallbackRes = await fetch(fallbackUrl, { headers, next: { revalidate: 86400 } });
@@ -107,14 +139,12 @@ export async function GET(req: NextRequest) {
     }
 
     if (foundData) {
-      // Transliterate lyrics if needed
-      if (foundData.plainLyrics) {
-        foundData.plainLyrics = await transliterate(foundData.plainLyrics);
-      }
-      if (foundData.syncedLyrics) {
-        foundData.syncedLyrics = await transliterate(foundData.syncedLyrics);
-      }
-      return NextResponse.json(foundData);
+      // Return lyrics in their original language — no transliteration
+      return NextResponse.json({
+        plainLyrics: foundData.plainLyrics || null,
+        syncedLyrics: foundData.syncedLyrics || null,
+        source: 'lrclib',
+      });
     }
 
     return NextResponse.json({ error: 'Lyrics not found' }, { status: 404 });

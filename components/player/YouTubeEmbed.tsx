@@ -142,14 +142,14 @@ export function YouTubeEmbed() {
   }, [currentTrack]);
 
   useEffect(() => {
-    if (!currentTrack || !playerRef.current) return;
+    if (!currentTrack || !playerRef.current || !isActive) return;
 
-    // Always load by ID when the track changes or player becomes ready
+    // Only load by ID when YouTube is the active player
     if (typeof playerRef.current.loadVideoById === 'function') {
       playerRef.current.loadVideoById(currentTrack.videoId);
       // Wait for it to play, the onStateChange will handle the isPlaying state update
     }
-  }, [currentTrack, isApiReady]);
+  }, [currentTrack, isApiReady, isActive]);
 
   // ══════════════════════════════════════════════════════════════
   // 4. Sync Play/Pause State (Global toggle)
@@ -289,53 +289,71 @@ export function YouTubeEmbed() {
       silentAudioRef.current?.pause();
       wakeLockRef.current?.release().then(() => { wakeLockRef.current = null; }).catch(() => {});
     }
+  }, [isPlaying, isActive]);
 
-    if ('mediaSession' in navigator && currentTrack && isActive) {
-      const art = currentTrack.thumbnails?.high || currentTrack.thumbnails?.default;
-      const artwork = art ? [{ src: art, sizes: '512x512', type: 'image/jpeg' }] : [];
+  // 9a. Set Metadata only when track changes
+  useEffect(() => {
+    if (!isActive || !currentTrack || !('mediaSession' in navigator)) return;
 
-      try {
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: currentTrack.title || 'Unknown Title',
-          artist: currentTrack.artist || 'Unknown Artist',
-          album: currentTrack.albumName || 'Unknown Album',
-          artwork,
-        });
-      } catch { /* ignore */ }
+    const art = currentTrack.thumbnails?.high || currentTrack.thumbnails?.default;
+    const artwork = art ? [{ src: art, sizes: '512x512', type: 'image/jpeg' }] : [];
 
-      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
-
-      navigator.mediaSession.setActionHandler('play', () => {
-        audioContextRef.current?.resume().catch(() => {});
-        silentAudioRef.current?.play().catch(() => {});
-        if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
-          playerRef.current.playVideo();
-        }
-        setIsPlaying(true);
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: currentTrack.title || 'Unknown Title',
+        artist: currentTrack.artist || 'Unknown Artist',
+        album: currentTrack.albumName || 'Unknown Album',
+        artwork,
       });
+    } catch { /* ignore */ }
+  }, [isActive, currentTrack]);
 
-      navigator.mediaSession.setActionHandler('pause', () => {
-        silentAudioRef.current?.pause();
-        if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
-          playerRef.current.pauseVideo();
-        }
-        setIsPlaying(false);
-      });
+  // 9b. Update playback state only when playing state changes
+  useEffect(() => {
+    if (!isActive || !('mediaSession' in navigator)) return;
+    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+  }, [isActive, isPlaying]);
 
-      navigator.mediaSession.setActionHandler('previoustrack', () => {
-        audioContextRef.current?.resume().catch(() => {});
-        silentAudioRef.current?.play().catch(() => {});
-        const prev = playPrevious();
-        if (prev) setCurrentTrack(prev);
-      });
+  // 9c. Setup action handlers
+  useEffect(() => {
+    if (!isActive || !('mediaSession' in navigator)) return;
 
-      navigator.mediaSession.setActionHandler('nexttrack', () => {
-        audioContextRef.current?.resume().catch(() => {});
-        silentAudioRef.current?.play().catch(() => {});
-        handleAdvanceToNext();
-      });
-    }
-  }, [isPlaying, currentTrack, playNext, playPrevious, setCurrentTrack, setIsPlaying, handleAdvanceToNext]);
+    navigator.mediaSession.setActionHandler('play', () => {
+      audioContextRef.current?.resume().catch(() => {});
+      silentAudioRef.current?.play().catch(() => {});
+      if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
+        playerRef.current.playVideo();
+      }
+      setIsPlaying(true);
+    });
+
+    navigator.mediaSession.setActionHandler('pause', () => {
+      silentAudioRef.current?.pause();
+      if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
+        playerRef.current.pauseVideo();
+      }
+      setIsPlaying(false);
+    });
+
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+      audioContextRef.current?.resume().catch(() => {});
+      silentAudioRef.current?.play().catch(() => {});
+      const prev = playPrevious();
+      if (prev) setCurrentTrack(prev);
+    });
+
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+      audioContextRef.current?.resume().catch(() => {});
+      silentAudioRef.current?.play().catch(() => {});
+      handleAdvanceToNext();
+    });
+
+    navigator.mediaSession.setActionHandler('seekto', (details) => {
+      if (playerRef.current && typeof playerRef.current.seekTo === 'function' && details.seekTime !== undefined) {
+        playerRef.current.seekTo(details.seekTime, true);
+      }
+    });
+  }, [isActive, playPrevious, setCurrentTrack, setIsPlaying, handleAdvanceToNext]);
 
   return (
     <>

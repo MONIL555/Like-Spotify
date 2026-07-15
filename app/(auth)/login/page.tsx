@@ -17,7 +17,7 @@ export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
   
-  const { phoneAuthEnabled, fetchConfig } = useConfigStore();
+  const { phoneAuthEnabled, isLoading: configLoading, fetchConfig } = useConfigStore();
 
   useEffect(() => {
     fetchConfig();
@@ -204,7 +204,7 @@ export default function LoginPage() {
           <div className="flex-1 h-px bg-white/10"></div>
         </div>
 
-        {phoneAuthEnabled && (
+        {!configLoading && phoneAuthEnabled && (
           <div className="relative z-10 flex mb-6 bg-white/5 rounded-lg p-1 w-full max-w-[240px] mx-auto backdrop-blur-md border border-white/5">
             <button
               onClick={() => { setLoginMethod('email'); setError(''); }}

@@ -1,0 +1,1 @@
+const fs = require('fs'); const env = fs.readFileSync('.env.local', 'utf8'); process.env.YOUTUBE_API_KEY = env.match(/YOUTUBE_API_KEY=(.*)/)[1]; import('./lib/youtube.ts').then(yt => yt.searchYouTube('honey singh', 20, undefined, 'channel')).then(res => console.log(JSON.stringify(res, null, 2))).catch(console.error);

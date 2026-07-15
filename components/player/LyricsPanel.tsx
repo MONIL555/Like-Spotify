@@ -11,10 +11,11 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 export function LyricsPanel() {
   const { isLyricsOpen, toggleLyrics, currentTrack } = usePlayerStore();
   
-  const { data, isLoading, error } = useSWR(
-    isLyricsOpen && currentTrack ? `/api/lyrics?track=${encodeURIComponent(currentTrack.title)}&artist=${encodeURIComponent(currentTrack.artist || currentTrack.channelTitle || '')}` : null,
-    fetcher
-  );
+  const lyricsUrl = isLyricsOpen && currentTrack
+    ? `/api/lyrics?track=${encodeURIComponent(currentTrack.title)}&artist=${encodeURIComponent(currentTrack.artist || currentTrack.channelTitle || '')}${currentTrack.saavnId ? `&saavnId=${encodeURIComponent(currentTrack.saavnId)}` : ''}${currentTrack.source ? `&source=${currentTrack.source}` : ''}`
+    : null;
+
+  const { data, isLoading, error } = useSWR(lyricsUrl, fetcher);
 
   if (!isLyricsOpen) return null;
 

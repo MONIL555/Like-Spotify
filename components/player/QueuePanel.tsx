@@ -60,13 +60,19 @@ export function QueuePanel() {
         onClick={() => isUserQueue ? handlePlayFromUserQueue(track, index) : handlePlayFromQueue(track, index)}
       >
         <div className="relative h-12 w-12 shrink-0 rounded-lg overflow-hidden shadow-sm">
-          <Image 
-            src={typeof track.thumbnails?.default === 'string' ? track.thumbnails.default : (track.thumbnails?.default as any)?.url || ''} 
-            alt={track.title}
-            fill
-            sizes="48px"
-            className={cn("object-cover transition-opacity", !isCurrent && "group-hover:opacity-50")}
-          />
+          {typeof track.thumbnails?.default === 'string' && track.thumbnails.default || (track.thumbnails?.default as any)?.url ? (
+            <Image 
+              src={typeof track.thumbnails?.default === 'string' ? track.thumbnails.default : (track.thumbnails?.default as any)?.url || ''} 
+              alt={track.title}
+              fill
+              sizes="48px"
+              className={cn("object-cover transition-opacity", !isCurrent && "group-hover:opacity-50")}
+            />
+          ) : (
+            <div className="w-full h-full bg-surface-hover flex items-center justify-center">
+              <span className="text-muted-foreground font-bold">{track.title?.charAt(0)}</span>
+            </div>
+          )}
           {!isCurrent && (
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
               <Play className="h-5 w-5 fill-white text-white" />

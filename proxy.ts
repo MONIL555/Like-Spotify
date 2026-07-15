@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const PUBLIC_ROUTES = ['/login', '/register', '/forgot-password'];
-const PUBLIC_API_ROUTES = ['/api/auth/login', '/api/auth/register', '/api/auth/refresh'];
+const PUBLIC_API_ROUTES = ['/api/auth/login', '/api/auth/register', '/api/auth/refresh', '/api/test-search'];
 
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

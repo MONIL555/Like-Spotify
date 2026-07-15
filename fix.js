@@ -1,0 +1,1 @@
+const fs=require('fs'); const mongoose = require('mongoose'); const env = fs.readFileSync('.env.local', 'utf8'); const uri = env.match(/MONGODB_URI=(.*)/)[1]; mongoose.connect(uri).then(() => mongoose.connection.db.collection('appconfigs').updateOne({_id: 'global_config'}, {'': {youtubeFallbackEnabled: true}})).then(res => {console.log(res); process.exit(0)}).catch(console.error)

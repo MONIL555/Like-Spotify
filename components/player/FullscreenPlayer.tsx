@@ -30,19 +30,17 @@ export function FullscreenPlayer() {
     };
   }, [isFullscreen]);
 
-  const { data: lyricsData, isLoading: lyricsLoading } = useSWR(
-    currentTrack ? `/api/lyrics?track=${encodeURIComponent(currentTrack.title)}&artist=${encodeURIComponent(currentTrack.artist || currentTrack.channelTitle || '')}` : null,
-    fetcher
-  );
+  const lyricsUrl = currentTrack
+    ? `/api/lyrics?track=${encodeURIComponent(currentTrack.title)}&artist=${encodeURIComponent(currentTrack.artist || currentTrack.channelTitle || '')}${currentTrack.saavnId ? `&saavnId=${encodeURIComponent(currentTrack.saavnId)}` : ''}${currentTrack.source ? `&source=${currentTrack.source}` : ''}`
+    : null;
+
+  const { data: lyricsData, isLoading: lyricsLoading } = useSWR(lyricsUrl, fetcher);
 
   if (!currentTrack || !isFullscreen) return null;
 
-  const thumbnail = typeof currentTrack.thumbnails?.high === 'string' 
-    ? currentTrack.thumbnails.high 
-    : (currentTrack.thumbnails?.high as any)?.url || 
-      (typeof currentTrack.thumbnails?.default === 'string' 
-        ? currentTrack.thumbnails.default 
-        : (currentTrack.thumbnails?.default as any)?.url) || '';
+  const highThumb = typeof currentTrack.thumbnails?.high === 'string' ? currentTrack.thumbnails.high : (currentTrack.thumbnails?.high as any)?.url;
+  const defaultThumb = typeof currentTrack.thumbnails?.default === 'string' ? currentTrack.thumbnails.default : (currentTrack.thumbnails?.default as any)?.url;
+  const thumbnail = highThumb || defaultThumb || '';
 
   return (
     <div className="fixed inset-0 z-[100] bg-[#121212] animate-slide-up flex flex-col font-sans">
@@ -51,7 +49,7 @@ export function FullscreenPlayer() {
         <div 
           className="absolute inset-0 opacity-40 blur-[100px] scale-125 pointer-events-none transition-all duration-1000"
           style={{
-            backgroundImage: `url(${thumbnail})`,
+            backgroundImage: thumbnail ? `url(${thumbnail})` : 'none',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
@@ -108,15 +106,21 @@ export function FullscreenPlayer() {
               className="absolute inset-0 w-full h-full rounded-[32px] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.6)]"
               style={{ backfaceVisibility: 'hidden' }}
             >
-              <Image 
-                src={thumbnail} 
-                alt={currentTrack.title} 
-                fill
-                sizes="(max-width: 768px) 100vw, 50vw"
-                className="object-cover"
-                draggable={false}
-                priority
-              />
+              {thumbnail ? (
+                <Image 
+                  src={thumbnail} 
+                  alt={currentTrack.title} 
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover"
+                  draggable={false}
+                  priority
+                />
+              ) : (
+                <div className="w-full h-full bg-surface-hover flex items-center justify-center">
+                  <span className="text-4xl text-muted-foreground font-bold">{currentTrack.title?.charAt(0)}</span>
+                </div>
+              )}
               <div className="absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] rounded-[32px] pointer-events-none" />
               <div className="absolute bottom-4 right-6 pointer-events-none">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-white/70 bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-md">

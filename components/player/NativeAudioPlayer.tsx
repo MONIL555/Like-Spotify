@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { usePlayerStore } from '@/store/playerStore';
 import { useQueueStore } from '@/store/queueStore';
+import { useConfigStore } from '@/store/configStore';
 
 export function NativeAudioPlayer() {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -46,12 +47,23 @@ export function NativeAudioPlayer() {
           if (data.streamUrl) {
             setStreamUrl(data.streamUrl);
           } else {
-            // Fallback to youtube active player if stream fetch fails
-            usePlayerStore.getState().setActivePlayer('youtube');
+            // Check YouTube fallback flag before falling back
+            const { youtubeFallbackEnabled } = useConfigStore.getState();
+            if (youtubeFallbackEnabled) {
+              usePlayerStore.getState().setActivePlayer('youtube');
+            } else {
+              // YouTube disabled — skip this track
+              usePlayerStore.getState().advanceToNext();
+            }
           }
         })
         .catch(() => {
-          usePlayerStore.getState().setActivePlayer('youtube');
+          const { youtubeFallbackEnabled } = useConfigStore.getState();
+          if (youtubeFallbackEnabled) {
+            usePlayerStore.getState().setActivePlayer('youtube');
+          } else {
+            usePlayerStore.getState().advanceToNext();
+          }
         });
     }
   }, [currentTrack, isActive]);
@@ -89,20 +101,33 @@ export function NativeAudioPlayer() {
   }, []);
 
   // 5. Media Session (Lockscreen controls)
+  
+  // 5a. Set Metadata only when track changes
   useEffect(() => {
     if (!isActive || !currentTrack || !('mediaSession' in navigator)) return;
 
     const art = currentTrack.thumbnails?.high || currentTrack.thumbnails?.default;
     const artwork = art ? [{ src: art, sizes: '512x512', type: 'image/jpeg' }] : [];
 
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: currentTrack.title || 'Unknown Title',
-      artist: currentTrack.artist || 'Unknown Artist',
-      album: currentTrack.albumName || 'Unknown Album',
-      artwork,
-    });
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: currentTrack.title || 'Unknown Title',
+        artist: currentTrack.artist || 'Unknown Artist',
+        album: currentTrack.albumName || 'Unknown Album',
+        artwork,
+      });
+    } catch { /* ignore */ }
+  }, [isActive, currentTrack]);
 
+  // 5b. Update playback state only when playing state changes
+  useEffect(() => {
+    if (!isActive || !('mediaSession' in navigator)) return;
     navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+  }, [isActive, isPlaying]);
+
+  // 5c. Setup action handlers
+  useEffect(() => {
+    if (!isActive || !('mediaSession' in navigator)) return;
 
     navigator.mediaSession.setActionHandler('play', () => {
       audioRef.current?.play();
@@ -122,7 +147,13 @@ export function NativeAudioPlayer() {
     navigator.mediaSession.setActionHandler('nexttrack', () => {
       advanceToNext();
     });
-  }, [isActive, isPlaying, currentTrack, playPrevious, advanceToNext, setCurrentTrack, setIsPlaying]);
+    
+    navigator.mediaSession.setActionHandler('seekto', (details) => {
+      if (audioRef.current && details.seekTime !== undefined) {
+        audioRef.current.currentTime = details.seekTime;
+      }
+    });
+  }, [isActive, playPrevious, advanceToNext, setCurrentTrack, setIsPlaying]);
 
   const handleTimeUpdate = () => {
     if (audioRef.current && isActive) {
@@ -148,8 +179,13 @@ export function NativeAudioPlayer() {
 
   const handleError = () => {
     if (isActive) {
-      console.error('Native Audio Player Error, falling back to YouTube');
-      usePlayerStore.getState().setActivePlayer('youtube');
+      console.error('Native Audio Player Error, checking YouTube fallback...');
+      const { youtubeFallbackEnabled } = useConfigStore.getState();
+      if (youtubeFallbackEnabled) {
+        usePlayerStore.getState().setActivePlayer('youtube');
+      } else {
+        usePlayerStore.getState().advanceToNext();
+      }
     }
   };
 
