@@ -41,8 +41,7 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
 
   const handlePlay = () => {
     if (isDragging) return; // Prevent click if we just finished dragging
-    
-    const isNativeTrack = !!(track.streamUrl || track.saavnId);
+    const isNativeTrack = !!(track.streamUrl || track.saavnId || track.audioUrl || (track.source && (track.source.endsWith('_cached') || track.source === 'admin_manual')));
     
     if (typeof window !== 'undefined') {
       if (isCurrentTrack) {
@@ -79,6 +78,7 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
           artist: t.artist || t.channelName || t.channelTitle || 'Unknown Artist',
           channelId: t.channelId || '',
           albumName: t.albumName,
+          audioUrl: t.audioUrl,
           thumbnails: { default: typeof t.thumbnails?.default === 'string' ? t.thumbnails.default : (t.thumbnails?.default as any)?.url || '', high: typeof t.thumbnails?.high === 'string' ? t.thumbnails.high : (t.thumbnails?.high as any)?.url || '' },
           duration: t.duration || 0,
           durationText: t.durationText || (t.duration ? formatDuration(t.duration) : ''),
@@ -94,6 +94,7 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
           saavnId: track.saavnId,
           source: track.source,
           streamUrl: track.streamUrl,
+          audioUrl: track.audioUrl,
           title, artist,
           channelId: track.channelId || '',
           albumName: track.albumName,

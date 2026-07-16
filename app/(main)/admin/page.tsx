@@ -4,7 +4,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';
-import { Users, ListMusic, Activity, Clock, Music, TrendingUp, Shield } from 'lucide-react';
+import { Users, ListMusic, Activity, Clock, Music, TrendingUp, Shield, HardDrive } from 'lucide-react';
+import Link from 'next/link';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -95,13 +96,22 @@ export default function AdminPage() {
   return (
     <div className="py-2 md:py-6 px-4 md:px-8 flex flex-col gap-8 animate-fade-in pb-32">
       {/* Header */}
-      <div className="flex items-start justify-between w-full gap-2 md:gap-4">
-        <div className="flex flex-col justify-center min-w-0 flex-1 py-2">
-          <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-1 truncate">Admin Dashboard</h1>
-          <p className="text-sm md:text-base font-medium text-muted-foreground truncate">System overview & controls</p>
+      <div className="flex flex-col md:flex-row md:items-start justify-between w-full gap-4 md:gap-4">
+        <div className="flex items-start justify-between w-full md:w-auto">
+          <div className="flex flex-col justify-center min-w-0 py-2">
+            <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-1">Admin Dashboard</h1>
+            <p className="text-sm md:text-base font-medium text-muted-foreground">System overview & controls</p>
+          </div>
+          <div className="h-10 w-10 shrink-0 rounded-full bg-brand-primary/20 flex md:hidden items-center justify-center text-brand-primary ml-4 mt-2">
+            <Shield className="h-5 w-5" />
+          </div>
         </div>
-        <div className="shrink-0 mt-2 md:mt-4">
-          <div className="h-10 w-10 rounded-full bg-brand-primary/20 flex items-center justify-center text-brand-primary">
+        
+        <div className="flex items-center gap-3 md:mt-2">
+          <Link href="/admin/cached-tracks" className="text-sm bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full transition-colors flex items-center gap-2 font-medium">
+            <HardDrive className="w-4 h-4" /> Manage Cache
+          </Link>
+          <div className="h-10 w-10 shrink-0 rounded-full bg-brand-primary/20 hidden md:flex items-center justify-center text-brand-primary">
             <Shield className="h-5 w-5" />
           </div>
         </div>

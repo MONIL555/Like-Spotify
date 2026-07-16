@@ -71,7 +71,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
 
     let activePlayer: 'native' | 'youtube' = 'youtube';
-    if (track.streamUrl || track.saavnId) {
+    if (track.streamUrl || track.saavnId || (track.source && (track.source.endsWith('_cached') || track.source === 'admin_manual'))) {
       activePlayer = 'native';
     }
 

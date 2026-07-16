@@ -40,8 +40,8 @@ export default function MainLayout({
             <TopBar />
 
             {/* Page Content */}
-            <main className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar pb-32 md:pb-28 px-3 md:px-8 pt-2 md:pt-4">
-              <div className="mx-auto max-w-7xl h-full">
+            <main className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar px-3 md:px-8 pt-2 md:pt-4">
+              <div className="mx-auto max-w-7xl min-h-full pb-40 md:pb-32">
                 {children}
               </div>
             </main>

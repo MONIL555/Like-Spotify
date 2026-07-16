@@ -39,6 +39,11 @@ export function NativeAudioPlayer() {
       return;
     }
 
+    if ((currentTrack.source && (currentTrack.source.endsWith('_cached') || currentTrack.source === 'admin_manual')) && currentTrack.audioUrl) {
+      setStreamUrl(currentTrack.audioUrl);
+      return;
+    }
+
     if (currentTrack.saavnId) {
       // Fetch stream dynamically
       fetch(`/api/tracks/${currentTrack.saavnId}/stream`)

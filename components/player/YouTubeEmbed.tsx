@@ -147,9 +147,39 @@ export function YouTubeEmbed() {
     // Only load by ID when YouTube is the active player
     if (typeof playerRef.current.loadVideoById === 'function') {
       playerRef.current.loadVideoById(currentTrack.videoId);
+      
+      // Inform user about limited lockscreen
+      import('sonner').then(({ toast }) => {
+        toast('ℹ️ Playing via YouTube — lockscreen controls limited.', { 
+          description: 'Listen for 30s to unlock full background playback!',
+          duration: 5000 
+        });
+      });
       // Wait for it to play, the onStateChange will handle the isPlaying state update
     }
   }, [currentTrack, isApiReady, isActive]);
+
+  // ══════════════════════════════════════════════════════════════
+  // 3.5 Auto-Swap to Cached Version (If available)
+  // ══════════════════════════════════════════════════════════════
+  useEffect(() => {
+    if (isActive && currentTrack && currentTrack.source === 'youtube') {
+      // Check if it's already cached in the database
+      fetch(`/api/cache-track?videoId=${currentTrack.videoId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'ready' && data.track && data.track.audioUrl) {
+            // Swap to the cached track seamlessly
+            usePlayerStore.getState().setCurrentTrack({
+              ...currentTrack,
+              source: data.track.source || 'pagalworld_cached',
+              audioUrl: data.track.audioUrl,
+            });
+          }
+        })
+        .catch(err => console.error('Failed to check cache status:', err));
+    }
+  }, [currentTrack?.videoId, isActive]);
 
   // ══════════════════════════════════════════════════════════════
   // 4. Sync Play/Pause State (Global toggle)
@@ -181,8 +211,14 @@ export function YouTubeEmbed() {
   }, [volume, isMuted]);
 
   // ══════════════════════════════════════════════════════════════
-  // 6. Time Tracking Loop
+  // 6. Time Tracking Loop & PagalWorld Cache Trigger
   // ══════════════════════════════════════════════════════════════
+  const cacheRequestedRef = useRef(false);
+
+  useEffect(() => {
+    cacheRequestedRef.current = false;
+  }, [currentTrack?.videoId]);
+
   useEffect(() => {
     if (!isPlaying || !isActive) return;
 
@@ -190,14 +226,49 @@ export function YouTubeEmbed() {
       if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
         try { 
           const t = playerRef.current.getCurrentTime();
-          if (isFinite(t) && t > 0) setCurrentTime(t);
+          if (isFinite(t) && t > 0) {
+            setCurrentTime(t);
+            
+            // Check for caching after 30 seconds
+            if (t >= 30 && !cacheRequestedRef.current && currentTrack) {
+              cacheRequestedRef.current = true;
+              
+              import('sonner').then(({ toast }) => {
+                toast('🎵 Caching this song for lockscreen playback...', { duration: 3000 });
+              });
+              
+              fetch('/api/cache-track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  videoId: currentTrack.videoId,
+                  title: currentTrack.title,
+                  artist: currentTrack.artist
+                })
+              })
+              .then(res => res.json())
+              .then(data => {
+                if (data.status === 'ready') {
+                   if (data.message) {
+                     import('sonner').then(({ toast }) => {
+                       toast.success(`✅ "${currentTrack.title}" is now available with full lockscreen support!`);
+                     });
+                   }
+                } else if (data.error) {
+                   import('sonner').then(({ toast }) => {
+                       toast.error(`⚠️ Song couldn't be cached — lockscreen won't work for this track`);
+                   });
+                }
+              })
+              .catch(err => console.error('Failed to trigger cache:', err));
+            }
+          }
         } catch { /* ignore */ }
       }
     }, 250);
 
     return () => clearInterval(id);
-  }, [isPlaying, isActive, setCurrentTime]);
-
+  }, [isPlaying, isActive, setCurrentTime, currentTrack]);
   // ══════════════════════════════════════════════════════════════
   // 7. Global Expose for Seek and Sync Play (TrackRow.tsx)
   // ══════════════════════════════════════════════════════════════

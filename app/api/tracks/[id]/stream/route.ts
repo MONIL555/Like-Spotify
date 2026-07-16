@@ -26,6 +26,19 @@ export async function GET(
       return NextResponse.json({ streamUrl: track.streamUrl, source: 'jiosaavn' });
     }
 
+    // Check CachedTrack collection
+    try {
+      const connectDB = (await import('@/lib/mongodb')).default;
+      await connectDB();
+      const CachedTrack = (await import('@/models/CachedTrack')).default;
+      const cached = await CachedTrack.findOne({ videoId: id, status: 'ready' }).lean();
+      if (cached && cached.audioUrl) {
+        return NextResponse.json({ streamUrl: cached.audioUrl, source: 'pagalworld_cached' });
+      }
+    } catch (e) {
+      console.warn('Error checking CachedTrack:', e);
+    }
+
     return NextResponse.json({ error: 'Stream not found' }, { status: 404 });
   } catch (error: any) {
     console.error('Stream API Error:', error);

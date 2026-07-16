@@ -1,0 +1,214 @@
+import { parse } from 'node-html-parser';
+import { storageAdmin } from './firebase-admin';
+import { v4 as uuidv4 } from 'uuid';
+
+const BASE_URL = 'https://pagalnew.com';
+
+export interface PagalNewSearchResult {
+  title: string;
+  url: string;
+  slug: string;
+}
+
+export interface PagalNewSongDetails {
+  title: string;
+  album: string;
+  singers: string;
+  releaseDate: string;
+  coverUrl: string;
+  downloadUrl128: string | null;
+  downloadUrl320: string | null;
+}
+
+/**
+ * Searches PagalNew for a query
+ */
+export async function searchPagalNew(query: string): Promise<PagalNewSearchResult[]> {
+  try {
+    const encodedQuery = encodeURIComponent(query);
+    const searchUrl = `${BASE_URL}/search.php?find=${encodedQuery}`;
+    
+    const response = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
+
+    if (!response.ok) {
+      console.error(`PagalNew search failed: ${response.status} ${response.statusText}`);
+      return [];
+    }
+
+    const html = await response.text();
+    const root = parse(html);
+
+    const results: PagalNewSearchResult[] = [];
+    
+    // Find all links inside the main area
+    // Usually PagalNew search results are links pointing to /songs/
+    const anchorTags = root.querySelectorAll('a');
+    for (const a of anchorTags) {
+      const href = a.getAttribute('href');
+      if (href && href.includes('/songs/') && href.endsWith('.html')) {
+        const fullUrl = href.startsWith('http') ? href : `${BASE_URL}${href}`;
+        const slug = href.split('/').pop()?.replace('.html', '') || '';
+        
+        // The text often contains title - artist \n album
+        const text = a.text.trim();
+        
+        // Prevent exact duplicates in results
+        if (!results.find(r => r.url === fullUrl)) {
+          results.push({
+            title: text.split('\n')[0].trim(),
+            url: fullUrl,
+            slug
+          });
+        }
+      }
+    }
+
+    return results;
+  } catch (error) {
+    console.error('Error searching PagalNew:', error);
+    return [];
+  }
+}
+
+/**
+ * Scrapes the download page for song details
+ */
+export async function scrapePagalNewSongPage(url: string): Promise<PagalNewSongDetails | null> {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
+
+    if (!response.ok) {
+      console.error(`PagalNew page scrape failed: ${response.status} ${response.statusText}`);
+      return null;
+    }
+
+    const html = await response.text();
+    const root = parse(html);
+
+    // Extract title
+    const titleEl = root.querySelector('h1');
+    const title = titleEl ? titleEl.text.trim() : 'Unknown Title';
+
+    // Extract metadata
+    // Often in <div class="list-group"> -> <div class="list-group-item">
+    let album = '';
+    let singers = '';
+    let releaseDate = '';
+
+    const listItems = root.querySelectorAll('.list-group-item');
+    for (const item of listItems) {
+      const text = item.text;
+      if (text.includes('Album')) {
+        album = item.querySelector('a')?.text.trim() || '';
+      } else if (text.includes('Singer')) {
+        singers = item.querySelectorAll('a').map(a => a.text.trim()).join(', ');
+      } else if (text.includes('Release')) {
+        releaseDate = text.replace('Release:', '').trim();
+      }
+    }
+
+    // Extract cover
+    const coverEl = root.querySelector('.img-thumbnail');
+    let coverUrl = coverEl?.getAttribute('src') || '';
+    if (coverUrl && !coverUrl.startsWith('http')) {
+      coverUrl = `${BASE_URL}${coverUrl.startsWith('/') ? '' : '/'}${coverUrl}`;
+    }
+
+    // Extract download links
+    let downloadUrl128 = null;
+    let downloadUrl320 = null;
+    
+    const downloadBtns = root.querySelectorAll('a');
+    for (const btn of downloadBtns) {
+      const text = btn.text.toLowerCase();
+      const href = btn.getAttribute('href');
+      if (href) {
+        const absoluteHref = href.startsWith('http') ? href : `${BASE_URL}${href.startsWith('/') ? '' : '/'}${href}`;
+        if (text.includes('128 kbps') || href.includes('128-downloads')) {
+          downloadUrl128 = absoluteHref;
+        } else if (text.includes('320 kbps') || href.includes('320-downloads')) {
+          downloadUrl320 = absoluteHref;
+        }
+      }
+    }
+
+    // Resolve the actual MP3 direct URLs via 301 redirects
+    if (downloadUrl128) downloadUrl128 = await resolveRedirect(downloadUrl128);
+    if (downloadUrl320) downloadUrl320 = await resolveRedirect(downloadUrl320);
+
+    return {
+      title,
+      album,
+      singers,
+      releaseDate,
+      coverUrl,
+      downloadUrl128,
+      downloadUrl320
+    };
+  } catch (error) {
+    console.error('Error scraping PagalNew page:', error);
+    return null;
+  }
+}
+
+async function resolveRedirect(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, { redirect: 'manual' });
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get('location');
+      if (location) return location;
+    } else if (res.status === 200) {
+      return url; // It wasn't a redirect, it's the direct link
+    }
+  } catch (e) {
+    console.error('Failed to resolve redirect:', e);
+  }
+  return url;
+}
+
+/**
+ * Downloads the MP3 from PagalNew and uploads it to Firebase Storage.
+ */
+export async function cachePagalNewSongAudio(songDetails: PagalNewSongDetails, videoId: string) {
+  let downloadUrl = songDetails.downloadUrl128 || songDetails.downloadUrl320;
+  
+  if (!downloadUrl) {
+    throw new Error('No download URL found on PagalNew page');
+  }
+
+  // We will no longer upload to Firebase Storage to bypass costs.
+  // Instead, we fetch just the headers to get the file size.
+  const response = await fetch(downloadUrl, {
+    method: 'HEAD',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Referer': 'https://pagalnew.com/'
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to access audio from PagalNew: ${response.statusText}`);
+  }
+
+  const contentLength = response.headers.get('content-length');
+  const sizeBytes = contentLength ? parseInt(contentLength, 10) : 0;
+  
+  // Return the relative proxy URL
+  const proxyUrl = `/api/stream-proxy?url=${encodeURIComponent(downloadUrl)}`;
+  const bitrateStr = downloadUrl.includes('320') ? 320 : 128;
+
+  return {
+    url: proxyUrl,
+    format: 'mp3',
+    size: sizeBytes,
+    bitrate: bitrateStr,
+  };
+}

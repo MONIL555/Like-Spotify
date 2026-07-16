@@ -15,8 +15,9 @@ export interface Track {
   _id?: string;
   videoId: string; // Used as fallback / YouTube ID
   saavnId?: string; // JioSaavn ID
-  source?: 'youtube' | 'jiosaavn';
-  streamUrl?: string; // Direct audio URL
+  source?: 'youtube' | 'jiosaavn' | 'pagalworld_cached' | 'pagalnew_cached' | 'admin_manual' | string;
+  streamUrl?: string; // Direct audio URL (JioSaavn)
+  audioUrl?: string; // Direct audio URL (PagalWorld cached)
   title: string;
   artist: string;
   channelId: string;

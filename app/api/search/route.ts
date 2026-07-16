@@ -50,13 +50,44 @@ export async function GET(req: NextRequest) {
     // 3. Check Database Cache
     await connectDB();
     
-    const cachedResult = await SearchCache.findOne({ 
+    // Step 3.5: Fetch from CachedTrack (PagalWorld cached tracks)
+    const CachedTrack = (await import('@/models/CachedTrack')).default;
+    let localCachedTracks: any[] = [];
+    if (validated.type === 'video' || validated.type === 'all') {
+      const dbCachedTracks = await CachedTrack.find(
+        { $text: { $search: validated.q }, status: 'ready' },
+        { score: { $meta: 'textScore' } }
+      ).sort({ score: { $meta: 'textScore' } }).limit(5).lean();
+
+      localCachedTracks = dbCachedTracks.map((ct: any) => ({
+        videoId: ct.videoId,
+        title: ct.title,
+        artist: ct.artist,
+        channelTitle: ct.channelTitle,
+        channelId: ct.channelId,
+        thumbnails: ct.thumbnails,
+        duration: ct.duration,
+        durationText: ct.durationText,
+        source: 'pagalworld_cached',
+        audioUrl: ct.audioUrl,
+      }));
+    }
+    
+    const searchCacheResult = await SearchCache.findOne({ 
       query: validated.q, 
       type: validated.type 
     }).lean();
 
-    if (cachedResult && JSON.parse(cachedResult.results).items?.length > 0) {
-      return NextResponse.json(JSON.parse(cachedResult.results));
+    if (searchCacheResult && JSON.parse(searchCacheResult.results).items?.length > 0) {
+      const parsedResults = JSON.parse(searchCacheResult.results);
+      
+      // Deduplicate: remove items from parsedResults that match videoId in localCachedTracks
+      const localIds = new Set(localCachedTracks.map(t => t.videoId));
+      parsedResults.items = parsedResults.items.filter((item: any) => !localIds.has(item.videoId));
+      
+      // Prepend local cached tracks
+      parsedResults.items = [...localCachedTracks, ...parsedResults.items];
+      return NextResponse.json(parsedResults);
     }
 
     // 4. Try JioSaavn API First
@@ -120,6 +151,13 @@ export async function GET(req: NextRequest) {
       { results: JSON.stringify({ ...searchData, source }) },
       { upsert: true, new: true }
     );
+
+    // Deduplicate from fetched results
+    const localIds = new Set(localCachedTracks.map(t => t.videoId));
+    if (searchData.items) {
+      searchData.items = (searchData.items as any[]).filter((item: any) => !localIds.has(item.videoId));
+      searchData.items = [...localCachedTracks, ...(searchData.items as any[])] as any;
+    }
 
     return NextResponse.json({ ...searchData, source });
 
