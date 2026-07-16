@@ -52,5 +52,12 @@
     "prettier": "^3.9.1",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "firebase-admin": {
+      "jwks-rsa": {
+        "jose": "4.15.5"
+      }
+    }
   }
 }

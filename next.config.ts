@@ -48,7 +48,7 @@ const nextConfig: NextConfig = {
     ];
   },
   // Optimize server-side packages
-  serverExternalPackages: ['mongoose', 'jsonwebtoken', 'bcryptjs'],
+  serverExternalPackages: ['mongoose', 'jsonwebtoken', 'bcryptjs', 'firebase-admin'],
 };
 
 export default nextConfig;
