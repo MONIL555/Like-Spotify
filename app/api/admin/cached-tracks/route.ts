@@ -3,6 +3,8 @@ import connectDB from '@/lib/mongodb';
 import CachedTrack from '@/models/CachedTrack';
 import { storageAdmin } from '@/lib/firebase-admin';
 
+export const dynamic = 'force-dynamic';
+
 // Protect these routes to admin only? 
 // For now, assume it's protected by middleware or we can add a simple check if needed.
 
