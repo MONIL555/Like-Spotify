@@ -19,7 +19,10 @@ export async function GET(req: NextRequest) {
     }
     
     if (search) {
-      query.$text = { $search: search };
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { artist: { $regex: search, $options: 'i' } }
+      ];
     }
 
     const tracks = await CachedTrack.find(query).sort({ createdAt: -1 }).limit(100).lean();

@@ -6,7 +6,7 @@
 
 import { useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { useAuthStore } from '@/store/authStore';
 import type { UserPublic, ApiResponse } from '@/types';
 
@@ -102,6 +102,8 @@ export function useAuth() {
     [mutate, router]
   );
 
+  const { mutate: globalMutate } = useSWRConfig();
+
   const logout = useCallback(async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
@@ -109,9 +111,9 @@ export function useAuth() {
       // Continue with client-side logout even if API fails
     }
     storeLogout();
-    await mutate(undefined, { revalidate: false });
+    await globalMutate(() => true, undefined, { revalidate: false });
     router.push('/login');
-  }, [storeLogout, mutate, router]);
+  }, [storeLogout, globalMutate, router]);
 
   return {
     user,

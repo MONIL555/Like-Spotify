@@ -14,13 +14,14 @@ export async function GET(req: NextRequest) {
     
     const jwtUser = verifyAccessToken(token);
 
-    if (jwtUser.role === 'admin') {
-      return NextResponse.json([]);
-    }
-
     await connectDB();
+    
+    // Handle admin string ID differently to prevent Mongoose CastError
+    const query = jwtUser.userId === 'admin' 
+      ? { userId: null } // Admins shouldn't have normal playlists, or we can use a special ID. For now return empty or allow creation.
+      : { userId: jwtUser.userId };
 
-    const playlists = await Playlist.find({ userId: jwtUser.userId }).sort({ createdAt: -1 }).lean();
+    const playlists = await Playlist.find(query).sort({ createdAt: -1 }).lean();
 
     return NextResponse.json(playlists);
   } catch (error: any) {
