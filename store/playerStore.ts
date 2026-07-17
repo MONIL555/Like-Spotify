@@ -25,6 +25,7 @@ interface PlayerState {
   contextPlaylistId: string | null;
   isPlayerReady: boolean;
   activePlayer: 'native' | 'youtube'; // New
+  isFetchingMix: boolean;
 
   // Actions
   setCurrentTrack: (track: Track | null) => void;
@@ -42,6 +43,7 @@ interface PlayerState {
   setActivePlayer: (player: 'native' | 'youtube') => void;
   reset: () => void;
   advanceToNext: () => Promise<void>;
+  fetchMixForTrack: (track: Track) => Promise<void>;
 }
 
 const initialState = {
@@ -57,6 +59,7 @@ const initialState = {
   contextPlaylistId: null,
   isPlayerReady: false,
   activePlayer: 'youtube' as const,
+  isFetchingMix: false,
 };
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
@@ -127,34 +130,95 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   reset: () => set(initialState),
 
-  advanceToNext: async () => {
-    const { currentTrack, setCurrentTrack, setIsPlaying } = get();
-    let next = useQueueStore.getState().playNext(currentTrack);
+  /**
+   * Fetch a mix for the given track and populate the autoplay queue.
+   * Called immediately when a single song starts playing, and again
+   * when the autoplay queue runs low during playback (infinite radio).
+   */
+  fetchMixForTrack: async (track: Track) => {
+    const { isFetchingMix } = get();
+    if (isFetchingMix) return; // prevent concurrent fetches
 
-    // AUTOPLAY LOGIC
-    if (!next && currentTrack) {
-      const user = useAuthStore.getState().user as any;
-      const autoplayEnabled = user?.preferences?.autoplay !== false;
+    const user = useAuthStore.getState().user as any;
+    const autoplayEnabled = user?.preferences?.autoplay !== false;
+    if (!autoplayEnabled) return;
 
-      if (autoplayEnabled) {
-        try {
-          console.log(`[Autoplay] Queue empty, fetching mix for: ${currentTrack.title}...`);
-          const res = await fetch(`/api/autoplay?videoId=${currentTrack.videoId}&artist=${encodeURIComponent(currentTrack.artist || '')}&title=${encodeURIComponent(currentTrack.title || '')}`);
-          const data = await res.json();
-          if (data.playlist && data.playlist.length > 0) {
-            useQueueStore.getState().addMultipleToQueue(data.playlist);
-            next = useQueueStore.getState().playNext(null);
-          }
-        } catch (err) {
-          console.error('[Autoplay] Failed to fetch next tracks', err);
+    set({ isFetchingMix: true });
+
+    try {
+      const skipIds = useQueueStore.getState().getPlayedVideoIds();
+      const skipParam = skipIds.length > 0 ? `&skipVideoIds=${skipIds.join(',')}` : '';
+      
+      console.log(`[Autoplay] Fetching mix for: ${track.title}...`);
+      const res = await fetch(
+        `/api/autoplay?videoId=${track.videoId}&artist=${encodeURIComponent(track.artist || '')}&title=${encodeURIComponent(track.title || '')}${skipParam}`
+      );
+      const data = await res.json();
+
+      if (data.playlist && data.playlist.length > 0) {
+        // Filter out the currently playing track and any already in queue
+        const currentVideoId = get().currentTrack?.videoId;
+        const existingIds = new Set([
+          ...useQueueStore.getState().autoplayQueue.map(t => t.videoId),
+          ...useQueueStore.getState().userQueue.map(t => t.videoId),
+          ...skipIds,
+          ...(currentVideoId ? [currentVideoId] : []),
+        ]);
+
+        const newTracks = data.playlist.filter(
+          (t: any) => !existingIds.has(t.videoId)
+        );
+
+        if (newTracks.length > 0) {
+          useQueueStore.getState().appendAutoplayQueue(newTracks);
+          console.log(`[Autoplay] Added ${newTracks.length} tracks to mix queue`);
         }
       }
+    } catch (err) {
+      console.error('[Autoplay] Failed to fetch mix tracks', err);
+    } finally {
+      set({ isFetchingMix: false });
+    }
+  },
+
+  advanceToNext: async () => {
+    const { currentTrack, setCurrentTrack, setIsPlaying, fetchMixForTrack } = get();
+    const queueState = useQueueStore.getState();
+    let next = queueState.playNext(currentTrack);
+
+    // If no next track, attempt autoplay if source is 'single'
+    if (!next && currentTrack) {
+      const { playbackSource } = useQueueStore.getState();
+
+      if (playbackSource === 'single') {
+        // Source is single — try to fetch more mix tracks
+        const user = useAuthStore.getState().user as any;
+        const autoplayEnabled = user?.preferences?.autoplay !== false;
+
+        if (autoplayEnabled) {
+          try {
+            console.log(`[Autoplay] Queue empty, fetching more mix for: ${currentTrack.title}...`);
+            await fetchMixForTrack(currentTrack);
+            // Try again after fetching
+            next = useQueueStore.getState().playNext(null);
+          } catch (err) {
+            console.error('[Autoplay] Failed to fetch next tracks', err);
+          }
+        }
+      }
+      // If source is 'playlist', we do NOT autoplay — playlist ends naturally
     }
 
     if (next) {
       setCurrentTrack(next);
-      // Wait a tick to ensure state is updated before iframe plays
       setTimeout(() => setIsPlaying(true), 50);
+
+      // Pre-fetch next batch if autoplay queue is running low (< 3 tracks)
+      const { autoplayQueue, playbackSource } = useQueueStore.getState();
+      if (playbackSource === 'single' && autoplayQueue.length < 3) {
+        // Fetch more mix tracks in the background using the new current track
+        fetchMixForTrack(next);
+      }
     } else {
       setCurrentTrack(null);
       setIsPlaying(false);

@@ -65,8 +65,8 @@ export function HomeDashboard() {
   // Trending Bollywood data (Tracks)
   const { data: trendingData, isLoading: trendingLoading } = useSWR(`/api/search?q=Top+Bollywood+Hits+${currentYear}&type=video`, fetcher, SWR_OPTIONS);
 
-  const { loadPlaylist, shuffleQueue } = useQueueStore();
-  const { setCurrentTrack } = usePlayerStore();
+  const { loadPlaylist, loadSingle, shuffleQueue } = useQueueStore();
+  const { setCurrentTrack, fetchMixForTrack } = usePlayerStore();
 
   const handlePlayTrack = useCallback((track: any, contextList?: any[], index?: number) => {
     if (typeof window !== 'undefined' && (window as any).playVideoSync) {
@@ -75,19 +75,34 @@ export function HomeDashboard() {
       (window as any).playSilentAudio();
     }
 
-    if (contextList && contextList.length > 0 && typeof index === 'number') {
-      const nextTrack = loadPlaylist(contextList, index);
-      if (nextTrack) setCurrentTrack(nextTrack);
-    } else {
-      const nextTrack = loadPlaylist([track], 0);
-      if (nextTrack) setCurrentTrack(nextTrack);
-    }
-  }, [loadPlaylist, setCurrentTrack]);
+    // Always use loadSingle for home page plays — triggers autoplay mix
+    const trackData = {
+      videoId: track.videoId || track.id,
+      title: track.title || 'Unknown Title',
+      artist: track.artist || track.channelName || track.channelTitle || 'Unknown Artist',
+      channelId: track.channelId || '',
+      albumName: track.albumName,
+      thumbnails: {
+        default: track.thumbnail || track.thumbnails?.default || '',
+        high: track.thumbnail || track.thumbnails?.high || '',
+      },
+      duration: track.duration || 0,
+      durationText: track.durationText || '',
+      tags: [],
+      playCount: 0,
+      likeCount: 0,
+      cachedAt: new Date().toISOString(),
+    };
+    loadSingle(trackData);
+    setCurrentTrack(trackData);
+    // Immediately fetch mix in the background
+    fetchMixForTrack(trackData);
+  }, [loadSingle, setCurrentTrack, fetchMixForTrack]);
 
   const handleShufflePlaylist = useCallback((playlist: any) => {
     if (playlist.tracks && playlist.tracks.length > 0) {
       const shuffledTracks = [...playlist.tracks].sort(() => Math.random() - 0.5);
-      const nextTrack = loadPlaylist(shuffledTracks, 0);
+      const nextTrack = loadPlaylist(shuffledTracks, 0, 'playlist');
       shuffleQueue();
       if (nextTrack) {
         if (typeof window !== 'undefined' && (window as any).playVideoSync) {

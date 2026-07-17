@@ -20,7 +20,7 @@ export default function LikedSongsPage() {
 
   const handlePlayAll = () => {
     if (tracks.length > 0) {
-      const nextTrack = loadPlaylist(tracks, 0);
+      const nextTrack = loadPlaylist(tracks, 0, 'playlist');
       if (nextTrack) setCurrentTrack(nextTrack);
     }
   };
@@ -28,7 +28,7 @@ export default function LikedSongsPage() {
   const handleShuffle = () => {
     if (tracks.length > 0) {
       const shuffledTracks = [...tracks].sort(() => Math.random() - 0.5);
-      const nextTrack = loadPlaylist(shuffledTracks, 0);
+      const nextTrack = loadPlaylist(shuffledTracks, 0, 'playlist');
       shuffleQueue();
       if (nextTrack) setCurrentTrack(nextTrack);
     }
@@ -109,6 +109,7 @@ export default function LikedSongsPage() {
                 track={track} 
                 index={i}
                 contextTracks={tracks}
+                isPlaylistContext={true}
               />
             ))}
           </div>

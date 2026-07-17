@@ -78,7 +78,14 @@ export function NativeAudioPlayer() {
     if (!audioRef.current || !isActive || !streamUrl) return;
 
     if (isPlaying) {
-      audioRef.current.play().catch(e => console.error('Native Audio Play Error:', e));
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(e => {
+          if (e.name !== 'AbortError') {
+            console.error('Native Audio Play Error:', e);
+          }
+        });
+      }
     } else {
       audioRef.current.pause();
     }
@@ -205,7 +212,6 @@ export function NativeAudioPlayer() {
       onEnded={handleEnded}
       onError={handleError}
       className="hidden"
-      autoPlay={isPlaying}
     />
   );
 }

@@ -16,6 +16,14 @@ export const useHistoryStore = create<HistoryState>()(
     (set) => ({
       recentlyPlayed: [],
       addToHistory: (track) => set((state) => {
+        // Only add songs belonging to JioSaavn or cached sources (no YouTube)
+        const isJioSaavn = track.source === 'jiosaavn' || !!track.saavnId;
+        const isCached = track.source?.includes('cached');
+        
+        if (!isJioSaavn && !isCached) {
+          return state;
+        }
+
         // Remove it if it already exists to put it at the front (most recent first)
         const filtered = state.recentlyPlayed.filter((t) => t.videoId !== track.videoId);
         return {

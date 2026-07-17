@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
-import { ChevronLeft, ChevronRight, User, Settings, LogOut, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User, Settings, LogOut, Search, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { Avatar } from '@/components/ui/avatar';
@@ -129,6 +129,10 @@ export function TopBar() {
               <DropdownMenuItem onClick={() => router.push('/settings')}>
                 <Settings className="mr-3 h-4 w-4" />
                 <span className="font-semibold">Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push('/help')}>
+                <HelpCircle className="mr-3 h-4 w-4" />
+                <span className="font-semibold">Help & Features</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout} className="text-destructive hover:text-destructive">

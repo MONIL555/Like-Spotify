@@ -63,12 +63,18 @@ export function useAuth() {
         body: JSON.stringify({ email, password }),
       });
 
-      const json = await res.json();
-
       if (!res.ok) {
-        throw new Error(json.error || 'Login failed');
+        let errorMsg = 'Login failed';
+        try {
+          const json = await res.json();
+          errorMsg = json.error || errorMsg;
+        } catch {
+          errorMsg = `Server error: ${res.status} ${res.statusText}`;
+        }
+        throw new Error(errorMsg);
       }
 
+      const json = await res.json();
       await mutate();
       router.push('/');
       return json;
@@ -89,12 +95,18 @@ export function useAuth() {
         body: JSON.stringify(data),
       });
 
-      const json = await res.json();
-
       if (!res.ok) {
-        throw new Error(json.error || 'Registration failed');
+        let errorMsg = 'Registration failed';
+        try {
+          const json = await res.json();
+          errorMsg = json.error || errorMsg;
+        } catch {
+          errorMsg = `Server error: ${res.status} ${res.statusText}`;
+        }
+        throw new Error(errorMsg);
       }
 
+      const json = await res.json();
       await mutate();
       router.push('/');
       return json;

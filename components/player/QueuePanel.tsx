@@ -2,7 +2,7 @@
 
 import { usePlayerStore } from '@/store/playerStore';
 import { useQueueStore } from '@/store/queueStore';
-import { X, Play } from 'lucide-react';
+import { X, Play, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
@@ -11,18 +11,14 @@ import Image from 'next/image';
 
 export function QueuePanel() {
   const { isQueueOpen, toggleQueue, currentTrack, setCurrentTrack } = usePlayerStore();
-  const { userQueue, queue, loadPlaylist, playNext } = useQueueStore();
+  const { userQueue, queue, autoplayQueue, playbackSource, loadPlaylist, playNext } = useQueueStore();
 
   if (!isQueueOpen) return null;
 
   const handlePlayFromUserQueue = (track: any, index: number) => {
-    // We want to skip ahead to this track in the user queue.
-    // Simplest way is to just call playNext until we hit it, or manually set it.
-    // For manual set without skipping history cleanly, we can just load it directly.
-    // Ideally we should remove it from userQueue.
     const state = useQueueStore.getState();
     const newUserQueue = [...state.userQueue];
-    newUserQueue.splice(0, index + 1); // remove all up to and including this track
+    newUserQueue.splice(0, index + 1);
     useQueueStore.setState({ userQueue: newUserQueue });
     
     if (typeof window !== 'undefined' && (window as any).playVideoSync) {
@@ -35,9 +31,7 @@ export function QueuePanel() {
   };
 
   const handlePlayFromQueue = (track: any, index: number) => {
-    // In our queueStore, the 'queue' array represents the entire current playlist context.
-    // To play a specific track, we just need to set it as current, and the queueStore handles the rest.
-    const newTrack = loadPlaylist(queue, index);
+    const newTrack = loadPlaylist(queue, index, 'playlist');
     if (newTrack) {
       if (typeof window !== 'undefined' && (window as any).playVideoSync) {
         (window as any).playVideoSync(newTrack.videoId);
@@ -48,16 +42,38 @@ export function QueuePanel() {
     }
   };
 
-  const renderTrack = (track: any, index: number, isUserQueue: boolean) => {
+  const handlePlayFromAutoplay = (track: any, index: number) => {
+    // Remove tracks before this one from autoplay queue
+    const state = useQueueStore.getState();
+    const newAutoplayQueue = [...state.autoplayQueue];
+    newAutoplayQueue.splice(0, index + 1);
+    useQueueStore.setState({ autoplayQueue: newAutoplayQueue });
+    
+    if (typeof window !== 'undefined' && (window as any).playVideoSync) {
+      (window as any).playVideoSync(track.videoId);
+    } else if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
+      (window as any).playSilentAudio();
+    }
+    
+    setCurrentTrack(track);
+  };
+
+  const renderTrack = (track: any, index: number, queueType: 'user' | 'playlist' | 'autoplay') => {
     const isCurrent = currentTrack?.videoId === track.videoId;
+    const handleClick = () => {
+      if (queueType === 'user') handlePlayFromUserQueue(track, index);
+      else if (queueType === 'playlist') handlePlayFromQueue(track, index);
+      else handlePlayFromAutoplay(track, index);
+    };
+
     return (
       <div 
-        key={`${isUserQueue ? 'uq' : 'q'}-${track.videoId}-${index}`}
+        key={`${queueType}-${track.videoId}-${index}`}
         className={cn(
           "flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer group",
           isCurrent ? "clay-inset bg-brand-primary/10" : "hover:bg-surface-hover hover:scale-[1.02]"
         )}
-        onClick={() => isUserQueue ? handlePlayFromUserQueue(track, index) : handlePlayFromQueue(track, index)}
+        onClick={handleClick}
       >
         <div className="relative h-12 w-12 shrink-0 rounded-lg overflow-hidden shadow-sm">
           {typeof track.thumbnails?.default === 'string' && track.thumbnails.default || (track.thumbnails?.default as any)?.url ? (
@@ -107,7 +123,7 @@ export function QueuePanel() {
     );
   };
 
-  const totalTracks = userQueue.length + queue.length;
+  const totalTracks = userQueue.length + queue.length + autoplayQueue.length;
 
   return (
     <div className="fixed top-0 right-0 h-[calc(100vh-100px)] w-full max-w-sm z-40 p-4 md:p-6 animate-fade-in pointer-events-none">
@@ -130,16 +146,30 @@ export function QueuePanel() {
             </div>
           ) : (
             <>
+              {/* User Queue — highest priority */}
               {userQueue.length > 0 && (
                 <div className="mb-4">
                   <h3 className="text-sm font-bold text-muted-foreground mb-2 px-3 uppercase tracking-wider">Up Next</h3>
-                  {userQueue.map((track: any, index: number) => renderTrack(track, index, true))}
+                  {userQueue.map((track: any, index: number) => renderTrack(track, index, 'user'))}
                 </div>
               )}
-              {queue.length > 0 && (
+
+              {/* Playlist Context — only when playing from a playlist */}
+              {playbackSource === 'playlist' && queue.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-sm font-bold text-muted-foreground mb-2 px-3 uppercase tracking-wider">From Playlist</h3>
+                  {queue.map((track: any, index: number) => renderTrack(track, index, 'playlist'))}
+                </div>
+              )}
+
+              {/* Autoplay Mix — only when playing a single song */}
+              {playbackSource === 'single' && autoplayQueue.length > 0 && (
                 <div>
-                  {userQueue.length > 0 && <h3 className="text-sm font-bold text-muted-foreground mb-2 px-3 uppercase tracking-wider">From Context</h3>}
-                  {queue.map((track: any, index: number) => renderTrack(track, index, false))}
+                  <h3 className="text-sm font-bold text-muted-foreground mb-2 px-3 uppercase tracking-wider flex items-center gap-2">
+                    <Sparkles className="h-3.5 w-3.5 text-brand-primary" />
+                    Autoplay Mix
+                  </h3>
+                  {autoplayQueue.map((track: any, index: number) => renderTrack(track, index, 'autoplay'))}
                 </div>
               )}
             </>

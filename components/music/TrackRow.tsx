@@ -22,14 +22,16 @@ interface TrackRowProps {
   showCover?: boolean;
   onRemove?: () => void;
   contextTracks?: any[];
+  isPlaylistContext?: boolean;
 }
 
-export function TrackRow({ track, index, showCover = true, onRemove, contextTracks }: TrackRowProps) {
+export function TrackRow({ track, index, showCover = true, onRemove, contextTracks, isPlaylistContext = false }: TrackRowProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const { currentTrack, isPlaying, togglePlay, setCurrentTrack } = usePlayerStore();
-  const { loadPlaylist, addToQueue } = useQueueStore();
+  const { loadPlaylist, loadSingle, addToQueue } = useQueueStore();
+  const { fetchMixForTrack } = usePlayerStore();
   const { data: playlists } = useSWR('/api/playlists', fetcher);
   
   const isCurrentTrack = currentTrack?.videoId === track.videoId;
@@ -68,7 +70,22 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
     if (isCurrentTrack) {
       togglePlay();
     } else {
-      if (contextTracks && contextTracks.length > 0) {
+      const trackData = {
+        videoId: track.videoId,
+        saavnId: track.saavnId,
+        source: track.source,
+        streamUrl: track.streamUrl,
+        audioUrl: track.audioUrl,
+        title, artist,
+        channelId: track.channelId || '',
+        albumName: track.albumName,
+        thumbnails: { default: thumbnail, high: typeof track.thumbnails?.high === 'string' ? track.thumbnails.high : '' },
+        duration: track.duration || 0, durationText,
+        tags: [], playCount: 0, likeCount: 0, cachedAt: new Date().toISOString()
+      };
+
+      if (isPlaylistContext && contextTracks && contextTracks.length > 0) {
+        // Playlist mode: load all tracks, play in order, no autoplay
         const playlist = contextTracks.map(t => ({
           videoId: t.videoId,
           saavnId: t.saavnId,
@@ -86,24 +103,14 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
         }));
         
         const startIndex = index !== undefined ? index : playlist.findIndex(t => t.videoId === track.videoId);
-        const currentTrackToPlay = loadPlaylist(playlist, Math.max(0, startIndex));
+        const currentTrackToPlay = loadPlaylist(playlist, Math.max(0, startIndex), 'playlist');
         if (currentTrackToPlay) setCurrentTrack(currentTrackToPlay);
       } else {
-        const trackData = {
-          videoId: track.videoId,
-          saavnId: track.saavnId,
-          source: track.source,
-          streamUrl: track.streamUrl,
-          audioUrl: track.audioUrl,
-          title, artist,
-          channelId: track.channelId || '',
-          albumName: track.albumName,
-          thumbnails: { default: thumbnail, high: typeof track.thumbnails?.high === 'string' ? track.thumbnails.high : '' },
-          duration: track.duration || 0, durationText,
-          tags: [], playCount: 0, likeCount: 0, cachedAt: new Date().toISOString()
-        };
-        const currentTrackToPlay = loadPlaylist([trackData], 0);
-        if (currentTrackToPlay) setCurrentTrack(currentTrackToPlay);
+        // Single mode: play this track, generate a mix for autoplay
+        loadSingle(trackData);
+        setCurrentTrack(trackData);
+        // Immediately fetch mix in the background
+        fetchMixForTrack(trackData);
       }
     }
   };

@@ -20,7 +20,7 @@ export default function YTPlaylistPage() {
 
   const handlePlayAll = () => {
     if (playlist?.tracks && playlist.tracks.length > 0) {
-      const nextTrack = loadPlaylist(playlist.tracks, 0);
+      const nextTrack = loadPlaylist(playlist.tracks, 0, 'playlist');
       if (nextTrack) setCurrentTrack(nextTrack);
     }
   };
@@ -28,7 +28,7 @@ export default function YTPlaylistPage() {
   const handleShuffle = () => {
     if (playlist?.tracks && playlist.tracks.length > 0) {
       const shuffledTracks = [...playlist.tracks].sort(() => Math.random() - 0.5);
-      const nextTrack = loadPlaylist(shuffledTracks, 0);
+      const nextTrack = loadPlaylist(shuffledTracks, 0, 'playlist');
       shuffleQueue();
       if (nextTrack) setCurrentTrack(nextTrack);
     }
@@ -119,6 +119,7 @@ export default function YTPlaylistPage() {
                 track={track} 
                 index={i}
                 contextTracks={playlist.tracks}
+                isPlaylistContext={true}
               />
             ))}
           </div>

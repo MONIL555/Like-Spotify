@@ -20,6 +20,14 @@ export async function POST(req: NextRequest) {
 
     if (!videoId) return NextResponse.json({ error: 'videoId is required' }, { status: 400 });
 
+    // Only allow songs belonging to JioSaavn or cached sources (no YouTube)
+    const isJioSaavn = source === 'jiosaavn' || (body.trackData && !!body.trackData.saavnId);
+    const isCached = source?.includes('cached');
+    
+    if (!isJioSaavn && !isCached) {
+      return NextResponse.json({ success: true, ignored: true, reason: 'Only JioSaavn and cached sources are recorded in history' });
+    }
+
     await connectDB();
 
     // Ensure the track metadata exists in the DB so it can be populated in recommendations

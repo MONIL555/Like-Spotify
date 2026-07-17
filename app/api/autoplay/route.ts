@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { searchYouTube } from '@/lib/youtube';
+import { searchSaavn } from '@/lib/jiosaavn';
 
-// Expanded filter: catches jukebox, non-stop, medley etc.
+// Expanded filter: catches jukebox, non-stop, medley, remix, lofi, slowed etc.
 const COMPILATION_RE = /top\s*\d+|best of|mashup|jukebox|compilation|full album|audio jukebox|collection|playlist|medley|non[\s-]?stop|all songs|hit songs|evergreen/i;
+
+// Filter out remix/lofi/slowed/cover variants of the original song
+const VARIANT_RE = /\b(remix|lofi|lo[\s-]?fi|slowed|reverb|8d|3d|bass\s*boost(?:ed)?|karaoke|instrumental|cover|unplugged|acoustic\s*version|nightcore|sped\s*up|chipmunk)\b/i;
 
 function isCompilation(title: string): boolean {
   return COMPILATION_RE.test(title);
+}
+
+function isVariant(title: string): boolean {
+  return VARIANT_RE.test(title);
 }
 
 // Strip trailing noise from artist/channel names: "(Official)", "- Topic", etc.
@@ -26,21 +33,7 @@ function getTokens(title: string): Set<string> {
   return new Set(base.split(/[^a-z0-9]+/).filter(t => t.length > 2));
 }
 
-function toTrack(item: any) {
-  return {
-    id: item.videoId,
-    videoId: item.videoId,
-    title: item.title,
-    artist: item.channelName,
-    albumName: 'Auto Mix',
-    thumbnails: {
-      default: item.thumbnail,
-      high: item.thumbnail,
-    },
-    duration: 0,
-    type: 'track',
-  };
-}
+// We no longer need toTrack since searchSaavn already returns fully formed Track objects.
 
 export async function GET(req: NextRequest) {
   try {
@@ -48,6 +41,7 @@ export async function GET(req: NextRequest) {
     const videoId = searchParams.get('videoId');
     const artist  = searchParams.get('artist');
     const title   = searchParams.get('title') || '';
+    const skipVideoIdsRaw = searchParams.get('skipVideoIds') || '';
 
     if (!videoId) {
       return NextResponse.json({ error: 'Missing videoId' }, { status: 400 });
@@ -56,28 +50,37 @@ export async function GET(req: NextRequest) {
     const cleanArtist = cleanStr(artist ?? '');
     const cleanTitle = cleanStr(title);
 
-    // ── FALLBACK ALGORITHM (Since relatedToVideoId is deprecated) ────────────
+    // Parse skip list (already-played tracks to exclude)
+    const skipIds = new Set<string>(
+      skipVideoIdsRaw ? skipVideoIdsRaw.split(',').filter(Boolean) : []
+    );
+
+    // ── DIVERSIFIED MIX ALGORITHM ───────────────────────────────
+    // 5 diverse strategies to build a YouTube Music-style mix
+    const currentYear = new Date().getFullYear();
     const queries = [
-      `${cleanTitle} ${cleanArtist} similar vibe songs`,
-      `trending hits like ${cleanTitle}`,
-      `popular songs radio mix ${cleanArtist}`,
-      `top tracks same genre as ${cleanTitle}`,
-    ];
+      cleanTitle,
+      cleanArtist,
+      `${cleanArtist} hits`,
+      'bollywood hits',
+      'trending hindi songs',
+    ].filter(Boolean);
 
     const settled = await Promise.allSettled(
-      queries.map(q => searchYouTube(q, 10))
+      queries.map(q => searchSaavn(q, 15))
     );
 
     const buckets: any[][] = settled.map(r =>
-      r.status === 'fulfilled' ? (r.value?.items ?? []) : []
+      r.status === 'fulfilled' ? (r.value ?? []) : []
     );
 
-    const seenIds = new Set<string>([videoId]);
+    const seenIds = new Set<string>([videoId, ...skipIds]);
     const seenTitlesTokens: Set<string>[] = [getTokens(title)];
     const channelCounts = new Map<string, number>();
     const mixTracks: any[] = [];
     const maxLen = Math.max(...buckets.map(b => b.length));
 
+    // Round-robin pick from each bucket for diversity
     for (let i = 0; i < maxLen; i++) {
       for (const bucket of buckets) {
         const item = bucket[i];
@@ -85,14 +88,16 @@ export async function GET(req: NextRequest) {
 
         if (seenIds.has(item.videoId)) continue;
         if (isCompilation(item.title)) continue;
+        if (isVariant(item.title)) continue;
         
-        // Limit to max 2 tracks from the same channel/artist to ensure a varied vibe
-        const cName = item.channelName?.toLowerCase() || '';
+        // Limit to max 2 tracks from the same channel/artist to ensure diverse mix
+        const cName = (item.artist || item.channelTitle || '').toLowerCase();
         if ((channelCounts.get(cName) || 0) >= 2) continue;
 
         const tokens = getTokens(item.title);
         if (tokens.size === 0) continue;
 
+        // Stricter dedup: lower threshold from 0.5 to 0.35 to catch more near-duplicates
         let isDuplicate = false;
         for (const seenTokens of seenTitlesTokens) {
           let intersection = 0;
@@ -102,7 +107,7 @@ export async function GET(req: NextRequest) {
           const union = new Set([...tokens, ...seenTokens]).size;
           const similarity = intersection / union;
           
-          if (similarity >= 0.5) {
+          if (similarity >= 0.35) {
             isDuplicate = true;
             break;
           }
@@ -123,7 +128,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'No similar tracks found' }, { status: 404 });
     }
 
-    const playlist = mixTracks.slice(0, 8).map(toTrack);
+    // Return up to 20 tracks for longer uninterrupted play
+    const playlist = mixTracks.slice(0, 20);
 
     return NextResponse.json({
       playlist,           

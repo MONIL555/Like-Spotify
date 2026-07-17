@@ -17,16 +17,34 @@ export default function ArtistPage() {
   // We search for the artist specifically
   const { data, error, isLoading } = useSWR(artistName ? `/api/search?q=${encodeURIComponent(artistName + ' songs')}` : null, fetcher);
   
-  const { setCurrentTrack } = usePlayerStore();
-  const { loadPlaylist } = useQueueStore();
+  const { setCurrentTrack, fetchMixForTrack } = usePlayerStore();
+  const { loadSingle } = useQueueStore();
 
   const handlePlayAll = () => {
     if (data && data.items && data.items.length > 0) {
-      const currentTrackToPlay = loadPlaylist(data.items, 0);
-      if (currentTrackToPlay) setCurrentTrack(currentTrackToPlay);
+      const track = data.items[0];
+      const trackData = {
+        videoId: track.videoId,
+        title: track.title || 'Unknown Title',
+        artist: track.artist || track.channelName || track.channelTitle || 'Unknown Artist',
+        channelId: track.channelId || '',
+        thumbnails: {
+          default: track.thumbnail || track.thumbnails?.default || '',
+          high: track.thumbnail || track.thumbnails?.high || '',
+        },
+        duration: track.duration || 0,
+        durationText: track.durationText || '',
+        tags: [],
+        playCount: 0,
+        likeCount: 0,
+        cachedAt: new Date().toISOString(),
+      };
+      loadSingle(trackData);
+      setCurrentTrack(trackData);
+      fetchMixForTrack(trackData);
       
       if (typeof window !== 'undefined' && (window as any).playVideoSync) {
-        (window as any).playVideoSync(data.items[0].videoId);
+        (window as any).playVideoSync(track.videoId);
       } else if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
         (window as any).playSilentAudio();
       }
