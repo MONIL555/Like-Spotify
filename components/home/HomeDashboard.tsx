@@ -65,8 +65,12 @@ export function HomeDashboard() {
   // Trending Bollywood data (Tracks)
   const { data: trendingData, isLoading: trendingLoading } = useSWR(`/api/search?q=Top+Bollywood+Hits+${currentYear}&type=video`, fetcher, SWR_OPTIONS);
 
-  const { loadPlaylist, loadSingle, shuffleQueue } = useQueueStore();
-  const { setCurrentTrack, fetchMixForTrack } = usePlayerStore();
+  const loadPlaylist = useQueueStore(s => s.loadPlaylist);
+  const loadSingle = useQueueStore(s => s.loadSingle);
+  const shuffleQueue = useQueueStore(s => s.shuffleQueue);
+  
+  const setCurrentTrack = usePlayerStore(s => s.setCurrentTrack);
+  const fetchMixForTrack = usePlayerStore(s => s.fetchMixForTrack);
 
   const handlePlayTrack = useCallback((track: any, contextList?: any[], index?: number) => {
     if (typeof window !== 'undefined' && (window as any).playVideoSync) {

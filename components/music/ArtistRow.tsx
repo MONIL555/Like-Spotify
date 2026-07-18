@@ -5,12 +5,14 @@ import { Avatar } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { User, ChevronRight } from 'lucide-react';
 
+import { memo } from 'react';
+
 interface ArtistRowProps {
   artist: any;
   index?: number;
 }
 
-export function ArtistRow({ artist, index }: ArtistRowProps) {
+export const ArtistRow = memo(function ArtistRow({ artist, index }: ArtistRowProps) {
   const router = useRouter();
   
   const title = artist.title || artist.channelName || 'Unknown Artist';
@@ -57,4 +59,4 @@ export function ArtistRow({ artist, index }: ArtistRowProps) {
       </div>
     </div>
   );
-}
+});

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import React, { useState, useRef, memo } from 'react';
 
 import { Play, Pause, MoreHorizontal, ListPlus, User } from 'lucide-react';
 import { usePlayerStore } from '@/store/playerStore';
@@ -16,6 +16,8 @@ import { useRouter } from 'next/navigation';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
+import { useShallow } from 'zustand/react/shallow';
+
 interface TrackRowProps {
   track: any;
   index?: number;
@@ -25,13 +27,21 @@ interface TrackRowProps {
   isPlaylistContext?: boolean;
 }
 
-export function TrackRow({ track, index, showCover = true, onRemove, contextTracks, isPlaylistContext = false }: TrackRowProps) {
+export const TrackRow = memo(function TrackRow({ track, index, showCover = true, onRemove, contextTracks, isPlaylistContext = false }: TrackRowProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const { currentTrack, isPlaying, togglePlay, setCurrentTrack } = usePlayerStore();
-  const { loadPlaylist, loadSingle, addToQueue } = useQueueStore();
-  const { fetchMixForTrack } = usePlayerStore();
+  
+  const currentTrack = usePlayerStore(s => s.currentTrack);
+  const isPlaying = usePlayerStore(s => s.isPlaying);
+  const togglePlay = usePlayerStore(s => s.togglePlay);
+  const setCurrentTrack = usePlayerStore(s => s.setCurrentTrack);
+  const fetchMixForTrack = usePlayerStore(s => s.fetchMixForTrack);
+  
+  const loadPlaylist = useQueueStore(s => s.loadPlaylist);
+  const loadSingle = useQueueStore(s => s.loadSingle);
+  const addToQueue = useQueueStore(s => s.addToQueue);
+  
   const { data: playlists } = useSWR('/api/playlists', fetcher);
   
   const isCurrentTrack = currentTrack?.videoId === track.videoId;
@@ -263,4 +273,4 @@ export function TrackRow({ track, index, showCover = true, onRemove, contextTrac
       </motion.div>
     </div>
   );
-}
+});

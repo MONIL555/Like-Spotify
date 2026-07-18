@@ -45,7 +45,9 @@ export function NativeAudioPlayer() {
     }
 
     if (currentTrack.saavnId) {
-      setStreamUrl(null);
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
       // Fetch stream dynamically
       fetch(`/api/tracks/${currentTrack.saavnId}/stream`)
         .then(res => res.json())
@@ -143,21 +145,25 @@ export function NativeAudioPlayer() {
     if (!isActive || !('mediaSession' in navigator)) return;
 
     navigator.mediaSession.setActionHandler('play', () => {
+      silentAudioRef.current?.play().catch(() => {});
       audioRef.current?.play();
       setIsPlaying(true);
     });
 
     navigator.mediaSession.setActionHandler('pause', () => {
+      silentAudioRef.current?.pause();
       audioRef.current?.pause();
       setIsPlaying(false);
     });
 
     navigator.mediaSession.setActionHandler('previoustrack', () => {
+      silentAudioRef.current?.play().catch(() => {});
       const prev = playPrevious();
       if (prev) setCurrentTrack(prev);
     });
 
     navigator.mediaSession.setActionHandler('nexttrack', () => {
+      silentAudioRef.current?.play().catch(() => {});
       advanceToNext();
     });
     
@@ -202,17 +208,38 @@ export function NativeAudioPlayer() {
     }
   };
 
+  const silentAudioRef = useRef<HTMLAudioElement>(null);
+
+  // Keep silent audio in sync with play state to hold the lockscreen session
+  useEffect(() => {
+    if (isPlaying && isActive) {
+      silentAudioRef.current?.play().catch(() => {});
+    } else {
+      silentAudioRef.current?.pause();
+    }
+  }, [isPlaying, isActive]);
+
   if (!isActive) return null;
 
   return (
-    <audio
-      ref={audioRef}
-      src={streamUrl || undefined}
-      onTimeUpdate={handleTimeUpdate}
-      onLoadedMetadata={handleLoadedMetadata}
-      onEnded={handleEnded}
-      onError={handleError}
-      className="hidden"
-    />
+    <>
+      <audio
+        ref={silentAudioRef}
+        src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="
+        loop
+        playsInline
+        preload="auto"
+        className="hidden"
+      />
+      <audio
+        ref={audioRef}
+        src={streamUrl || undefined}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={handleEnded}
+        onError={handleError}
+        className="hidden"
+      />
+    </>
   );
 }

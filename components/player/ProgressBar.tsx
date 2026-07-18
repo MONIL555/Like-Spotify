@@ -5,8 +5,12 @@ import { Slider } from '@/components/ui/slider';
 import { formatDuration } from '@/lib/utils';
 import { useEffect, useState, useRef } from 'react';
 
+import { useShallow } from 'zustand/react/shallow';
+
 export function ProgressBar() {
-  const { currentTime, duration } = usePlayerStore();
+  const { currentTime, duration } = usePlayerStore(
+    useShallow(s => ({ currentTime: s.currentTime, duration: s.duration }))
+  );
   const [localTime, setLocalTime] = useState(currentTime);
   const [isDragging, setIsDragging] = useState(false);
   const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);

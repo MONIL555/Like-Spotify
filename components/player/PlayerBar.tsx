@@ -11,8 +11,23 @@ import { cn } from '@/lib/utils';
 import { LikeButton } from '@/components/music/LikeButton';
 import { motion } from 'framer-motion';
 
+import { useShallow } from 'zustand/react/shallow';
+
 export function PlayerBar() {
-  const { currentTrack, toggleQueue, toggleLyrics, isQueueOpen, isLyricsOpen, isPlaying, togglePlay, toggleFullscreen, advanceToNext, setCurrentTrack } = usePlayerStore();
+  const { currentTrack, toggleQueue, toggleLyrics, isQueueOpen, isLyricsOpen, isPlaying, togglePlay, toggleFullscreen, advanceToNext, setCurrentTrack } = usePlayerStore(
+    useShallow((s) => ({
+      currentTrack: s.currentTrack,
+      toggleQueue: s.toggleQueue,
+      toggleLyrics: s.toggleLyrics,
+      isQueueOpen: s.isQueueOpen,
+      isLyricsOpen: s.isLyricsOpen,
+      isPlaying: s.isPlaying,
+      togglePlay: s.togglePlay,
+      toggleFullscreen: s.toggleFullscreen,
+      advanceToNext: s.advanceToNext,
+      setCurrentTrack: s.setCurrentTrack
+    }))
+  );
 
   if (!currentTrack) return null;
 

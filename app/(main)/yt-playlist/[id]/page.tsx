@@ -7,6 +7,7 @@ import { Play, Shuffle, Clock, Loader2, Music2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQueueStore } from '@/store/queueStore';
 import { usePlayerStore } from '@/store/playerStore';
+import Image from 'next/image';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -61,7 +62,7 @@ export default function YTPlaylistPage() {
       <div className="flex flex-row items-center md:items-end gap-4 md:gap-8">
         <div className="relative h-28 w-28 md:h-56 md:w-56 shrink-0 clay-panel overflow-hidden shadow-2xl rounded-[32px] bg-white/5">
           {imgSrc ? (
-            <img src={imgSrc} alt={playlist.name} className="h-full w-full object-cover" />
+            <Image src={imgSrc} alt={playlist.name} fill priority sizes="(max-width: 768px) 112px, 224px" className="object-cover" />
           ) : (
             <div className="h-full w-full flex items-center justify-center bg-brand-primary/10">
               <Music2 className="h-12 w-12 md:h-20 md:w-20 text-brand-primary/30" />
