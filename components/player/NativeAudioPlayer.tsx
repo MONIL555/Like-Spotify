@@ -45,6 +45,7 @@ export function NativeAudioPlayer() {
     }
 
     if (currentTrack.saavnId) {
+      setStreamUrl(null);
       // Fetch stream dynamically
       fetch(`/api/tracks/${currentTrack.saavnId}/stream`)
         .then(res => res.json())
@@ -201,12 +202,12 @@ export function NativeAudioPlayer() {
     }
   };
 
-  if (!isActive || !streamUrl) return null;
+  if (!isActive) return null;
 
   return (
     <audio
       ref={audioRef}
-      src={streamUrl}
+      src={streamUrl || undefined}
       onTimeUpdate={handleTimeUpdate}
       onLoadedMetadata={handleLoadedMetadata}
       onEnded={handleEnded}

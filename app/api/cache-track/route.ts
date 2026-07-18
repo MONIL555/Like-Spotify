@@ -60,9 +60,15 @@ export async function POST(req: NextRequest) {
 
     // 2. Search PagalWorld
     // We clean the title to get better search results (remove "Lyrical Video", "Official Video", etc)
+    const baseTitleMatch = title.match(/^([^-|]+)/);
+    let baseTitle = baseTitleMatch ? baseTitleMatch[1].trim() : title;
+    baseTitle = baseTitle.replace(/\(.*?\)|\[.*?\]|Lyrical|Official|Video|Audio|Full Song|HD/gi, '').trim();
+
     const cleanTitle = title
       .replace(/\(.*?\)|\[.*?\]|Lyrical|Official|Video|Audio|Full Song|HD/gi, '')
+      .replace(/- Topic/i, '').trim();
     let cleanArtist = artist.replace(/- Topic/i, '').replace(/VEVO/i, '').trim();
+    
     const query = `${cleanTitle} ${cleanArtist}`.trim();
     
     console.log(`[Cache Track] Searching PagalWorld for: ${query}`);
@@ -72,6 +78,12 @@ export async function POST(req: NextRequest) {
     if (searchResults.length === 0) {
       console.log(`[Cache Track] Not found on PagalWorld with artist, trying title only: ${cleanTitle}`);
       searchResults = await searchPagalWorld(cleanTitle);
+    }
+    
+    // Fallback 1.5: Try PagalWorld with base title
+    if (searchResults.length === 0 && baseTitle !== cleanTitle) {
+      console.log(`[Cache Track] Not found on PagalWorld with title, trying base title: ${baseTitle}`);
+      searchResults = await searchPagalWorld(baseTitle);
     }
     
     if (searchResults.length === 0) {
@@ -84,6 +96,12 @@ export async function POST(req: NextRequest) {
       if (finalPagalNewResults.length === 0) {
         console.log(`[Cache Track] Not found on PagalNew with artist, trying title only: ${cleanTitle}`);
         finalPagalNewResults = await searchPagalNew(cleanTitle);
+      }
+      
+      // Fallback 4: Try PagalNew with base title
+      if (finalPagalNewResults.length === 0 && baseTitle !== cleanTitle) {
+        console.log(`[Cache Track] Not found on PagalNew with title, trying base title: ${baseTitle}`);
+        finalPagalNewResults = await searchPagalNew(baseTitle);
       }
       
       if (finalPagalNewResults.length === 0) {

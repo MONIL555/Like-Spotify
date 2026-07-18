@@ -26,45 +26,49 @@ export interface PagalNewSongDetails {
 export async function searchPagalNew(query: string): Promise<PagalNewSearchResult[]> {
   try {
     const encodedQuery = encodeURIComponent(query);
-    const searchUrl = `${BASE_URL}/search.php?find=${encodedQuery}`;
-    
-    const response = await fetch(searchUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
-    });
-
-    if (!response.ok) {
-      console.error(`PagalNew search failed: ${response.status} ${response.statusText}`);
-      return [];
-    }
-
-    const html = await response.text();
-    const root = parse(html);
-
     const results: PagalNewSearchResult[] = [];
-    
-    // Find all links inside the main area
-    // Usually PagalNew search results are links pointing to /songs/
-    const anchorTags = root.querySelectorAll('a');
-    for (const a of anchorTags) {
-      const href = a.getAttribute('href');
-      if (href && href.includes('/songs/') && href.endsWith('.html')) {
-        const fullUrl = href.startsWith('http') ? href : `${BASE_URL}${href}`;
-        const slug = href.split('/').pop()?.replace('.html', '') || '';
-        
-        // The text often contains title - artist \n album
-        const text = a.text.trim();
-        
-        // Prevent exact duplicates in results
-        if (!results.find(r => r.url === fullUrl)) {
-          results.push({
-            title: text.split('\n')[0].trim(),
-            url: fullUrl,
-            slug
-          });
+
+    // Fetch up to 3 pages to handle pagination
+    for (let page = 1; page <= 3; page++) {
+      const searchUrl = `${BASE_URL}/search.php?find=${encodedQuery}${page > 1 ? `&page_album=${page}` : ''}`;
+      
+      const response = await fetch(searchUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      });
+
+      if (!response.ok) {
+        console.error(`PagalNew search failed: ${response.status} ${response.statusText}`);
+        break; // Stop on error
+      }
+
+      const html = await response.text();
+      const root = parse(html);
+      let pageHasResults = false;
+
+      const anchorTags = root.querySelectorAll('a');
+      for (const a of anchorTags) {
+        const href = a.getAttribute('href');
+        if (href && href.includes('/songs/') && href.endsWith('.html')) {
+          pageHasResults = true;
+          const fullUrl = href.startsWith('http') ? href : `${BASE_URL}${href}`;
+          const slug = href.split('/').pop()?.replace('.html', '') || '';
+          
+          const text = a.text.trim();
+          
+          if (!results.find(r => r.url === fullUrl)) {
+            results.push({
+              title: text.split('\n')[0].trim(),
+              url: fullUrl,
+              slug
+            });
+          }
         }
       }
+      
+      // If no valid song links on this page, assume we've reached the end
+      if (!pageHasResults) break;
     }
 
     return results;

@@ -81,13 +81,15 @@ export async function GET(req: NextRequest) {
     if (searchCacheResult && JSON.parse(searchCacheResult.results).items?.length > 0) {
       const parsedResults = JSON.parse(searchCacheResult.results);
       
-      // Deduplicate: remove items from parsedResults that match videoId in localCachedTracks
-      const localIds = new Set(localCachedTracks.map(t => t.videoId));
-      parsedResults.items = parsedResults.items.filter((item: any) => !localIds.has(item.videoId));
-      
-      // Prepend local cached tracks
-      parsedResults.items = [...localCachedTracks, ...parsedResults.items];
-      return NextResponse.json(parsedResults);
+      if (parsedResults.source !== 'youtube') {
+        // Deduplicate: remove items from parsedResults that match videoId in localCachedTracks
+        const localIds = new Set(localCachedTracks.map(t => t.videoId));
+        parsedResults.items = parsedResults.items.filter((item: any) => !localIds.has(item.videoId));
+        
+        // Prepend local cached tracks
+        parsedResults.items = [...localCachedTracks, ...parsedResults.items];
+        return NextResponse.json(parsedResults);
+      }
     }
 
     // 4. Try JioSaavn API First
@@ -112,37 +114,12 @@ export async function GET(req: NextRequest) {
         totalResults: saavnTracks.length,
       };
     } catch (error) {
-      // Check YouTube fallback flag before falling back
-      let youtubeAllowed = true;
-      try {
-        const AppConfig = (await import('@/models/AppConfig')).default;
-        const config = await AppConfig.findById('global_config');
-        if (config && config.youtubeFallbackEnabled === false) {
-          youtubeAllowed = false;
-        }
-      } catch { /* ignore config check failure */ }
-
-      if (youtubeAllowed) {
-        console.warn('JioSaavn search failed, falling back to YouTube:', error);
-        source = 'youtube';
-        searchData = await searchYouTube(validated.q, 20, undefined, validated.type);
-        
-        if (validated.type === 'video' && searchData.items && searchData.items.length > 0) {
-          searchData.items.sort((a: any, b: any) => {
-            const aIsOfficial = a.channelName?.toLowerCase().includes('topic') || a.channelName?.toLowerCase().includes('vevo') ? 1 : 0;
-            const bIsOfficial = b.channelName?.toLowerCase().includes('topic') || b.channelName?.toLowerCase().includes('vevo') ? 1 : 0;
-            return bIsOfficial - aIsOfficial;
-          });
-          searchData.items = searchData.items.slice(0, validated.limit);
-        }
-      } else {
-        console.warn('JioSaavn search failed, YouTube fallback is disabled');
-        searchData = {
-          items: [],
-          nextPageToken: null,
-          totalResults: 0,
-        };
-      }
+      console.warn('JioSaavn search failed:', error);
+      searchData = {
+        items: [],
+        nextPageToken: null,
+        totalResults: 0,
+      };
     }
 
     // 5. Cache the result (Upsert to replace bad cache)
