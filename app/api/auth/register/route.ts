@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — Register API Route
+// MoniStream — Register API Route
 // ============================================================
 
 import { NextRequest } from 'next/server';

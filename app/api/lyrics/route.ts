@@ -96,7 +96,7 @@ export async function GET(req: NextRequest) {
     const track = cleanTitle(rawTrack);
     const cleanArt = cleanArtist(artist || '');
 
-    const headers = { 'User-Agent': 'SpotTunes-NextJS/0.1.0' };
+    const headers = { 'User-Agent': 'MoniStream-NextJS/0.1.0' };
 
     // 2. Try exact match first
     let fetchUrl = `https://lrclib.net/api/get?track_name=${encodeURIComponent(track)}`;

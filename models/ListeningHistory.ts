@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — Listening History Model
+// MoniStream — Listening History Model
 // ============================================================
 
 import mongoose, { Schema, Document, Model } from 'mongoose';

@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — UserPreferences Model
+// MoniStream — UserPreferences Model
 // ============================================================
 
 import mongoose, { Schema, Document, Model } from 'mongoose';

@@ -38,7 +38,7 @@ export function Sidebar() {
                 <circle cx="18" cy="16" r="3" />
               </svg>
             </div>
-            <span className="font-bold text-xl tracking-tight text-foreground">SpotTunes</span>
+            <span className="font-bold text-xl tracking-tight text-foreground">MoniStream</span>
           </Link>
         </div>
 

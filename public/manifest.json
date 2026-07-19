@@ -1,6 +1,6 @@
 {
-  "name": "SpotTunes",
-  "short_name": "SpotTunes",
+  "name": "MoniStream",
+  "short_name": "MoniStream",
   "description": "A modern, high-performance web music player built with Next.js.",
   "start_url": "/",
   "display": "standalone",

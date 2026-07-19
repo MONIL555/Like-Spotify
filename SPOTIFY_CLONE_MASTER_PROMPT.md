@@ -1,4 +1,4 @@
-# 🎵 SpotTunes — Spotify Clone: Master Build Prompt
+# 🎵 MoniStream — Spotify Clone: Master Build Prompt
 ### Full-Stack Next.js + MongoDB + YouTube API | Antigravity IDE
 
 ---
@@ -32,7 +32,7 @@ ls .agents/skills/
 
 ## 📋 PROJECT BRIEF
 
-**App Name:** SpotTunes (you can rename)
+**App Name:** MoniStream (you can rename)
 **Purpose:** A private, personal Spotify clone for personal use, friends & family.
 **Music Source:** YouTube IFrame Player API (playback) + YouTube Data API v3 (search/metadata)
 **IDE:** Antigravity
@@ -66,7 +66,7 @@ Read this entire document before writing a single line of code.
 ## 🗂️ FULL PROJECT STRUCTURE
 
 ```
-SpotTunes/
+MoniStream/
 ├── .agents/skills/           ← Antigravity skills (auto-installed)
 │   ├── ui-ux-pro-max/
 │   └── superpowers/
@@ -219,7 +219,7 @@ SpotTunes/
 ## 🎨 DESIGN SYSTEM (Light Theme)
 
 > **IMPORTANT:** Run the `ui-ux-pro-max` skill FIRST. Tell it:
-> *"Generate a design system for a music streaming app called SpotTunes. Light theme. Product type: music-entertainment. Style: clean-minimal with soft green accent. Reference: Spotify light mode."*
+> *"Generate a design system for a music streaming app called MoniStream. Light theme. Product type: music-entertainment. Style: clean-minimal with soft green accent. Reference: Spotify light mode."*
 
 ### Color Palette
 ```css
@@ -303,8 +303,8 @@ xl:  1280–1535px (large laptops)
 
 ```bash
 # Initialize project
-npx create-next-app@latest SpotTunes --typescript --tailwind --app --src-dir=no --import-alias="@/*"
-cd SpotTunes
+npx create-next-app@latest MoniStream --typescript --tailwind --app --src-dir=no --import-alias="@/*"
+cd MoniStream
 
 # Install shadcn/ui
 npx shadcn@latest init
@@ -341,7 +341,7 @@ npm install -D prettier eslint-config-prettier
 ### Environment Variables (`.env.local`)
 ```env
 # MongoDB
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/SpotTunes
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/MoniStream
 
 # JWT
 JWT_ACCESS_SECRET=your-super-secret-access-key-min-64-chars
@@ -356,7 +356,7 @@ YOUTUBE_API_KEY=your-youtube-data-api-v3-key
 
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-APP_NAME=SpotTunes
+APP_NAME=MoniStream
 
 # Upstash Redis (for rate limiting on Vercel)
 UPSTASH_REDIS_REST_URL=https://...
@@ -1674,7 +1674,7 @@ Work through these phases in order. Complete each phase fully before moving to n
 ```bash
 # 1. Push code to GitHub
 git init && git add . && git commit -m "initial commit"
-gh repo create SpotTunes --private && git push
+gh repo create MoniStream --private && git push
 
 # 2. Connect Vercel to GitHub repo
 # Go to vercel.com → New Project → Import your repo
@@ -1725,7 +1725,7 @@ vercel --prod
 After pasting this entire document, follow up with:
 
 ```
-Read the entire SpotTunes master prompt above.
+Read the entire MoniStream master prompt above.
 Start with PHASE 1 — Foundation.
 
 Before writing any code:
@@ -1747,4 +1747,4 @@ Ask me for my .env.local values before writing any environment-dependent code.
 
 ---
 
-*Document version: 1.0 | Built for SpotTunes Personal Spotify Clone | Next.js 15 · MongoDB · YouTube API*
+*Document version: 1.0 | Built for MoniStream Personal Spotify Clone | Next.js 15 · MongoDB · YouTube API*

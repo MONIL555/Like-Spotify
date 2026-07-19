@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — Track Model (cached YouTube metadata)
+// MoniStream — Track Model (cached YouTube metadata)
 // ============================================================
 
 import mongoose, { Schema, Document, Model } from 'mongoose';

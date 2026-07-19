@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { HomeDashboard } from '@/components/home/HomeDashboard';
 
 export const metadata: Metadata = {
-  title: 'Home | SpotTunes',
+  title: 'Home | MoniStream',
 };
 
 export default function HomePage() {

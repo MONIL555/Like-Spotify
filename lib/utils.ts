@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — Utility Functions
+// MoniStream — Utility Functions
 // ============================================================
 
 import { type ClassValue, clsx } from 'clsx';

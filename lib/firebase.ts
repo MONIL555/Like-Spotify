@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — Firebase Client Setup
+// MoniStream — Firebase Client Setup
 // ============================================================
 
 import { initializeApp, getApps, getApp } from 'firebase/app';

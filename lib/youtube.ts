@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — YouTube Data API v3 Wrapper (Server-side only)
+// MoniStream — YouTube Data API v3 Wrapper (Server-side only)
 // ============================================================
 
 const YT_API_KEY = process.env.YOUTUBE_API_KEY!;

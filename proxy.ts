@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — Next.js Middleware (Auth Guard)
+// MoniStream — Next.js Middleware (Auth Guard)
 // ============================================================
 
 import { NextResponse } from 'next/server';

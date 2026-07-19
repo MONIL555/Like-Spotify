@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — MongoDB Connection Singleton
+// MoniStream — MongoDB Connection Singleton
 // ============================================================
 
 import mongoose from 'mongoose';

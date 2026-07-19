@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — SMS Gateway Service
+// MoniStream — SMS Gateway Service
 // ============================================================
 
 import axios from 'axios';

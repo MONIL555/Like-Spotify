@@ -36,7 +36,7 @@ export const useHistoryStore = create<HistoryState>()(
       clearHistory: () => set({ recentlyPlayed: [] }),
     }),
     {
-      name: 'spottunes-history-storage',
+      name: 'monistream-history-storage',
     }
   )
 );

@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — Firebase Admin Setup
+// MoniStream — Firebase Admin Setup
 // ============================================================
 
 import { getApps, initializeApp, cert } from 'firebase-admin/app';

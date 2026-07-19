@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — User Model
+// MoniStream — User Model
 // ============================================================
 
 import mongoose, { Schema, Document, Model } from 'mongoose';

@@ -178,7 +178,7 @@ export default function LoginPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-black text-white tracking-tight drop-shadow-md">Welcome Back</h1>
-          <p className="text-white/60 text-sm font-medium mt-1">Log in to SpotTunes</p>
+          <p className="text-white/60 text-sm font-medium mt-1">Log in to MoniStream</p>
         </div>
 
         {/* Google Login Button */}

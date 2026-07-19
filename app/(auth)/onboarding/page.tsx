@@ -67,7 +67,7 @@ function OnboardingForm() {
         throw new Error(data.error || 'Failed to complete registration');
       }
       
-      toast.success('Registration complete! Welcome to SpotTunes.');
+      toast.success('Registration complete! Welcome to MoniStream.');
       // Reload to update auth state context
       window.location.href = '/';
     } catch (err: any) {

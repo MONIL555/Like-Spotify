@@ -49,7 +49,7 @@ export default function RegisterPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-black text-white tracking-tight drop-shadow-md">Create Account</h1>
-          <p className="text-white/60 text-sm font-medium mt-1">Join SpotTunes today</p>
+          <p className="text-white/60 text-sm font-medium mt-1">Join MoniStream today</p>
         </div>
 
         {error && (

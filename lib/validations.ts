@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — Zod Validation Schemas
+// MoniStream — Zod Validation Schemas
 // ============================================================
 
 import { z } from 'zod';

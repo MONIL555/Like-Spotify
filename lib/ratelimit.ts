@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — Rate Limiting (Upstash Redis)
+// MoniStream — Rate Limiting (Upstash Redis)
 // ============================================================
 
 import { Ratelimit } from '@upstash/ratelimit';

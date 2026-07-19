@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — Player Store (Zustand)
+// MoniStream — Player Store (Zustand)
 // ============================================================
 
 'use client';
@@ -147,7 +147,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
     try {
       const skipIds = useQueueStore.getState().getPlayedVideoIds();
-      const skipParam = skipIds.length > 0 ? `&skipVideoIds=${skipIds.join(',')}` : '';
+      // To prevent extremely long URLs in endless radio mode, take the last 50 skip IDs
+      const recentSkipIds = skipIds.slice(-50);
+      const skipParam = recentSkipIds.length > 0 ? `&skipVideoIds=${recentSkipIds.join(',')}` : '';
       
       console.log(`[Autoplay] Fetching mix for: ${track.title}...`);
       const res = await fetch(

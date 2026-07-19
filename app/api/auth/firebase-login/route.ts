@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — Firebase Login API Route
+// MoniStream — Firebase Login API Route
 // ============================================================
 
 import { NextRequest } from 'next/server';

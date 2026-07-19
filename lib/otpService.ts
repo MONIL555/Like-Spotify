@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — OTP Service (Redis)
+// MoniStream — OTP Service (Redis)
 // ============================================================
 
 import { Redis } from '@upstash/redis';

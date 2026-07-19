@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — Get Current User API Route
+// MoniStream — Get Current User API Route
 // ============================================================
 
 import { NextRequest } from 'next/server';

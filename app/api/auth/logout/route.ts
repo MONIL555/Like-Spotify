@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — Logout API Route
+// MoniStream — Logout API Route
 // ============================================================
 
 import { NextRequest } from 'next/server';

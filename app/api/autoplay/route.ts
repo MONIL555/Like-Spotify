@@ -59,11 +59,11 @@ export async function GET(req: NextRequest) {
     // 5 diverse strategies to build a YouTube Music-style mix
     const currentYear = new Date().getFullYear();
     const queries = [
-      cleanTitle,
+      cleanTitle ? `${cleanArtist} ${cleanTitle}` : cleanArtist,
       cleanArtist,
+      `${cleanArtist} popular`,
       `${cleanArtist} hits`,
-      'bollywood hits',
-      'trending hindi songs',
+      `${cleanArtist} new`,
     ].filter(Boolean);
 
     const settled = await Promise.allSettled(
@@ -107,7 +107,7 @@ export async function GET(req: NextRequest) {
           const union = new Set([...tokens, ...seenTokens]).size;
           const similarity = intersection / union;
           
-          if (similarity >= 0.35) {
+          if (similarity >= 0.25) {
             isDuplicate = true;
             break;
           }

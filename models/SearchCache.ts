@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — SearchCache Model
+// MoniStream — SearchCache Model
 // ============================================================
 
 import mongoose, { Schema, Document, Model } from 'mongoose';

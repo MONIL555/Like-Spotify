@@ -1,5 +1,5 @@
 // ============================================================
-// SpotTunes — JWT Authentication Helpers
+// MoniStream — JWT Authentication Helpers
 // ============================================================
 
 import jwt from 'jsonwebtoken';

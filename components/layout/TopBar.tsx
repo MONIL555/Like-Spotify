@@ -75,7 +75,7 @@ export function TopBar() {
                 <circle cx="18" cy="16" r="3" />
               </svg>
             </div>
-            <span className="font-bold text-lg tracking-tight text-foreground">SpotTunes</span>
+            <span className="font-bold text-lg tracking-tight text-foreground">MoniStream</span>
           </div>
         )}
       </div>

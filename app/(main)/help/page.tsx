@@ -26,7 +26,7 @@ export default function HelpPage() {
         </div>
         <div>
           <h1 className="text-3xl font-black text-foreground tracking-tight">Help & Features</h1>
-          <p className="text-muted-foreground font-medium">Everything you need to know about SpotTunes</p>
+          <p className="text-muted-foreground font-medium">Everything you need to know about MoniStream</p>
         </div>
       </div>
 
@@ -48,7 +48,7 @@ export default function HelpPage() {
               </div>
               <h2 className="text-2xl font-black text-foreground mb-3">Fully Cached & Background Play</h2>
               <p className="text-muted-foreground leading-relaxed mb-4 font-medium text-sm md:text-base">
-                SpotTunes uses a highly intelligent audio routing system to give you the ultimate premium experience for free. 
+                MoniStream uses a highly intelligent audio routing system to give you the ultimate premium experience for free. 
                 When you play a song, our engine automatically streams it from high-quality sources like JioSaavn or caches it in the background.
               </p>
               
@@ -88,7 +88,7 @@ export default function HelpPage() {
               </div>
               <h3 className="text-lg font-bold text-foreground mb-2">Endless Autoplay Mix</h3>
               <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                When you play a single track, SpotTunes automatically generates an endless radio mix of similar vibes. We pull these directly from native sources so the music never stops when your screen turns off.
+                When you play a single track, MoniStream automatically generates an endless radio mix of similar vibes. We pull these directly from native sources so the music never stops when your screen turns off.
               </p>
             </CardContent>
           </Card>

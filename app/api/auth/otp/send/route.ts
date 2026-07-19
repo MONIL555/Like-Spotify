@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     const otp = generateOTP();
     await storeOTP(phone, otp);
 
-    const message = `Your SpotTunes verification code is ${otp}. It is valid for 5 minutes. Do not share this code.`;
+    const message = `Your MoniStream verification code is ${otp}. It is valid for 5 minutes. Do not share this code.`;
     const result = await sendSMS(phone, message);
 
     if (!result.success) {
