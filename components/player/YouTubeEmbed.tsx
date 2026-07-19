@@ -163,7 +163,7 @@ export function YouTubeEmbed() {
   // 3.5 Auto-Swap to Cached Version (If available)
   // ══════════════════════════════════════════════════════════════
   useEffect(() => {
-    if (isActive && currentTrack && currentTrack.source === 'youtube') {
+    if (isActive && currentTrack && (!currentTrack.source || currentTrack.source === 'youtube')) {
       // Check if it's already cached in the database
       fetch(`/api/cache-track?videoId=${currentTrack.videoId}`)
         .then(res => res.json())

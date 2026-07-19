@@ -61,7 +61,7 @@ export const TrackRow = memo(function TrackRow({ track, index, showCover = true,
         if (!isPlaying) {
           if (isNativeTrack) {
             // Just unlock audio context for native tracks
-            (window as any).playSilentAudio?.();
+            (window as any).playNativeSilentAudio?.();
           } else {
             (window as any).playVideoSync?.();
           }
@@ -69,7 +69,7 @@ export const TrackRow = memo(function TrackRow({ track, index, showCover = true,
       } else {
         if (isNativeTrack) {
           // Native track — only unlock audio context, don't touch YouTube
-          (window as any).playSilentAudio?.();
+          (window as any).playNativeSilentAudio?.();
         } else {
           // YouTube track — load into YouTube player
           (window as any).playVideoSync?.(track.videoId);

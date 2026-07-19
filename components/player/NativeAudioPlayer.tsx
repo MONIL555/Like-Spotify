@@ -113,6 +113,10 @@ export function NativeAudioPlayer() {
         originalSeekTo(seconds);
       }
     };
+
+    (window as any).playNativeSilentAudio = () => {
+      silentAudioRef.current?.play().catch(() => {});
+    };
   }, []);
 
   // 5. Media Session (Lockscreen controls)
