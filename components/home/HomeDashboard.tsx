@@ -1,7 +1,8 @@
 'use client';
 
 import useSWR from 'swr';
-import { Play, Plus, Heart, Shuffle, ChevronRight, Music2 } from 'lucide-react';
+import { Play, Plus, Heart, Shuffle, ChevronRight, Music2, Loader2 } from 'lucide-react';
+import { CardSkeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useQueueStore } from '@/store/queueStore';
 import { usePlayerStore } from '@/store/playerStore';
@@ -184,7 +185,9 @@ export function HomeDashboard() {
         {trendingLoading ? (
           <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-4 -mx-4 px-4 md:mx-0 md:px-0">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="w-[140px] md:w-[180px] shrink-0 aspect-square bg-white/5 rounded-[24px] animate-pulse" />
+              <div key={i} className="w-[140px] md:w-[180px] shrink-0">
+                <CardSkeleton />
+              </div>
             ))}
           </div>
         ) : (

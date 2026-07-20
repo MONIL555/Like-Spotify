@@ -3,6 +3,7 @@
 import useSWR from 'swr';
 import { TrackRow } from '@/components/music/TrackRow';
 import { Play, Shuffle, Clock, Loader2, Heart } from 'lucide-react';
+import { Skeleton, TrackSkeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useQueueStore } from '@/store/queueStore';
 import { usePlayerStore } from '@/store/playerStore';
@@ -36,8 +37,24 @@ export default function LikedSongsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] text-brand-primary">
-        <Loader2 className="h-12 w-12 animate-spin" />
+      <div className="py-6 flex flex-col gap-8 animate-fade-in">
+        <div className="flex flex-row items-center md:items-end gap-4 md:gap-8">
+          <Skeleton className="h-28 w-28 md:h-56 md:w-56 shrink-0 rounded-xl" />
+          <div className="flex flex-col flex-1 pb-1 md:pb-2 gap-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-8 md:h-12 w-3/4 max-w-[400px]" />
+            <Skeleton className="h-4 w-32 mt-2" />
+          </div>
+        </div>
+        <div className="flex items-center gap-3 py-2 md:py-4">
+          <Skeleton className="h-12 w-12 md:h-14 md:w-14 rounded-full" />
+          <Skeleton className="h-12 w-12 md:h-14 md:w-14 rounded-full" />
+        </div>
+        <div className="mt-2 space-y-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <TrackSkeleton key={i} />
+          ))}
+        </div>
       </div>
     );
   }

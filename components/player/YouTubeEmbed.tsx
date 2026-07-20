@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { mutate } from 'swr';
 import { usePlayerStore } from '@/store/playerStore';
 import { useQueueStore } from '@/store/queueStore';
 import { useHistoryStore } from '@/store/historyStore';
@@ -94,12 +95,22 @@ export function YouTubeEmbed() {
         onStateChange: (event: any) => {
           const state = event.data;
           const YT = window.YT;
+          const store = usePlayerStore.getState();
+          const isYouTubeActive = store.activePlayer === 'youtube';
+
+          if (!isYouTubeActive) {
+            // If YouTube is not the active player but it starts playing, force it to pause
+            if (state === YT.PlayerState.PLAYING || state === YT.PlayerState.BUFFERING) {
+              event.target.pauseVideo();
+            }
+            return;
+          }
 
           if (state === YT.PlayerState.PLAYING) {
             setIsPlaying(true);
             setDuration(event.target.getDuration());
           } else if (state === YT.PlayerState.PAUSED) {
-            if (document.hidden && usePlayerStore.getState().isPlaying) {
+            if (document.hidden && store.isPlaying) {
               // Try to force play if it was paused while backgrounded
               event.target.playVideo();
             } else {
@@ -107,7 +118,7 @@ export function YouTubeEmbed() {
             }
           } else if (state === YT.PlayerState.CUED) {
             // When cued, if we intend to play, force play it
-            if (usePlayerStore.getState().isPlaying) {
+            if (store.isPlaying) {
               event.target.playVideo();
             }
           } else if (state === YT.PlayerState.ENDED) {
@@ -163,18 +174,30 @@ export function YouTubeEmbed() {
   // 3.5 Auto-Swap to Cached Version (If available)
   // ══════════════════════════════════════════════════════════════
   useEffect(() => {
-    if (isActive && currentTrack && (!currentTrack.source || currentTrack.source === 'youtube')) {
+    if (isActive && currentTrack && currentTrack.source === 'youtube') {
       // Check if it's already cached in the database
       fetch(`/api/cache-track?videoId=${currentTrack.videoId}`)
         .then(res => res.json())
         .then(data => {
           if (data.status === 'ready' && data.track && data.track.audioUrl) {
             // Swap to the cached track seamlessly
-            usePlayerStore.getState().setCurrentTrack({
+            const store = usePlayerStore.getState();
+            const t = store.currentTime;
+            store.swapToCachedTrack({
               ...currentTrack,
               source: data.track.source || 'pagalworld_cached',
               audioUrl: data.track.audioUrl,
             });
+            setTimeout(() => {
+              if (typeof (window as any).seekTo === 'function') {
+                (window as any).seekTo(t);
+              }
+            }, 300);
+            mutate(
+              (key) => typeof key === 'string' && (key.includes('/api/search') || key.includes('/api/library') || key.includes('/api/admin')),
+              undefined,
+              { revalidate: true }
+            );
           }
         })
         .catch(err => console.error('Failed to check cache status:', err));
@@ -253,6 +276,26 @@ export function YouTubeEmbed() {
                      import('sonner').then(({ toast }) => {
                        toast.success(`✅ "${currentTrack.title}" is now available with full lockscreen support!`);
                      });
+                   }
+                   if (data.audioUrl) {
+                     const store = usePlayerStore.getState();
+                     const t = store.currentTime;
+                     store.swapToCachedTrack({
+                       ...currentTrack,
+                       source: data.source || 'pagalworld_cached',
+                       audioUrl: data.audioUrl,
+                     });
+                     mutate(
+                       (key) => typeof key === 'string' && (key.includes('/api/search') || key.includes('/api/library') || key.includes('/api/admin')),
+                       undefined,
+                       { revalidate: true }
+                     );
+                     
+                     setTimeout(() => {
+                       if (typeof (window as any).seekTo === 'function') {
+                         (window as any).seekTo(t);
+                       }
+                     }, 500);
                    }
                 } else if (data.error) {
                    import('sonner').then(({ toast }) => {

@@ -9,7 +9,7 @@ import { LikeButton } from './LikeButton';
 import { Button } from '@/components/ui/button';
 import { formatDuration, cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
 import { Avatar } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
@@ -42,6 +42,7 @@ export const TrackRow = memo(function TrackRow({ track, index, showCover = true,
   const loadSingle = useQueueStore(s => s.loadSingle);
   const addToQueue = useQueueStore(s => s.addToQueue);
   
+  const { mutate } = useSWRConfig();
   const { data: playlists } = useSWR('/api/playlists', fetcher);
   
   const isCurrentTrack = currentTrack?.videoId === track.videoId;
@@ -61,7 +62,7 @@ export const TrackRow = memo(function TrackRow({ track, index, showCover = true,
         if (!isPlaying) {
           if (isNativeTrack) {
             // Just unlock audio context for native tracks
-            (window as any).playNativeSilentAudio?.();
+            (window as any).playSilentAudio?.();
           } else {
             (window as any).playVideoSync?.();
           }
@@ -69,7 +70,7 @@ export const TrackRow = memo(function TrackRow({ track, index, showCover = true,
       } else {
         if (isNativeTrack) {
           // Native track — only unlock audio context, don't touch YouTube
-          (window as any).playNativeSilentAudio?.();
+          (window as any).playSilentAudio?.();
         } else {
           // YouTube track — load into YouTube player
           (window as any).playVideoSync?.(track.videoId);
@@ -132,8 +133,13 @@ export const TrackRow = memo(function TrackRow({ track, index, showCover = true,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ track })
       });
-      if (res.ok) toast.success('Added to playlist');
-      else toast.error('Failed to add to playlist');
+      if (res.ok) {
+        toast.success('Added to playlist');
+        mutate('/api/playlists');
+        mutate(`/api/playlists/${playlistId}`);
+      } else {
+        toast.error('Failed to add to playlist');
+      }
     } catch {
       toast.error('Error adding to playlist');
     }

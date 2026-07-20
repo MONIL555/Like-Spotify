@@ -75,32 +75,58 @@ export async function POST(req: NextRequest) {
     let searchResults = await searchPagalWorld(query);
     
     // Fallback 1: Try PagalWorld with just the title
-    if (searchResults.length === 0) {
-      console.log(`[Cache Track] Not found on PagalWorld with artist, trying title only: ${cleanTitle}`);
-      searchResults = await searchPagalWorld(cleanTitle);
+    // Check up to 3 PagalWorld results to avoid ringtones
+    let bestAudioInfo = null;
+    let bestSongDetails = null;
+    let bestMatch = null;
+    let fallbackToNew = false;
+
+    if (searchResults.length > 0) {
+      const match = searchResults[0];
+      const details = await scrapeSongPage(match.url);
+      if (details) {
+        try {
+          const info = await cacheSongAudio(details, videoId);
+          bestAudioInfo = info;
+          bestSongDetails = details;
+          bestMatch = match;
+        } catch (e) {
+          console.error(`PagalWorld scrape failed for ${match.url}`, e);
+        }
+      }
     }
-    
-    // Fallback 1.5: Try PagalWorld with base title
-    if (searchResults.length === 0 && baseTitle !== cleanTitle) {
-      console.log(`[Cache Track] Not found on PagalWorld with title, trying base title: ${baseTitle}`);
-      searchResults = await searchPagalWorld(baseTitle);
-    }
-    
-    if (searchResults.length === 0) {
-      // Fallback 2: Try PagalNew with title + artist
-      console.log(`[Cache Track] Not found on PagalWorld, trying PagalNew for: ${query}`);
-      const pagalNewResults = await searchPagalNew(query);
-      let finalPagalNewResults = pagalNewResults;
+
+    if (bestAudioInfo && bestAudioInfo.size > 1500000) {
+      cachedTrack.status = 'ready';
+      cachedTrack.audioUrl = bestAudioInfo.url;
+      cachedTrack.audioFormat = bestAudioInfo.format;
+      cachedTrack.audioBitrate = bestAudioInfo.bitrate;
+      cachedTrack.audioSize = bestAudioInfo.size;
+      cachedTrack.albumName = bestSongDetails!.album;
+      cachedTrack.pagalworldSlug = bestMatch!.slug;
+      cachedTrack.source = 'pagalworld_cached';
       
-      // Fallback 3: Try PagalNew with title only
-      if (finalPagalNewResults.length === 0) {
-        console.log(`[Cache Track] Not found on PagalNew with artist, trying title only: ${cleanTitle}`);
-        finalPagalNewResults = await searchPagalNew(cleanTitle);
+      if (bestSongDetails!.coverUrl) {
+        cachedTrack.thumbnails = {
+          default: { url: bestSongDetails!.coverUrl, width: 150, height: 150 },
+          high: { url: bestSongDetails!.coverUrl, width: 500, height: 500 }
+        };
       }
       
-      // Fallback 4: Try PagalNew with base title
+      await cachedTrack.save();
+      return NextResponse.json({ status: 'ready', audioUrl: cachedTrack.audioUrl, message: 'Song cached via PagalWorld' });
+    } else {
+      fallbackToNew = true;
+    }
+
+    if (fallbackToNew || searchResults.length === 0) {
+      console.log(`[Cache Track] Not found on PagalWorld (or ringtone), trying PagalNew for: ${query}`);
+      let finalPagalNewResults = await searchPagalNew(query);
+      
+      if (finalPagalNewResults.length === 0) {
+        finalPagalNewResults = await searchPagalNew(cleanTitle);
+      }
       if (finalPagalNewResults.length === 0 && baseTitle !== cleanTitle) {
-        console.log(`[Cache Track] Not found on PagalNew with title, trying base title: ${baseTitle}`);
         finalPagalNewResults = await searchPagalNew(baseTitle);
       }
       
@@ -110,99 +136,50 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Song not found on PagalWorld or PagalNew' }, { status: 404 });
       }
       
-      // Found on PagalNew
-      const bestMatch = finalPagalNewResults[0];
-      const songDetails = await scrapePagalNewSongPage(bestMatch.url);
+      // Check the first PagalNew result
+      let bestPNewInfo = null;
+      let bestPNewDetails = null;
+      let bestPNewMatch = null;
+
+      if (finalPagalNewResults.length > 0) {
+        const match = finalPagalNewResults[0];
+        const details = await scrapePagalNewSongPage(match.url);
+        if (details) {
+          try {
+            const info = await cachePagalNewSongAudio(details, videoId);
+            bestPNewInfo = info;
+            bestPNewDetails = details;
+            bestPNewMatch = match;
+          } catch (e) {}
+        }
+      }
       
-      if (!songDetails) {
+      if (!bestPNewInfo) {
         cachedTrack.status = 'failed';
         await cachedTrack.save();
         return NextResponse.json({ error: 'Failed to scrape PagalNew song details' }, { status: 500 });
       }
       
-      try {
-        const audioInfo = await cachePagalNewSongAudio(songDetails, videoId);
-        
-        cachedTrack.status = 'ready';
-        cachedTrack.audioUrl = audioInfo.url;
-        cachedTrack.audioFormat = audioInfo.format;
-        cachedTrack.audioBitrate = audioInfo.bitrate;
-        cachedTrack.audioSize = audioInfo.size;
-        cachedTrack.albumName = songDetails.album;
-        cachedTrack.source = 'pagalnew_cached';
-        cachedTrack.pagalworldSlug = bestMatch.slug;
-        
-        if (songDetails.coverUrl) {
-          cachedTrack.thumbnails = {
-            default: { url: songDetails.coverUrl, width: 150, height: 150 },
-            high: { url: songDetails.coverUrl, width: 500, height: 500 }
-          };
-        }
-        
-        await cachedTrack.save();
-        return NextResponse.json({ status: 'ready', audioUrl: cachedTrack.audioUrl, message: 'Song cached via PagalNew' });
-      } catch (err) {
-        console.error('Failed to cache audio from PagalNew:', err);
-        cachedTrack.status = 'failed';
-        await cachedTrack.save();
-        return NextResponse.json({ 
-          error: 'Failed to download from PagalNew', 
-          details: err instanceof Error ? err.message : String(err),
-          stack: err instanceof Error ? err.stack : undefined
-        }, { status: 500 });
-      }
-    }
-
-    // Found on PagalWorld
-    const bestMatch = searchResults[0];
-
-    // 3. Scrape song details
-    const songDetails = await scrapeSongPage(bestMatch.url);
-    if (!songDetails) {
-      cachedTrack.status = 'failed';
-      await cachedTrack.save();
-      return NextResponse.json({ error: 'Failed to scrape song details' }, { status: 500 });
-    }
-
-    // 4. Download and cache to Firebase
-    try {
-      const audioInfo = await cacheSongAudio(songDetails, videoId);
-      
-      // 5. Update the CachedTrack with success
       cachedTrack.status = 'ready';
-      cachedTrack.audioUrl = audioInfo.url;
-      cachedTrack.audioFormat = audioInfo.format;
-      cachedTrack.audioBitrate = audioInfo.bitrate;
-      cachedTrack.audioSize = audioInfo.size;
+      cachedTrack.audioUrl = bestPNewInfo.url;
+      cachedTrack.audioFormat = bestPNewInfo.format;
+      cachedTrack.audioBitrate = bestPNewInfo.bitrate;
+      cachedTrack.audioSize = bestPNewInfo.size;
+      cachedTrack.albumName = bestPNewDetails!.album;
+      cachedTrack.source = 'pagalnew_cached';
+      cachedTrack.pagalworldSlug = bestPNewMatch!.slug;
       
-      cachedTrack.albumName = songDetails.album;
-      cachedTrack.pagalworldSlug = bestMatch.slug;
-      cachedTrack.source = 'pagalworld_cached';
-      
-      // Save high res thumbnail from scrape if available
-      if (songDetails.coverUrl) {
+      if (bestPNewDetails!.coverUrl) {
         cachedTrack.thumbnails = {
-          default: { url: songDetails.coverUrl, width: 150, height: 150 },
-          high: { url: songDetails.coverUrl, width: 500, height: 500 }
+          default: { url: bestPNewDetails!.coverUrl, width: 150, height: 150 },
+          high: { url: bestPNewDetails!.coverUrl, width: 500, height: 500 }
         };
       }
       
       await cachedTrack.save();
-
-      return NextResponse.json({ 
-        status: 'ready', 
-        audioUrl: cachedTrack.audioUrl,
-        message: 'Song cached successfully'
-      });
-      
-    } catch (err) {
-      console.error('Failed to cache audio:', err);
-      cachedTrack.status = 'failed';
-      await cachedTrack.save();
-      return NextResponse.json({ error: 'Failed to download and store audio' }, { status: 500 });
+      return NextResponse.json({ status: 'ready', audioUrl: cachedTrack.audioUrl, message: 'Song cached via PagalNew' });
     }
-
-  } catch (error) {
+  } catch (error) { 
     console.error('Error in cache-track API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

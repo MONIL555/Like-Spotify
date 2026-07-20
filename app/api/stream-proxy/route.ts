@@ -13,11 +13,18 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const fetchHeaders: Record<string, string> = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Referer': url.includes('pagalnew') ? 'https://pagalnew.com/' : 'https://pagalworld.is/'
+    };
+
+    const range = req.headers.get('range');
+    if (range) {
+      fetchHeaders['Range'] = range;
+    }
+
     const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': url.includes('pagalnew') ? 'https://pagalnew.com/' : 'https://pagalworld.com/'
-      },
+      headers: fetchHeaders,
       // Important to stream the body instead of downloading it fully into memory
       // We pass the signal to cancel the upstream fetch if the client disconnects
       signal: req.signal

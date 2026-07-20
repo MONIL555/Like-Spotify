@@ -205,12 +205,11 @@ export async function cachePagalNewSongAudio(songDetails: PagalNewSongDetails, v
   const contentLength = response.headers.get('content-length');
   const sizeBytes = contentLength ? parseInt(contentLength, 10) : 0;
   
-  // Return the relative proxy URL
-  const proxyUrl = `/api/stream-proxy?url=${encodeURIComponent(downloadUrl)}`;
+  // Return the raw MP3 URL to bypass proxy issues
   const bitrateStr = downloadUrl.includes('320') ? 320 : 128;
 
   return {
-    url: proxyUrl,
+    url: downloadUrl,
     format: 'mp3',
     size: sizeBytes,
     bitrate: bitrateStr,

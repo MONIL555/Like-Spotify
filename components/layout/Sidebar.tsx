@@ -9,6 +9,7 @@ import useSWR from 'swr';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { CreatePlaylistModal } from '@/components/layout/CreatePlaylistModal';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const NAV_ITEMS = [
   { icon: Home, label: 'Home', href: '/' },
@@ -89,7 +90,13 @@ export function Sidebar() {
           </div>
           
           <div className="flex-1 overflow-y-auto hide-scrollbar space-y-1 pb-4">
-            {Array.isArray(playlists) && playlists.map((pl: any) => (
+            {!playlists ? (
+              <div className="px-3 flex flex-col gap-3 mt-2">
+                <Skeleton className="h-4 w-3/4 rounded" />
+                <Skeleton className="h-4 w-5/6 rounded" />
+                <Skeleton className="h-4 w-2/3 rounded" />
+              </div>
+            ) : Array.isArray(playlists) && playlists.map((pl: any) => (
               <Link
                 key={pl._id}
                 href={`/playlist/${pl._id}`}

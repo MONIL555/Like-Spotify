@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { usePlayerStore } from '@/store/playerStore';
 import { useQueueStore } from '@/store/queueStore';
 import { useConfigStore } from '@/store/configStore';
+import { useHistoryStore } from '@/store/historyStore';
 
 export function NativeAudioPlayer() {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -40,7 +41,13 @@ export function NativeAudioPlayer() {
     }
 
     if ((currentTrack.source && (currentTrack.source.endsWith('_cached') || currentTrack.source === 'admin_manual')) && currentTrack.audioUrl) {
-      setStreamUrl(currentTrack.audioUrl);
+      // Un-wrap stream-proxy URLs for older cached tracks
+      if (currentTrack.audioUrl.startsWith('/api/stream-proxy?url=')) {
+        const rawUrl = decodeURIComponent(currentTrack.audioUrl.replace('/api/stream-proxy?url=', ''));
+        setStreamUrl(rawUrl);
+      } else {
+        setStreamUrl(currentTrack.audioUrl);
+      }
       return;
     }
 
@@ -57,17 +64,17 @@ export function NativeAudioPlayer() {
           } else {
             // Check YouTube fallback flag before falling back
             const { youtubeFallbackEnabled } = useConfigStore.getState();
-            if (youtubeFallbackEnabled) {
+            if (youtubeFallbackEnabled && !currentTrack.videoId?.startsWith('saavn_')) {
               usePlayerStore.getState().setActivePlayer('youtube');
             } else {
-              // YouTube disabled — skip this track
+              // YouTube disabled or saavn track — skip this track
               usePlayerStore.getState().advanceToNext();
             }
           }
         })
         .catch(() => {
           const { youtubeFallbackEnabled } = useConfigStore.getState();
-          if (youtubeFallbackEnabled) {
+          if (youtubeFallbackEnabled && !currentTrack.videoId?.startsWith('saavn_')) {
             usePlayerStore.getState().setActivePlayer('youtube');
           } else {
             usePlayerStore.getState().advanceToNext();
@@ -112,10 +119,6 @@ export function NativeAudioPlayer() {
       } else if (originalSeekTo) {
         originalSeekTo(seconds);
       }
-    };
-
-    (window as any).playNativeSilentAudio = () => {
-      silentAudioRef.current?.play().catch(() => {});
     };
   }, []);
 
@@ -202,9 +205,13 @@ export function NativeAudioPlayer() {
 
   const handleError = () => {
     if (isActive) {
-      console.error('Native Audio Player Error, checking YouTube fallback...');
+      console.error('Native Audio Player Error.');
       const { youtubeFallbackEnabled } = useConfigStore.getState();
-      if (youtubeFallbackEnabled) {
+      
+      // Only fallback if YouTube is enabled AND it's a valid YouTube video ID (not a JioSaavn track)
+      if (youtubeFallbackEnabled && !currentTrack?.videoId?.startsWith('saavn_')) {
+        console.error('Falling back to YouTube Embed...');
+        useHistoryStore.getState().removeFromHistory(currentTrack!.videoId);
         usePlayerStore.getState().setActivePlayer('youtube');
       } else {
         usePlayerStore.getState().advanceToNext();

@@ -146,11 +146,18 @@ export async function scrapeSongPage(songUrl: string): Promise<PagalWorldSongDet
     const downloadBtns = root.querySelectorAll('a.dbutton');
     for (const btn of downloadBtns) {
       const titleAttr = btn.getAttribute('title') || '';
-      const href = btn.getAttribute('href') || '';
-      
-      if (!href) continue;
+      const dataYear = btn.getAttribute('data-year');
+      const dataMonth = btn.getAttribute('data-month');
+      const dataFile = btn.getAttribute('data-file');
 
-      const finalHref = href.startsWith('http') ? href : `${BASE_URL}${href.startsWith('/') ? '' : '/'}${href}`;
+      let finalHref = '';
+      if (dataYear && dataMonth && dataFile) {
+        finalHref = encodeURI(`${BASE_URL}/wp-content/uploads/${dataYear}/${dataMonth}/${dataFile}`);
+      } else {
+        const href = btn.getAttribute('href') || '';
+        if (!href) continue;
+        finalHref = encodeURI(href.startsWith('http') ? href : `${BASE_URL}${href.startsWith('/') ? '' : '/'}${href}`);
+      }
 
       if (titleAttr.includes('128')) {
         downloadUrl128 = finalHref;
@@ -206,12 +213,10 @@ export async function cacheSongAudio(
 
   const contentLength = response.headers.get('content-length');
   const size = contentLength ? parseInt(contentLength, 10) : 0;
-  
-  // Format the proxy URL
-  const proxyUrl = `/api/stream-proxy?url=${encodeURIComponent(downloadUrl)}`;
-  
+  // Use the raw downloadUrl directly to bypass proxy issues
+  // The browser will stream the audio natively without CORS issues
   return {
-    url: proxyUrl,
+    url: downloadUrl,
     size,
     bitrate,
     format: 'mp3',

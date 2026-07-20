@@ -6,6 +6,7 @@ import { TrackRow } from '@/components/music/TrackRow';
 import { ArtistRow } from '@/components/music/ArtistRow';
 import { useParams } from 'next/navigation';
 import { Loader2, Music2, Users, SquarePlay } from 'lucide-react';
+import { TrackSkeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -70,8 +71,10 @@ export default function SearchResultPage() {
         </div>
 
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-brand-primary">
-            <Loader2 className="h-10 w-10 animate-spin" />
+          <div className="flex flex-col gap-2">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <TrackSkeleton key={i} />
+            ))}
           </div>
         ) : error ? (
           <div className="clay-card p-12 text-center">

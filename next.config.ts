@@ -37,6 +37,21 @@ const nextConfig: NextConfig = {
         hostname: 'c.saavncdn.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'pagalworld.is',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'pagalnew.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'share.google',
+        pathname: '/**',
+      },
     ],
   },
   async headers() {

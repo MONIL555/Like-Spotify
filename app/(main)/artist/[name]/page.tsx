@@ -4,6 +4,7 @@ import useSWR from 'swr';
 import { TrackRow } from '@/components/music/TrackRow';
 import { useParams } from 'next/navigation';
 import { Loader2, Music2, Play } from 'lucide-react';
+import { TrackSkeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { usePlayerStore } from '@/store/playerStore';
 import { useQueueStore } from '@/store/queueStore';
@@ -78,8 +79,10 @@ export default function ArtistPage() {
         </h2>
         
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-brand-primary">
-            <Loader2 className="h-10 w-10 animate-spin" />
+          <div className="flex flex-col gap-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <TrackSkeleton key={i} />
+            ))}
           </div>
         ) : error ? (
           <div className="clay-card p-12 text-center">

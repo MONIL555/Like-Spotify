@@ -232,14 +232,17 @@ export const useQueueStore = create<QueueState>((set, get) => ({
   setCurrentIndex: (index) => set({ currentIndex: index }),
 
   /**
-   * Get all videoIds that have been played (history + current queues)
+   * Get all videoIds that have been played or are queued.
    * Used to pass as skipVideoIds to the autoplay API to avoid repeats.
+   * Includes: history, autoplayQueue, context queue, and userQueue.
    */
   getPlayedVideoIds: () => {
-    const { history, autoplayQueue } = get();
+    const { history, autoplayQueue, queue, userQueue } = get();
     const ids = new Set<string>();
     history.forEach(t => ids.add(t.videoId));
     autoplayQueue.forEach(t => ids.add(t.videoId));
+    queue.forEach(t => ids.add(t.videoId));
+    userQueue.forEach(t => ids.add(t.videoId));
     return Array.from(ids);
   },
 }));

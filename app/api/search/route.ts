@@ -28,32 +28,11 @@ export async function GET(req: NextRequest) {
       ...(sourceParam && { source: sourceParam }) 
     });
 
-    if (validated.source === 'youtube') {
-      const fetchLimit = validated.type === 'video' ? 10 : validated.limit;
-      const searchData = await searchYouTube(validated.q, fetchLimit, undefined, validated.type);
-      
-      if (validated.type === 'video' && searchData.items && searchData.items.length > 0) {
-        // Sort to prioritize official channels ("Topic" or "VEVO")
-        searchData.items.sort((a: any, b: any) => {
-          const aIsOfficial = a.channelName?.toLowerCase().includes('topic') || a.channelName?.toLowerCase().includes('vevo') ? 1 : 0;
-          const bIsOfficial = b.channelName?.toLowerCase().includes('topic') || b.channelName?.toLowerCase().includes('vevo') ? 1 : 0;
-          return bIsOfficial - aIsOfficial;
-        });
-        
-        // Slice down to requested limit
-        searchData.items = searchData.items.slice(0, validated.limit);
-      }
-      
-      return NextResponse.json({ ...searchData, source: 'youtube' });
-    }
-
-    // 3. Check Database Cache
-    await connectDB();
-    
-    // Step 3.5: Fetch from CachedTrack (PagalWorld cached tracks)
+    // Step 2.5: Fetch from CachedTrack (PagalWorld/PagalNew cached tracks)
     const CachedTrack = (await import('@/models/CachedTrack')).default;
     let localCachedTracks: any[] = [];
-    if (validated.type === 'video' || validated.type === 'all') {
+    if (validated.type === 'video' || validated.type === 'all' || !validated.type) {
+      await connectDB();
       const dbCachedTracks = await CachedTrack.find(
         { $text: { $search: validated.q }, status: 'ready' },
         { score: { $meta: 'textScore' } }
@@ -72,6 +51,35 @@ export async function GET(req: NextRequest) {
         audioUrl: ct.audioUrl,
       }));
     }
+
+    if (validated.source === 'youtube') {
+      const fetchLimit = validated.type === 'video' ? 10 : validated.limit;
+      const searchData = await searchYouTube(validated.q, fetchLimit, undefined, validated.type);
+      
+      if (validated.type === 'video' && searchData.items && searchData.items.length > 0) {
+        // Sort to prioritize official channels ("Topic" or "VEVO")
+        searchData.items.sort((a: any, b: any) => {
+          const aIsOfficial = a.channelName?.toLowerCase().includes('topic') || a.channelName?.toLowerCase().includes('vevo') ? 1 : 0;
+          const bIsOfficial = b.channelName?.toLowerCase().includes('topic') || b.channelName?.toLowerCase().includes('vevo') ? 1 : 0;
+          return bIsOfficial - aIsOfficial;
+        });
+        
+        // Slice down to requested limit
+        searchData.items = searchData.items.slice(0, validated.limit);
+      }
+
+      // Deduplicate and prepend
+      const localIds = new Set(localCachedTracks.map(t => t.videoId));
+      if (searchData.items) {
+        searchData.items = searchData.items.filter((item: any) => !localIds.has(item.videoId));
+        searchData.items = [...localCachedTracks, ...searchData.items];
+      }
+      
+      return NextResponse.json({ ...searchData, source: 'youtube' });
+    }
+
+    // 3. Check Database Cache
+    await connectDB();
     
     const searchCacheResult = await SearchCache.findOne({ 
       query: validated.q, 
@@ -82,12 +90,11 @@ export async function GET(req: NextRequest) {
       const parsedResults = JSON.parse(searchCacheResult.results);
       
       if (parsedResults.source !== 'youtube') {
-        // Deduplicate: remove items from parsedResults that match videoId in localCachedTracks
+        // Prepend local tracks if not present
         const localIds = new Set(localCachedTracks.map(t => t.videoId));
-        parsedResults.items = parsedResults.items.filter((item: any) => !localIds.has(item.videoId));
-        
-        // Prepend local cached tracks
+        parsedResults.items = parsedResults.items.filter((item: any) => !localIds.has(item.videoId || item.id));
         parsedResults.items = [...localCachedTracks, ...parsedResults.items];
+        
         return NextResponse.json(parsedResults);
       }
     }
@@ -113,6 +120,11 @@ export async function GET(req: NextRequest) {
         nextPageToken: null,
         totalResults: saavnTracks.length,
       };
+      
+      // Deduplicate and prepend cached tracks
+      const localIds = new Set(localCachedTracks.map(t => t.videoId));
+      searchData.items = searchData.items.filter((item: any) => !localIds.has(item.videoId || item.id));
+      searchData.items = [...localCachedTracks, ...searchData.items];
     } catch (error) {
       console.warn('JioSaavn search failed:', error);
       searchData = {
@@ -129,12 +141,6 @@ export async function GET(req: NextRequest) {
       { upsert: true, new: true }
     );
 
-    // Deduplicate from fetched results
-    const localIds = new Set(localCachedTracks.map(t => t.videoId));
-    if (searchData.items) {
-      searchData.items = (searchData.items as any[]).filter((item: any) => !localIds.has(item.videoId));
-      searchData.items = [...localCachedTracks, ...(searchData.items as any[])] as any;
-    }
 
     return NextResponse.json({ ...searchData, source });
 
