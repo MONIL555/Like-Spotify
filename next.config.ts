@@ -10,6 +10,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  compress: true, // Compress JSON and assets using Gzip/Brotli
   images: {
     remotePatterns: [
       {

@@ -4,6 +4,7 @@ import { verifyAccessToken } from '@/lib/auth';
 import { apiLimiter, checkRateLimit, getClientIp } from '@/lib/ratelimit';
 import ListeningHistory from '@/models/ListeningHistory';
 import Track from '@/models/Track';
+import { enqueueHistory } from '@/lib/batchQueue';
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,29 +31,12 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    // Ensure the track metadata exists in the DB so it can be populated in recommendations
-    const existingTrack = await Track.findOne({ videoId }).lean();
-    if (!existingTrack && body.trackData) {
-      // Create it if we passed the trackData
-      await Track.create({
-        videoId: body.trackData.videoId,
-        title: body.trackData.title,
-        artist: body.trackData.artist,
-        channelId: body.trackData.channelId,
-        channelTitle: body.trackData.channelTitle,
-        thumbnails: body.trackData.thumbnails,
-        duration: body.trackData.duration,
-        durationText: body.trackData.durationText,
-        publishedAt: body.trackData.publishedAt,
-      });
-    }
-
-    await ListeningHistory.create({
+    enqueueHistory({
       userId: jwtUser.userId,
       videoId,
       duration,
       source: source || 'queue',
-    });
+    }, body.trackData);
 
     return NextResponse.json({ success: true });
 

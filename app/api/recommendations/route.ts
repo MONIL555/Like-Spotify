@@ -52,9 +52,29 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // "New Releases" (Trending music search)
-    // We'll search for recent music videos
-    const newReleasesSearch = await searchYouTube('trending music official video', 10);
+    // Parallelize "New Releases" and "Made For You" fetching to cut latency
+    let newReleasesSearchPromise = searchYouTube('trending music official video', 10).catch(() => ({ items: [] }));
+    
+    let madeForYouSearchPromise;
+    let artistsToExclude: string[] = [];
+
+    if (recentlyPlayed.length > 0) {
+      // Get unique artists
+      const recentArtists = Array.from(new Set(recentlyPlayed.map((t: any) => t.artist))).filter(Boolean) as string[];
+      artistsToExclude = recentArtists.slice(0, 2).map(a => a.toLowerCase());
+      
+      const artistsQuery = recentArtists.slice(0, 2).join(' ');
+      // Search for a general mix of these artists and others
+      madeForYouSearchPromise = searchYouTube(`${artistsQuery} top bollywood punjabi hits`, 25).catch(() => ({ items: [] }));
+    } else {
+      madeForYouSearchPromise = searchYouTube(`Top Bollywood Punjabi hits ${new Date().getFullYear()}`, 15).catch(() => ({ items: [] }));
+    }
+
+    const [newReleasesSearch, madeForYouSearch] = await Promise.all([
+      newReleasesSearchPromise, 
+      madeForYouSearchPromise
+    ]);
+    
     const newReleases = newReleasesSearch.items.map((item: any) => ({
       id: item.videoId,
       title: item.title,
@@ -78,22 +98,6 @@ export async function GET(req: NextRequest) {
       }
     }));
 
-    // "Made For You" (Similar songs based on recent listening or general vibes)
-    let madeForYouSearch;
-    let artistsToExclude: string[] = [];
-
-    if (recentlyPlayed.length > 0) {
-      // Get unique artists
-      const recentArtists = Array.from(new Set(recentlyPlayed.map((t: any) => t.artist))).filter(Boolean) as string[];
-      artistsToExclude = recentArtists.slice(0, 2).map(a => a.toLowerCase());
-      
-      const artistsQuery = recentArtists.slice(0, 2).join(' ');
-      // Search for a general mix of these artists and others
-      madeForYouSearch = await searchYouTube(`${artistsQuery} top bollywood punjabi hits`, 25);
-    } else {
-      madeForYouSearch = await searchYouTube(`Top Bollywood Punjabi hits ${new Date().getFullYear()}`, 15);
-    }
-    
     // Filter out the exact artists we just listened to AND compilations
     const filteredItems = madeForYouSearch.items.filter((item: any) => {
       const itemTitle = item.title.toLowerCase();

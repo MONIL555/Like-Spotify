@@ -127,8 +127,23 @@ export const TrackRow = memo(function TrackRow({ track, index, showCover = true,
   };
 
   const handleAddToPlaylist = async (playlistId: string) => {
+    const playlistKey = `/api/playlists/${playlistId}`;
+    
+    // Optimistic update
+    mutate(playlistKey, (currentData: any) => {
+      if (!currentData || !currentData.playlist) return currentData;
+      // We don't know the exact format of the playlist payload, but if it has tracks array, we append
+      return {
+        ...currentData,
+        playlist: {
+          ...currentData.playlist,
+          tracks: [...(currentData.playlist.tracks || []), track]
+        }
+      };
+    }, { revalidate: false });
+
     try {
-      const res = await fetch(`/api/playlists/${playlistId}`, {
+      const res = await fetch(playlistKey, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ track })
@@ -136,12 +151,14 @@ export const TrackRow = memo(function TrackRow({ track, index, showCover = true,
       if (res.ok) {
         toast.success('Added to playlist');
         mutate('/api/playlists');
-        mutate(`/api/playlists/${playlistId}`);
+        mutate(playlistKey);
       } else {
         toast.error('Failed to add to playlist');
+        mutate(playlistKey); // Revert
       }
     } catch {
       toast.error('Error adding to playlist');
+      mutate(playlistKey); // Revert
     }
   };
 

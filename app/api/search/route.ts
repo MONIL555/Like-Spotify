@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
-import { searchLimiter, checkRateLimit, getClientIp } from '@/lib/ratelimit';
+import { searchLimiter, checkRateLimit, getClientIp, redis } from '@/lib/ratelimit';
 import { searchYouTube } from '@/lib/youtube';
 import { searchSaavn } from '@/lib/jiosaavn';
-import SearchCache from '@/models/SearchCache';
 import { SearchSchema } from '@/lib/validations';
 import { ZodError } from 'zod';
 
@@ -78,20 +77,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ...searchData, source: 'youtube' });
     }
 
-    // 3. Check Database Cache
-    await connectDB();
-    
-    const searchCacheResult = await SearchCache.findOne({ 
-      query: validated.q, 
-      type: validated.type 
-    }).lean();
+    // 3. Check Redis Cache
+    const cacheKey = `search:${validated.type}:${validated.q.toLowerCase()}`;
+    const searchCacheResult = await redis.get(cacheKey);
 
-    if (searchCacheResult && JSON.parse(searchCacheResult.results).items?.length > 0) {
-      const parsedResults = JSON.parse(searchCacheResult.results);
+    if (searchCacheResult) {
+      // Upstash Redis parses JSON automatically, but just in case we handle both
+      const parsedResults: any = typeof searchCacheResult === 'string' ? JSON.parse(searchCacheResult) : searchCacheResult;
       
-      if (parsedResults.source !== 'youtube') {
+      if (parsedResults?.items?.length > 0 && parsedResults.source !== 'youtube') {
         // Prepend local tracks if not present
-        const localIds = new Set(localCachedTracks.map(t => t.videoId));
+        const localIds = new Set(localCachedTracks.map((t: any) => t.videoId));
         parsedResults.items = parsedResults.items.filter((item: any) => !localIds.has(item.videoId || item.id));
         parsedResults.items = [...localCachedTracks, ...parsedResults.items];
         
@@ -134,12 +130,10 @@ export async function GET(req: NextRequest) {
       };
     }
 
-    // 5. Cache the result (Upsert to replace bad cache)
-    await SearchCache.findOneAndUpdate(
-      { query: validated.q, type: validated.type },
-      { results: JSON.stringify({ ...searchData, source }) },
-      { upsert: true, new: true }
-    );
+    // 5. Cache the result in Redis (expire in 2 hours)
+    if (searchData.items && searchData.items.length > 0) {
+      await redis.set(cacheKey, JSON.stringify({ ...searchData, source }), { ex: 7200 });
+    }
 
 
     return NextResponse.json({ ...searchData, source });
