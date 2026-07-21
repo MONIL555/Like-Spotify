@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Avatar } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown';
 import Link from 'next/link';
+import Image from 'next/image';
 import React, { useState, useRef, useEffect } from 'react';
 
 function SearchInput() {
@@ -68,13 +69,7 @@ export function TopBar() {
       <div className={`flex items-center gap-2 pl-1 ${pathname.startsWith('/search') ? 'hidden md:flex md:flex-1' : 'flex-1'}`}>
         {!pathname.startsWith('/search') && (
           <div className="flex items-center gap-2 md:hidden animate-fade-in">
-            <div className="h-8 w-8 rounded-lg bg-brand-primary flex items-center justify-center text-white shadow-brand">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                <path d="M9 18V5l12-2v13" />
-                <circle cx="6" cy="18" r="3" />
-                <circle cx="18" cy="16" r="3" />
-              </svg>
-            </div>
+            <Image src="/logo-v3.png" alt="MoniStream Logo" width={32} height={32} className="drop-shadow-md rounded-lg" />
             <span className="font-bold text-lg tracking-tight text-foreground">MoniStream</span>
           </div>
         )}

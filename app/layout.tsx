@@ -1,16 +1,22 @@
-import type { Metadata } from "next";
-import { UnregisterSW } from "@/components/UnregisterSW";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: 'MoniStream',
+  description: 'A seamless, nonstop audio experience.',
+  appleWebApp: {
+    title: 'MoniStream',
+    statusBarStyle: 'black-translucent',
+    capable: true,
+  },
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: '#1DB954',
 };
 
 export default function RootLayout({
@@ -21,7 +27,6 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body>
-        <UnregisterSW />
         {children}
       </body>
     </html>

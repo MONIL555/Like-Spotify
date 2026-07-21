@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Home, Search, Heart, ShieldAlert, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -32,13 +33,7 @@ export function Sidebar() {
         {/* Brand */}
         <div className="p-6 pb-2">
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="h-10 w-10 rounded-xl clay-btn flex items-center justify-center bg-brand-primary text-white shadow-brand">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
-                <path d="M9 18V5l12-2v13" />
-                <circle cx="6" cy="18" r="3" />
-                <circle cx="18" cy="16" r="3" />
-              </svg>
-            </div>
+            <Image src="/logo-v3.png" alt="MoniStream Logo" width={40} height={40} className="drop-shadow-md hover:scale-105 transition-transform duration-300 rounded-xl" />
             <span className="font-bold text-xl tracking-tight text-foreground">MoniStream</span>
           </Link>
         </div>
