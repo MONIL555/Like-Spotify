@@ -48,6 +48,15 @@ export async function POST(req: NextRequest) {
     // Wrap external URLs with our stream proxy to bypass CORS restrictions in the audio visualizer
     // We use a RELATIVE URL so it works automatically on mobile devices (network IPs)
     let finalAudioUrl = audioUrl;
+
+    // Process Google Drive Links
+    if (finalAudioUrl.includes('drive.google.com/file/d/')) {
+      const match = finalAudioUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        finalAudioUrl = `https://drive.google.com/uc?export=download&id=${match[1]}`;
+      }
+    }
+
     if (finalAudioUrl.startsWith('http') && !finalAudioUrl.includes('/api/stream-proxy')) {
       finalAudioUrl = `/api/stream-proxy?url=${encodeURIComponent(finalAudioUrl)}`;
     }

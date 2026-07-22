@@ -41,6 +41,13 @@ export async function GET(req: NextRequest) {
     headers.set('Access-Control-Allow-Headers', 'Content-Type, Range');
     headers.set('Access-Control-Expose-Headers', 'Content-Length, Content-Range');
 
+    // Strip restrictive headers that Google Drive sets which block <audio> tags
+    headers.delete('cross-origin-resource-policy');
+    headers.delete('cross-origin-embedder-policy');
+    headers.delete('cross-origin-opener-policy');
+    headers.delete('content-security-policy');
+    headers.delete('x-content-security-policy');
+
     // Return the response body directly as a stream
     return new Response(response.body, {
       status: response.status,

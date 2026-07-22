@@ -62,36 +62,34 @@ function buildDiverseQueries(cleanArtist: string, cleanTitle: string, allArtists
   // ── Strategy 2: Primary artist top songs
   if (primaryArtist) {
     queries.push(primaryArtist);
+    queries.push(`${primaryArtist} hits`);
   }
 
   // ── Strategy 3: Featured/secondary artists (different artist, same vibe)
   for (const secondaryArtist of allArtists.slice(1, 3)) {
     if (secondaryArtist && secondaryArtist !== primaryArtist) {
       queries.push(secondaryArtist);
+      queries.push(`${secondaryArtist} hits`);
     }
   }
 
-  // ── Strategy 4: Title-based search (finds covers, similar songs by OTHER artists)
-  if (cleanTitle) {
+  // ── Strategy 4: Genre/mood keywords extracted from title
+  const moodKeywords = extractMoodKeywords(cleanTitle);
+  if (moodKeywords) {
+    queries.push(`${moodKeywords} songs`);
+    if (primaryArtist) {
+      queries.push(`${primaryArtist} ${moodKeywords}`);
+    }
+  }
+
+  // ── Strategy 5: Better Discovery (instead of arbitrary 'latest Hindi songs')
+  if (primaryArtist) {
+    queries.push(`${primaryArtist} new songs`);
+  } else if (cleanTitle) {
     queries.push(cleanTitle);
   }
 
-  // ── Strategy 5: Genre/mood keywords extracted from title
-  // Hindi/Bollywood mood keywords
-  const moodKeywords = extractMoodKeywords(cleanTitle);
-  if (moodKeywords && primaryArtist) {
-    queries.push(`${moodKeywords} Hindi songs`);
-  }
-
-  // ── Strategy 6: "Similar to" / "like" queries for discovery
-  if (primaryArtist) {
-    queries.push(`${primaryArtist} type songs`);
-  }
-
-  // ── Strategy 7: Latest trending (general discovery)
-  queries.push('latest Hindi songs');
-
-  return queries.filter(Boolean).slice(0, 8); // cap at 8 queries
+  return Array.from(new Set(queries)).filter(Boolean).slice(0, 8); // deduplicate and cap at 8
 }
 
 /**
@@ -106,6 +104,8 @@ function extractMoodKeywords(title: string): string {
   if (/party|dance|nachle|badshah|honey|yo yo|groove|beat/i.test(lower)) moods.push('party');
   if (/chill|sukoon|rahat|soulful|unplugged|acoustic/i.test(lower)) moods.push('chill');
   if (/motivat|josh|winner|power|strong|udaan/i.test(lower)) moods.push('motivational');
+  if (/remix|mix|dj|club/i.test(lower)) moods.push('club');
+  if (/rap|hip hop|gangsta|hood|trap/i.test(lower)) moods.push('hip hop');
 
   return moods[0] || ''; // Return primary mood
 }
@@ -178,15 +178,12 @@ export async function GET(req: NextRequest) {
         // Normalize artist name for counting
         const itemArtistLower = (item.artist || item.channelTitle || '').toLowerCase();
 
-        // Max 3 tracks from any single artist, and primary artist capped at 40% of total
+        // Primary artist capped at 10 tracks, secondary artists capped at 4 tracks
         const currentCount = artistCounts.get(itemArtistLower) || 0;
-        if (currentCount >= 3) continue;
+        const isPrimary = primaryArtistLower && (itemArtistLower.includes(primaryArtistLower) || primaryArtistLower.includes(itemArtistLower));
+        const limit = isPrimary ? 10 : 4;
         
-        // Primary artist additional cap: no more than 40% of mix so far
-        if (itemArtistLower === primaryArtistLower && mixTracks.length > 4) {
-          const primaryCount = artistCounts.get(primaryArtistLower) || 0;
-          if (primaryCount / mixTracks.length >= 0.4) continue;
-        }
+        if (currentCount >= limit) continue;
 
         const tokens = getTokens(item.title);
         if (tokens.size === 0) continue;

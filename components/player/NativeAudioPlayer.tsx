@@ -41,12 +41,27 @@ export function NativeAudioPlayer() {
     }
 
     if ((currentTrack.source && (currentTrack.source.endsWith('_cached') || currentTrack.source === 'admin_manual')) && currentTrack.audioUrl) {
-      // Un-wrap stream-proxy URLs for older cached tracks
-      if (currentTrack.audioUrl.startsWith('/api/stream-proxy?url=')) {
-        const rawUrl = decodeURIComponent(currentTrack.audioUrl.replace('/api/stream-proxy?url=', ''));
-        setStreamUrl(rawUrl);
+      let urlToPlay = currentTrack.audioUrl;
+
+      // Check if it's wrapped in our proxy
+      const isProxied = urlToPlay.startsWith('/api/stream-proxy?url=');
+      let rawUrl = isProxied ? decodeURIComponent(urlToPlay.replace('/api/stream-proxy?url=', '')) : urlToPlay;
+
+      // Fix old Google Drive /view URLs to direct download URLs on the fly
+      if (rawUrl.includes('drive.google.com/file/d/')) {
+        const match = rawUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          rawUrl = `https://drive.google.com/uc?export=download&id=${match[1]}`;
+        }
+      }
+
+      // Re-evaluate proxy requirement
+      if (rawUrl.includes('drive.google.com')) {
+        // GDrive ALWAYS needs proxy due to CORP headers
+        setStreamUrl(`/api/stream-proxy?url=${encodeURIComponent(rawUrl)}`);
       } else {
-        setStreamUrl(currentTrack.audioUrl);
+        // Other sources can save bandwidth by skipping proxy
+        setStreamUrl(rawUrl);
       }
       return;
     }

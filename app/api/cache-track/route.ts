@@ -74,7 +74,16 @@ export async function POST(req: NextRequest) {
     console.log(`[Cache Track] Searching PagalWorld for: ${query}`);
     let searchResults = await searchPagalWorld(query);
     
-    // Fallback 1: Try PagalWorld with just the title
+    if (searchResults.length === 0) {
+      console.log(`[Cache Track] Not found on PagalWorld with full query, trying cleanTitle: ${cleanTitle}`);
+      searchResults = await searchPagalWorld(cleanTitle);
+    }
+    
+    if (searchResults.length === 0 && baseTitle !== cleanTitle) {
+      console.log(`[Cache Track] Not found on PagalWorld with cleanTitle, trying baseTitle: ${baseTitle}`);
+      searchResults = await searchPagalWorld(baseTitle);
+    }
+    
     // Check up to 3 PagalWorld results to avoid ringtones
     let bestAudioInfo = null;
     let bestSongDetails = null;
@@ -154,10 +163,10 @@ export async function POST(req: NextRequest) {
         }
       }
       
-      if (!bestPNewInfo) {
+      if (!bestPNewInfo || bestPNewInfo.size <= 1500000) {
         cachedTrack.status = 'failed';
         await cachedTrack.save();
-        return NextResponse.json({ error: 'Failed to scrape PagalNew song details' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to scrape PagalNew song details or file too small' }, { status: 500 });
       }
       
       cachedTrack.status = 'ready';
