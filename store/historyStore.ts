@@ -21,7 +21,7 @@ export const useHistoryStore = create<HistoryState>()(
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            videoId: track.videoId || track.id,
+            videoId: track.videoId || (track as any).id,
             duration: track.duration || 0,
             source: track.source || 'youtube',
             trackData: track,
