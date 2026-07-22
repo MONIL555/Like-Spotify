@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     // Step 2.5: Fetch from CachedTrack (PagalWorld/PagalNew cached tracks)
     const CachedTrack = (await import('@/models/CachedTrack')).default;
     let localCachedTracks: any[] = [];
-    if (validated.type === 'video' || validated.type === 'all' || !validated.type) {
+    if (validated.source !== 'jiosaavn' && (validated.type === 'video' || validated.type === 'all' || !validated.type)) {
       await connectDB();
       const dbCachedTracks = await CachedTrack.find(
         { $text: { $search: validated.q }, status: 'ready' },

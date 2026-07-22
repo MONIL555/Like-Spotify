@@ -5,7 +5,9 @@ import User from '@/models/User';
 import Playlist from '@/models/Playlist';
 import ListeningHistory from '@/models/ListeningHistory';
 import Track from '@/models/Track';
+import CachedTrack from '@/models/CachedTrack';
 import { getVideoDetails } from '@/lib/youtube';
+import { getSaavnTrackDetails } from '@/lib/jiosaavn';
 
 export async function GET(req: NextRequest) {
   try {
@@ -48,7 +50,7 @@ export async function GET(req: NextRequest) {
 
     // Populate user details for top users
     const topUsers = await Promise.all(topUsersAggregate.map(async (item) => {
-      const user = await User.findById(item._id).select('username email displayName avatarUrl avatarColor plan');
+      const user = await User.findById(item._id).select('username email displayName avatarUrl avatarColor');
       return {
         _id: item._id,
         user: user ? user.toObject() : null,
@@ -69,32 +71,62 @@ export async function GET(req: NextRequest) {
     const topTracks = await Promise.all(topTracksAggregate.map(async (item) => {
       let track = await Track.findOne({ videoId: item._id });
       
+      if (!track) {
+        track = await CachedTrack.findOne({ videoId: item._id });
+      }
+      
       let title = track?.title;
       let artist = track?.artist;
       let thumbnails = track?.thumbnails;
 
       if (!track) {
         try {
-          const ytDetails = await getVideoDetails([item._id]);
-          if (ytDetails && ytDetails.length > 0) {
-            title = ytDetails[0].title;
-            artist = ytDetails[0].channelTitle;
-            thumbnails = ytDetails[0].thumbnails;
-            
-            await Track.create({
-              videoId: ytDetails[0].videoId,
-              title: title,
-              artist: artist,
-              channelId: ytDetails[0].channelId,
-              channelTitle: artist,
-              thumbnails: thumbnails,
-              duration: ytDetails[0].duration,
-              durationText: ytDetails[0].durationText,
-              publishedAt: ytDetails[0].publishedAt,
-            });
+          const videoId = item._id;
+          
+          if (videoId.startsWith('saavn_')) {
+            const saavnId = videoId.replace('saavn_', '');
+            const saavnDetails = await getSaavnTrackDetails(saavnId);
+            if (saavnDetails) {
+              title = saavnDetails.title;
+              artist = saavnDetails.artist;
+              thumbnails = saavnDetails.thumbnails;
+              
+              await Track.create({
+                videoId: saavnDetails.videoId,
+                saavnId: saavnDetails.saavnId,
+                title: saavnDetails.title,
+                artist: saavnDetails.artist,
+                channelId: saavnDetails.channelId,
+                channelTitle: saavnDetails.channelTitle,
+                thumbnails: saavnDetails.thumbnails,
+                duration: saavnDetails.duration,
+                durationText: saavnDetails.durationText,
+                source: saavnDetails.source,
+              });
+            }
+          } else {
+            const ytDetails = await getVideoDetails([videoId]);
+            if (ytDetails && ytDetails.length > 0) {
+              title = ytDetails[0].title;
+              artist = ytDetails[0].channelTitle;
+              thumbnails = ytDetails[0].thumbnails;
+              
+              await Track.create({
+                videoId: ytDetails[0].videoId,
+                title: title,
+                artist: artist,
+                channelId: ytDetails[0].channelId,
+                channelTitle: artist,
+                thumbnails: thumbnails,
+                duration: ytDetails[0].duration,
+                durationText: ytDetails[0].durationText,
+                publishedAt: ytDetails[0].publishedAt,
+                source: 'youtube',
+              });
+            }
           }
         } catch (e) {
-          console.error("Failed to fetch YT details for", item._id);
+          console.error("Failed to fetch details for", item._id, e);
         }
       }
 

@@ -70,7 +70,6 @@ export interface UserPublic {
   displayName: string;
   avatarUrl: string | null;
   avatarColor: string;
-  plan: 'free' | 'premium';
   role?: 'admin' | 'user';
   isActive: boolean;
   followers: string[];
@@ -80,37 +79,6 @@ export interface UserPublic {
   followedArtistIds: string[];
   createdAt: string;
   updatedAt: string;
-}
-
-export interface UserWithPreferences extends UserPublic {
-  preferences?: UserPreferences;
-}
-
-// ─── User Preferences ───────────────────────────────────────
-
-export interface EQBands {
-  hz60: number;
-  hz230: number;
-  hz910: number;
-  hz4k: number;
-  hz14k: number;
-}
-
-export interface UserPreferences {
-  _id?: string;
-  userId: string;
-  eqPreset: string;
-  eqBands: EQBands;
-  crossfadeDuration: number;
-  normalization: boolean;
-  autoplay: boolean;
-  showUnplayable: boolean;
-  compactLibrary: boolean;
-  showFriendActivity: boolean;
-  language: string;
-  excludedTrackIds: string[];
-  excludedPlaylistIds: string[];
-  sleepTimerMinutes: number;
 }
 
 // ─── Playlist Folder ─────────────────────────────────────────
@@ -264,7 +232,6 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
 export interface JWTPayload {
   userId: string;
   email: string;
-  plan: 'free' | 'premium';
   role?: 'admin' | 'user';
   iat?: number;
   exp?: number;

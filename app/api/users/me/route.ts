@@ -49,7 +49,6 @@ export async function PUT(req: NextRequest) {
       displayName: user.displayName,
       avatarUrl: user.avatarUrl,
       avatarColor: user.avatarColor,
-      plan: user.plan,
     });
 
   } catch (error: any) {

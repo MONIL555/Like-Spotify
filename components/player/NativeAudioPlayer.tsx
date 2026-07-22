@@ -181,9 +181,32 @@ export function NativeAudioPlayer() {
     });
   }, [isActive, playPrevious, advanceToNext, setCurrentTrack, setIsPlaying]);
 
+  const historyAddedRef = useRef(false);
+
+  useEffect(() => {
+    historyAddedRef.current = false;
+  }, [currentTrack?.videoId]);
+
   const handleTimeUpdate = () => {
     if (audioRef.current && isActive) {
-      setCurrentTime(audioRef.current.currentTime);
+      const t = audioRef.current.currentTime;
+      const duration = audioRef.current.duration;
+      setCurrentTime(t);
+
+      if ('mediaSession' in navigator && isFinite(duration) && duration > 0) {
+        try {
+          navigator.mediaSession.setPositionState({
+            duration: duration,
+            playbackRate: audioRef.current.playbackRate || 1,
+            position: t
+          });
+        } catch (e) { /* ignore */ }
+      }
+
+      if (t >= 30 && !historyAddedRef.current && currentTrack) {
+        historyAddedRef.current = true;
+        useHistoryStore.getState().addToHistory(currentTrack);
+      }
     }
   };
 

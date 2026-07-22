@@ -37,7 +37,6 @@ export async function POST(req: NextRequest) {
       const tokenPayload = {
         userId: 'admin',
         email: adminEmail,
-        plan: 'premium' as const,
         role: 'admin' as const,
       };
 
@@ -54,7 +53,6 @@ export async function POST(req: NextRequest) {
             displayName: 'Administrator',
             avatarUrl: null,
             avatarColor: '#1DB954',
-            plan: 'premium',
             role: 'admin',
             followers: [],
             following: [],
@@ -103,7 +101,6 @@ export async function POST(req: NextRequest) {
     const tokenPayload = {
       userId: user._id.toString(),
       email: user.email,
-      plan: user.plan,
       role: (user as any).role || 'user',
     };
 
@@ -139,7 +136,6 @@ export async function POST(req: NextRequest) {
           displayName: user.displayName,
           avatarUrl: user.avatarUrl,
           avatarColor: user.avatarColor,
-          plan: user.plan,
           role: (user as any).role || 'user',
           followers: user.followers,
           following: user.following,

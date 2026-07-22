@@ -23,7 +23,6 @@ export async function GET(req: NextRequest) {
             displayName: 'Administrator',
             avatarUrl: null,
             avatarColor: '#1DB954',
-            plan: 'premium',
             role: 'admin',
             followers: [],
             following: [],

@@ -145,12 +145,6 @@ export function YouTubeEmbed() {
   // ══════════════════════════════════════════════════════════════
   // 3. Sync Current Track (Load new video)
   // ══════════════════════════════════════════════════════════════
-  useEffect(() => {
-    if (!currentTrack) return;
-    
-    // Add to recently played history
-    useHistoryStore.getState().addToHistory(currentTrack);
-  }, [currentTrack]);
 
   useEffect(() => {
     if (!currentTrack || !playerRef.current || !isActive) return;
@@ -237,9 +231,11 @@ export function YouTubeEmbed() {
   // 6. Time Tracking Loop & PagalWorld Cache Trigger
   // ══════════════════════════════════════════════════════════════
   const cacheRequestedRef = useRef(false);
+  const historyAddedRef = useRef(false);
 
   useEffect(() => {
     cacheRequestedRef.current = false;
+    historyAddedRef.current = false;
   }, [currentTrack?.videoId]);
 
   useEffect(() => {
@@ -249,8 +245,26 @@ export function YouTubeEmbed() {
       if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
         try { 
           const t = playerRef.current.getCurrentTime();
+          const duration = playerRef.current.getDuration();
           if (isFinite(t) && t > 0) {
             setCurrentTime(t);
+
+            // Sync media session position state
+            if ('mediaSession' in navigator && isFinite(duration) && duration > 0) {
+              try {
+                navigator.mediaSession.setPositionState({
+                  duration: duration,
+                  playbackRate: 1,
+                  position: t
+                });
+              } catch (e) { /* ignore */ }
+            }
+
+            // Task 2: Add to history after 30 seconds
+            if (t >= 30 && !historyAddedRef.current && currentTrack) {
+               historyAddedRef.current = true;
+               useHistoryStore.getState().addToHistory(currentTrack);
+            }
             
             // Check for caching after 30 seconds
             if (t >= 30 && !cacheRequestedRef.current && currentTrack) {

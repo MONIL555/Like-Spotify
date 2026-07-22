@@ -7,7 +7,6 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
-import UserPreferences from '@/models/UserPreferences';
 import { CompleteSignupSchema } from '@/lib/validations';
 import { signAccessToken, signRefreshToken, handleApiError, ApiError, getAuthCookieOptions } from '@/lib/auth';
 import { generateAvatarColor } from '@/lib/utils';
@@ -92,13 +91,11 @@ export async function POST(req: NextRequest) {
     }) as any;
 
     // Create default preferences
-    await UserPreferences.create({ userId: user._id });
 
     // Generate tokens
     const tokenPayload = {
       userId: user._id.toString(),
       email: user.email,
-      plan: user.plan,
     };
 
     const accessToken = signAccessToken(tokenPayload);
@@ -131,7 +128,6 @@ export async function POST(req: NextRequest) {
             phoneNumber: user.phoneNumber,
             avatarUrl: user.avatarUrl,
             avatarColor: user.avatarColor,
-            plan: user.plan,
           },
         },
       },

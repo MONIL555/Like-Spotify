@@ -6,6 +6,8 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface ITrack extends Document {
   videoId: string;
+  saavnId?: string;
+  source?: string;
   title: string;
   artist: string;
   channelId: string;
@@ -34,6 +36,11 @@ const TrackSchema = new Schema<ITrack>(
       required: true,
       unique: true,
       index: true,
+    },
+    saavnId: String,
+    source: {
+      type: String,
+      default: 'youtube',
     },
     title: {
       type: String,

@@ -5,6 +5,7 @@ import { apiLimiter, checkRateLimit, getClientIp } from '@/lib/ratelimit';
 import { getVideoDetails } from '@/lib/youtube';
 import User from '@/models/User';
 import Track from '@/models/Track';
+import CachedTrack from '@/models/CachedTrack';
 
 async function getUserFromReq(req: NextRequest) {
   const token = req.cookies.get('access_token')?.value || req.headers.get('Authorization')?.replace('Bearer ', '');
@@ -82,7 +83,24 @@ export async function GET(req: NextRequest) {
       .filter(Boolean)
       .reverse(); // Reverse so newest is first
 
-    return NextResponse.json(orderedTracks);
+    // Inject cached track info so cached tracks can play directly from cache
+    const cachedTracks = await CachedTrack.find({ videoId: { $in: likedIds }, status: 'ready' }).lean();
+    const cachedMap = new Map();
+    cachedTracks.forEach((ct: any) => cachedMap.set(ct.videoId, ct));
+
+    const enrichedTracks = orderedTracks.map(t => {
+      const ct = cachedMap.get(t.videoId);
+      if (ct) {
+        return {
+          ...t,
+          source: ct.source || 'pagalworld_cached',
+          audioUrl: ct.audioUrl,
+        };
+      }
+      return t;
+    });
+
+    return NextResponse.json(enrichedTracks);
 
   } catch (error: any) {
     console.error('Liked Library GET Error:', error);

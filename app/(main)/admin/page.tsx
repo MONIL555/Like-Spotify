@@ -107,7 +107,10 @@ export default function AdminPage() {
           </div>
         </div>
         
-        <div className="flex items-center gap-3 md:mt-2">
+        <div className="flex items-center gap-3 md:mt-2 flex-wrap">
+          <Link href="/admin/admin-picks" className="text-sm bg-brand-primary text-black hover:bg-brand-primary/90 px-4 py-2 rounded-full transition-colors flex items-center gap-2 font-bold">
+            <Music className="w-4 h-4" /> Admin Picks
+          </Link>
           <Link href="/admin/cached-tracks" className="text-sm bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full transition-colors flex items-center gap-2 font-medium">
             <HardDrive className="w-4 h-4" /> Manage Cache
           </Link>
@@ -277,7 +280,7 @@ export default function AdminPage() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-xs font-bold text-blue-500">{formatDuration(item.totalDuration)}</p>
-                  <p className="text-[10px] text-muted-foreground">{item.user?.plan || 'free'}</p>
+                  
                 </div>
               </div>
             ))}

@@ -1,7 +1,7 @@
 'use client';
 
 import useSWR from 'swr';
-import { Play, Plus, Heart, Shuffle, ChevronRight, Music2, Loader2 } from 'lucide-react';
+import { Play, Plus, Heart, Shuffle, ChevronRight, Music2, Music, ArrowRight, Loader2 } from 'lucide-react';
 import { CardSkeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useQueueStore } from '@/store/queueStore';
@@ -58,13 +58,29 @@ const HERO_ARTISTS = [
 export function HomeDashboard() {
   const router = useRouter();
   const currentYear = new Date().getFullYear();
+  const hourBlock = Math.floor(new Date().getHours() / 4);
+
+  // Rotate trending queries every 4 hours using specific top artists to avoid generic repetition
+  const trendingQueries = [
+    `Arijit Singh Hits`,
+    `Darshan Raval Songs`,
+    `Badshah Bollywood`,
+    `Shreya Ghoshal Hits`,
+    `Jubin Nautiyal Top`,
+    `Neha Kakkar Hits`,
+    `Kishore Kumar Hits`,
+    `Atif Aslam Songs`,
+    `Diljit Dosanjh Hits`,
+    `Honey Singh Bollywood`
+  ];
+  const currentTrendingQuery = trendingQueries[hourBlock % trendingQueries.length];
 
   // Existing data
-  const { data: recentData, isLoading: recentLoading } = useSWR('/api/recommendations', fetcher, SWR_OPTIONS);
+  const { data: recentData, isLoading: recentLoading } = useSWR(`/api/recommendations?block=${hourBlock}&v=4`, fetcher, SWR_OPTIONS);
   const { data: playlists } = useSWR('/api/playlists', fetcher, SWR_OPTIONS);
 
-  // Trending Bollywood data (Tracks)
-  const { data: trendingData, isLoading: trendingLoading } = useSWR(`/api/search?q=Top+Bollywood+Hits+${currentYear}&type=video`, fetcher, SWR_OPTIONS);
+  // Trending Bollywood data (Tracks) - JioSaavn (no type=video)
+  const { data: trendingData, isLoading: trendingLoading } = useSWR(`/api/search?q=${encodeURIComponent(currentTrendingQuery)}&limit=15&source=jiosaavn&block=${hourBlock}&v=4`, fetcher, SWR_OPTIONS);
 
   const loadPlaylist = useQueueStore(s => s.loadPlaylist);
   const loadSingle = useQueueStore(s => s.loadSingle);
@@ -97,6 +113,8 @@ export function HomeDashboard() {
       playCount: 0,
       likeCount: 0,
       cachedAt: new Date().toISOString(),
+      saavnId: track.saavnId,
+      source: track.source,
     };
     loadSingle(trackData);
     setCurrentTrack(trackData);
@@ -130,7 +148,15 @@ export function HomeDashboard() {
   );
 
   const trendingTracks = Array.isArray(trendingData) ? trendingData : trendingData?.items || [];
-  const validTrendingTracks = trendingTracks.filter((i: any) => i.track || i.videoId).map((i: any) => i.track || i);
+  const validTrendingTracks = Array.from(new Map(
+    trendingTracks
+      .filter((i: any) => i.track || i.videoId || i.id)
+      .map((i: any) => i.track || i)
+      .map((track: any) => {
+        const baseTitle = (track.title || '').split('(')[0].split('-')[0].trim().toLowerCase();
+        return [baseTitle, track];
+      })
+  ).values());
 
   return (
     <div className="flex flex-col gap-8 pb-12 animate-fade-in">
@@ -140,7 +166,11 @@ export function HomeDashboard() {
         {MOODS.map(mood => (
           <button
             key={mood}
-            onClick={() => router.push(`/search/${encodeURIComponent(mood + ' Bollywood')}`)}
+            onClick={() => {
+              const moodQueries = [mood, `${mood} Hindi`, `${mood} Bollywood`, `${mood} Songs`];
+              const dynamicQuery = moodQueries[hourBlock % moodQueries.length];
+              router.push(`/search/${encodeURIComponent(dynamicQuery)}`);
+            }}
             className="whitespace-nowrap px-5 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 text-sm font-bold transition-colors"
           >
             {mood}
@@ -224,7 +254,7 @@ export function HomeDashboard() {
                   </div>
                   <h3 className="font-bold text-foreground truncate text-sm md:text-base px-1">{track.title}</h3>
                   <p className="text-muted-foreground font-semibold line-clamp-1 text-xs mt-0.5 px-1">
-                    {track.artists?.map((a: any) => a.name).join(', ') || track.channelName || 'Various Artists'}
+                    {track.artist || track.artists?.map((a: any) => a.name).join(', ') || track.channelTitle || track.channelName || 'Various Artists'}
                   </p>
                 </div>
               )
@@ -233,15 +263,15 @@ export function HomeDashboard() {
         )}
       </section>
 
-      {/* 4. Based on your recent listening */}
+      {/* 4. Based on your recent listening (Admin Picks) */}
       {recentData?.madeForYou && recentData.madeForYou.length > 0 && (
-        <section>
-          <SectionHeader title="Jump Back In" onSeeAll={() => router.push('/search')} />
-          <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-4 -mx-4 px-4 md:mx-0 md:px-0">
-            {recentData.madeForYou.slice(0, 5).map((item: any, idx: number) => (
+        <section className="flex flex-col gap-4">
+          <SectionHeader title="Admin Picks" onSeeAll={() => router.push('/search')} />
+          <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2 -mx-4 px-4 md:mx-0 md:px-0">
+            {recentData.madeForYou.slice(0, 10).map((item: any, idx: number) => (
               <div
                 key={`recent-${item.id}`}
-                onClick={() => handlePlayTrack(item.data, recentData.madeForYou.slice(0, 5).map((i: any) => i.data), idx)}
+                onClick={() => handlePlayTrack(item.data, recentData.madeForYou.slice(0, 10).map((i: any) => i.data), idx)}
                 className="group w-[140px] md:w-[180px] shrink-0 cursor-pointer flex flex-col"
               >
                 <div className="relative aspect-square w-full rounded-[24px] overflow-hidden shadow-lg mb-3 bg-white/5">
@@ -251,17 +281,17 @@ export function HomeDashboard() {
                       alt={item.title}
                       fill
                       sizes="(max-width: 768px) 140px, 180px"
-                      className="object-cover transition-transform duration-700 group-hover:scale-110"
+                      className="object-cover transition-transform duration-500 group-hover:scale-110 group-hover:rotate-1"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Music2 className="w-10 h-10 text-white/30" />
+                    <div className="w-full h-full flex items-center justify-center bg-white/5">
+                      <Music className="w-12 h-12 text-muted-foreground opacity-20" />
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
-                    <Button size="icon" className="h-12 w-12 bg-brand-primary text-white rounded-full shadow-xl hover:scale-110 transition-transform translate-y-4 group-hover:translate-y-0">
-                      <Play className="fill-current h-6 w-6 ml-1" />
-                    </Button>
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                    <div className="w-12 h-12 rounded-full bg-brand-primary text-black flex items-center justify-center shadow-[0_0_20px_rgba(30,215,96,0.4)] transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 ease-out">
+                      <Play className="w-5 h-5 ml-1" />
+                    </div>
                   </div>
                 </div>
                 <h3 className="font-bold text-foreground truncate text-sm md:text-base px-1">{item.title}</h3>
@@ -270,6 +300,11 @@ export function HomeDashboard() {
                 </p>
               </div>
             ))}
+          </div>
+          <div className="flex justify-center mt-2 mb-4">
+             <button onClick={() => router.push('/search')} className="text-sm font-bold bg-white/10 hover:bg-white/20 transition-colors px-6 py-2 rounded-full text-foreground flex items-center gap-2">
+               See all songs <ArrowRight className="w-4 h-4" />
+             </button>
           </div>
         </section>
       )}

@@ -12,7 +12,6 @@ export interface IUser extends Document {
   passwordHash: string;
   avatarUrl: string | null;
   avatarColor: string;
-  plan: 'free' | 'premium';
   isActive: boolean;
   followers: mongoose.Types.ObjectId[];
   following: mongoose.Types.ObjectId[];
@@ -24,7 +23,6 @@ export interface IUser extends Document {
     createdAt: Date;
     expiresAt: Date;
   }[];
-  preferences?: mongoose.Types.ObjectId;
   currentlyPlaying?: {
     videoId: string;
     title: string;
@@ -80,11 +78,6 @@ const UserSchema = new Schema<IUser>(
       type: String,
       default: '#1DB954',
     },
-    plan: {
-      type: String,
-      enum: ['free', 'premium'],
-      default: 'free',
-    },
     isActive: {
       type: Boolean,
       default: true,
@@ -111,10 +104,6 @@ const UserSchema = new Schema<IUser>(
         expiresAt: Date,
       },
     ],
-    preferences: {
-      type: Schema.Types.ObjectId,
-      ref: 'UserPreferences',
-    },
     currentlyPlaying: {
       videoId: String,
       title: String,

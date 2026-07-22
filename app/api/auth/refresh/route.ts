@@ -34,7 +34,6 @@ export async function POST(req: NextRequest) {
     const accessToken = signAccessToken({
       userId: user._id.toString(),
       email: user.email,
-      plan: user.plan,
     });
 
     // Build response with new access token cookie

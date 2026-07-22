@@ -4,8 +4,10 @@ import { verifyAccessToken } from '@/lib/auth';
 import { apiLimiter, checkRateLimit, getClientIp } from '@/lib/ratelimit';
 import ListeningHistory from '@/models/ListeningHistory';
 import Track from '@/models/Track';
+import CuratedTrack from '@/models/CuratedTrack';
 import mongoose from 'mongoose';
-import { searchYouTube, getRelatedVideos } from '@/lib/youtube';
+import { getRelatedVideos } from '@/lib/youtube';
+import { searchSaavn } from '@/lib/jiosaavn';
 
 async function getUserFromReq(req: NextRequest) {
   const token = req.cookies.get('access_token')?.value || req.headers.get('Authorization')?.replace('Bearer ', '');
@@ -52,90 +54,72 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Parallelize "New Releases" and "Made For You" fetching to cut latency
-    let newReleasesSearchPromise = searchYouTube('trending music official video', 10).catch(() => ({ items: [] }));
+    const currentYear = new Date().getFullYear();
+    const hourBlock = Math.floor(new Date().getHours() / 4);
     
-    let madeForYouSearchPromise;
-    let artistsToExclude: string[] = [];
+    const trendingQueries = [
+      `Arijit Singh Hits`,
+      `Darshan Raval Songs`,
+      `Badshah Bollywood`,
+      `Shreya Ghoshal Hits`,
+      `Jubin Nautiyal Top`,
+      `Neha Kakkar Hits`,
+      `Kishore Kumar Hits`,
+      `Atif Aslam Songs`,
+      `Diljit Dosanjh Hits`,
+      `Honey Singh Bollywood`
+    ];
+    const newReleasesQuery = trendingQueries[hourBlock % trendingQueries.length];
 
-    if (recentlyPlayed.length > 0) {
-      // Get unique artists
-      const recentArtists = Array.from(new Set(recentlyPlayed.map((t: any) => t.artist))).filter(Boolean) as string[];
-      artistsToExclude = recentArtists.slice(0, 2).map(a => a.toLowerCase());
-      
-      const artistsQuery = recentArtists.slice(0, 2).join(' ');
-      // Search for a general mix of these artists and others
-      madeForYouSearchPromise = searchYouTube(`${artistsQuery} top bollywood punjabi hits`, 25).catch(() => ({ items: [] }));
-    } else {
-      madeForYouSearchPromise = searchYouTube(`Top Bollywood Punjabi hits ${new Date().getFullYear()}`, 15).catch(() => ({ items: [] }));
-    }
+    // Fetch New Releases
+    let newReleasesSearchPromise = searchSaavn(newReleasesQuery, 15).catch(() => ([]));
+    
+    // Fetch Admin Picks (formerly "Jump Back In")
+    let adminPicksPromise = CuratedTrack.find({ category: 'admin_picks' }).lean().catch(() => ([]));
 
-    const [newReleasesSearch, madeForYouSearch] = await Promise.all([
+    const [rawNewReleasesSearch, rawAdminPicks] = await Promise.all([
       newReleasesSearchPromise, 
-      madeForYouSearchPromise
+      adminPicksPromise
     ]);
+
+    // Deduplicate to avoid the same song from different albums (e.g., 5 versions of Jaan Nisaar)
+    const deduplicateTracks = (tracks: any[]) => {
+      return Array.from(new Map(
+        tracks.map((t: any) => {
+          const baseTitle = (t.title || '').split('(')[0].split('-')[0].trim().toLowerCase();
+          return [baseTitle, t];
+        })
+      ).values());
+    };
+
+    const newReleasesSearch = deduplicateTracks(rawNewReleasesSearch);
     
-    const newReleases = newReleasesSearch.items.map((item: any) => ({
-      id: item.videoId,
+    const newReleases = newReleasesSearch.map((item: any) => ({
+      id: item.videoId || item.id,
       title: item.title,
-      description: item.channelTitle || item.channelName,
-      imageUrl: item.thumbnail,
+      description: item.artist || item.channelTitle || 'Unknown Artist',
+      imageUrl: item.thumbnails?.high || item.thumbnails?.default || item.thumbnail,
       type: 'track',
-      data: {
-        videoId: item.videoId,
-        title: item.title,
-        artist: item.channelName || item.channelTitle,
-        channelId: item.channelId,
-        channelTitle: item.channelName || item.channelTitle,
-        thumbnails: {
-          default: item.thumbnail,
-          high: item.thumbnail
-        },
-        duration: 0,
-        durationText: '',
-        playCount: 0,
-        likeCount: 0
-      }
+      data: item
     }));
 
-    // Filter out the exact artists we just listened to AND compilations
-    const filteredItems = madeForYouSearch.items.filter((item: any) => {
-      const itemTitle = item.title.toLowerCase();
-      const itemChannel = (item.channelTitle || item.channelName || '').toLowerCase();
-      
-      const isSameArtist = artistsToExclude.some(artist => 
-        itemTitle.includes(artist) || itemChannel.includes(artist)
-      );
+    // Shuffle and pick 10 tracks for Admin Picks
+    const shuffledAdminPicks = [...rawAdminPicks].sort(() => Math.random() - 0.5).slice(0, 10);
 
-      // Exclude listicles, compilations, jukeboxes, and full albums
-      const isCompilation = /(top \d+|best of|mashup|jukebox|compilation|full album|audio jukebox|collection)/i.test(itemTitle);
-      
-      return !isSameArtist && !isCompilation;
-    });
-
-    // Fallback if filtering was too aggressive
-    const finalItems = filteredItems.length >= 4 ? filteredItems.slice(0, 10) : madeForYouSearch.items.slice(0, 10);
-
-    const madeForYou = finalItems.map((item: any) => ({
+    const madeForYou = shuffledAdminPicks.map((item: any) => ({
       id: item.videoId,
       title: item.title,
-      description: item.channelTitle || item.channelName,
-      imageUrl: item.thumbnail,
+      description: item.artist,
+      imageUrl: item.imageUrl,
       type: 'track',
       data: {
         videoId: item.videoId,
+        saavnId: item.saavnId,
+        source: item.source,
         title: item.title,
-        artist: item.channelName || item.channelTitle,
-        channelId: item.channelId,
-        channelTitle: item.channelName || item.channelTitle,
-        thumbnails: {
-          default: item.thumbnail,
-          high: item.thumbnail
-        },
-        duration: 0,
-        durationText: '',
-        playCount: 0,
-        likeCount: 0
+        artist: item.artist,
+        channelTitle: item.artist,
+        thumbnails: { default: item.imageUrl, high: item.imageUrl },
       }
     }));
 

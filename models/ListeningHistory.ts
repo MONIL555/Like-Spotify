@@ -31,7 +31,7 @@ const ListeningHistorySchema = new Schema<IListeningHistory>(
     duration: Number,
     source: {
       type: String,
-      enum: ['search', 'playlist', 'recommended', 'album', 'artist', 'queue'],
+      default: 'youtube',
     },
     contextId: String,
   },

@@ -44,7 +44,6 @@ export async function POST(req: NextRequest) {
       const tokenPayload = {
         userId: user._id.toString(),
         email: user.email,
-        plan: user.plan,
       };
 
       const accessToken = signAccessToken(tokenPayload);
@@ -77,7 +76,6 @@ export async function POST(req: NextRequest) {
               displayName: user.displayName,
               avatarUrl: user.avatarUrl,
               avatarColor: user.avatarColor,
-              plan: user.plan,
             },
           },
         },

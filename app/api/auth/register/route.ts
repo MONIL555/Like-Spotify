@@ -6,7 +6,6 @@ import { NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
-import UserPreferences from '@/models/UserPreferences';
 import { RegisterSchema } from '@/lib/validations';
 import { signAccessToken, signRefreshToken, handleApiError, ApiError, getAuthCookieOptions } from '@/lib/auth';
 import { generateAvatarColor } from '@/lib/utils';
@@ -55,13 +54,11 @@ export async function POST(req: NextRequest) {
     });
 
     // Create default preferences
-    await UserPreferences.create({ userId: user._id });
 
     // Generate tokens
     const tokenPayload = {
       userId: user._id.toString(),
       email: user.email,
-      plan: user.plan,
     };
 
     const accessToken = signAccessToken(tokenPayload);
@@ -93,7 +90,6 @@ export async function POST(req: NextRequest) {
             displayName: user.displayName,
             avatarUrl: user.avatarUrl,
             avatarColor: user.avatarColor,
-            plan: user.plan,
           },
         },
       },
