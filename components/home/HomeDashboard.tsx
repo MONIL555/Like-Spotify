@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCallback } from 'react';
+import { TrackCover } from '@/components/ui/track-cover';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -233,24 +234,13 @@ export function HomeDashboard() {
                   className="group w-[140px] md:w-[180px] shrink-0 cursor-pointer flex flex-col"
                 >
                   <div className="relative aspect-square w-full rounded-[24px] overflow-hidden shadow-lg mb-3 bg-white/5">
-                    {coverImg ? (
-                      <Image
-                        src={coverImg}
-                        alt={track.title}
-                        fill
-                        sizes="(max-width: 768px) 140px, 180px"
-                        className="object-cover transition-transform duration-700 group-hover:scale-110"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Music2 className="w-10 h-10 text-white/30" />
+                    <TrackCover src={coverImg} alt={track.title} sizes="(max-width: 768px) 140px, 180px" className="w-full h-full">
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                        <Button size="icon" className="h-12 w-12 bg-brand-primary text-white rounded-full shadow-xl hover:scale-110 transition-transform translate-y-4 group-hover:translate-y-0">
+                          <Play className="fill-current h-6 w-6 ml-1" />
+                        </Button>
                       </div>
-                    )}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
-                      <Button size="icon" className="h-12 w-12 bg-brand-primary text-white rounded-full shadow-xl hover:scale-110 transition-transform translate-y-4 group-hover:translate-y-0">
-                        <Play className="fill-current h-6 w-6 ml-1" />
-                      </Button>
-                    </div>
+                    </TrackCover>
                   </div>
                   <h3 className="font-bold text-foreground truncate text-sm md:text-base px-1">{track.title}</h3>
                   <p className="text-muted-foreground font-semibold line-clamp-1 text-xs mt-0.5 px-1">
@@ -275,24 +265,13 @@ export function HomeDashboard() {
                 className="group w-[140px] md:w-[180px] shrink-0 cursor-pointer flex flex-col"
               >
                 <div className="relative aspect-square w-full rounded-[24px] overflow-hidden shadow-lg mb-3 bg-white/5">
-                  {item.imageUrl ? (
-                    <Image
-                      src={item.imageUrl}
-                      alt={item.title}
-                      fill
-                      sizes="(max-width: 768px) 140px, 180px"
-                      className="object-cover transition-transform duration-500 group-hover:scale-110 group-hover:rotate-1"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-white/5">
-                      <Music className="w-12 h-12 text-muted-foreground opacity-20" />
+                  <TrackCover src={item.imageUrl} alt={item.title} sizes="(max-width: 768px) 140px, 180px" className="w-full h-full">
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                      <div className="w-12 h-12 rounded-full bg-brand-primary text-black flex items-center justify-center shadow-[0_0_20px_rgba(30,215,96,0.4)] transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 ease-out">
+                        <Play className="w-5 h-5 ml-1" />
+                      </div>
                     </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
-                    <div className="w-12 h-12 rounded-full bg-brand-primary text-black flex items-center justify-center shadow-[0_0_20px_rgba(30,215,96,0.4)] transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 ease-out">
-                      <Play className="w-5 h-5 ml-1" />
-                    </div>
-                  </div>
+                  </TrackCover>
                 </div>
                 <h3 className="font-bold text-foreground truncate text-sm md:text-base px-1">{item.title}</h3>
                 <p className="text-muted-foreground font-semibold line-clamp-1 text-xs mt-0.5 px-1">
@@ -339,26 +318,21 @@ export function HomeDashboard() {
                   const firstTrack = hasTracks ? pl.tracks[0] : null;
                   const imgSrc = firstTrack ? (typeof firstTrack.thumbnails?.high === 'string' ? firstTrack.thumbnails.high : (firstTrack.thumbnails?.high as any)?.url || typeof firstTrack.thumbnails?.default === 'string' ? firstTrack.thumbnails.default : (firstTrack.thumbnails?.default as any)?.url || '') : null;
 
-                  return imgSrc ? (
-                    <Image
-                      src={imgSrc}
-                      alt={pl.name}
-                      fill
-                      sizes="(max-width: 768px) 140px, 180px"
-                      className="object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                  ) : <Music2 className="w-10 h-10 text-white/30" />;
+                  return (
+                    <TrackCover src={imgSrc} alt={pl.name} sizes="(max-width: 768px) 140px, 180px" className="w-full h-full">
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                        <Button
+                          size="icon"
+                          className="h-12 w-12 bg-brand-primary text-white rounded-full shadow-xl hover:scale-110 transition-transform translate-y-4 group-hover:translate-y-0"
+                          onClick={(e) => { e.stopPropagation(); handleShufflePlaylist(pl); }}
+                          disabled={!pl.tracks || pl.tracks.length === 0}
+                        >
+                          <Shuffle className="h-5 w-5" />
+                        </Button>
+                      </div>
+                    </TrackCover>
+                  );
                 })()}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
-                  <Button
-                    size="icon"
-                    className="h-12 w-12 bg-brand-primary text-white rounded-full shadow-xl hover:scale-110 transition-transform translate-y-4 group-hover:translate-y-0"
-                    onClick={(e) => { e.stopPropagation(); handleShufflePlaylist(pl); }}
-                    disabled={!pl.tracks || pl.tracks.length === 0}
-                  >
-                    <Shuffle className="h-5 w-5" />
-                  </Button>
-                </div>
               </div>
               <h3 className="font-bold text-foreground text-sm md:text-base truncate px-1">{pl.name}</h3>
               <p className="text-muted-foreground font-semibold text-xs mt-0.5 px-1">
