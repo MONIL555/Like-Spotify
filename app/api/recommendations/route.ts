@@ -93,8 +93,8 @@ export async function GET(req: NextRequest) {
       data: item
     }));
 
-    // Shuffle and pick 10 tracks for Admin Picks
-    const shuffledAdminPicks = [...rawAdminPicks].sort(() => Math.random() - 0.5).slice(0, 10);
+    // Shuffle and return all Admin Picks (the frontend limits to 10 for the home page, but shows all on the dedicated page)
+    const shuffledAdminPicks = [...rawAdminPicks].sort(() => Math.random() - 0.5);
 
     const madeForYou = shuffledAdminPicks.map((item: any) => ({
       id: item.videoId,

@@ -264,7 +264,7 @@ export function HomeDashboard() {
       {/* 4. Based on your recent listening (Admin Picks) */}
       {recentData?.madeForYou && recentData.madeForYou.length > 0 && (
         <section className="flex flex-col gap-4">
-          <SectionHeader title="Admin Picks" onSeeAll={() => router.push('/search')} />
+          <SectionHeader title="Admin Picks" onSeeAll={() => router.push('/admin-picks')} />
           <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-2 -mx-4 px-4 md:mx-0 md:px-0">
             {recentData.madeForYou.slice(0, 10).map((item: any, idx: number) => (
               <div
@@ -287,11 +287,6 @@ export function HomeDashboard() {
                 </p>
               </div>
             ))}
-          </div>
-          <div className="flex justify-center mt-2 mb-4">
-             <button onClick={() => router.push('/search')} className="text-sm font-bold bg-white/10 hover:bg-white/20 transition-colors px-6 py-2 rounded-full text-foreground flex items-center gap-2">
-               See all songs <ArrowRight className="w-4 h-4" />
-             </button>
           </div>
         </section>
       )}
