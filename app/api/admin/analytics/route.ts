@@ -9,7 +9,7 @@ import CachedTrack from '@/models/CachedTrack';
 import { getVideoDetails } from '@/lib/youtube';
 import { getSaavnTrackDetails } from '@/lib/jiosaavn';
 
-export async function GET(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const jwtUser = await withAuth(req);
     if (jwtUser.role !== 'admin') {

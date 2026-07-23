@@ -8,7 +8,7 @@ import { Users, ListMusic, Activity, Clock, Music, TrendingUp, Shield, HardDrive
 import Link from 'next/link';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
-
+const postFetcher = (url: string) => fetch(url, { method: 'POST' }).then(res => res.json());
 function formatDuration(seconds: number): string {
   if (!seconds || seconds <= 0) return '0m';
   const hours = Math.floor(seconds / 3600);
@@ -30,7 +30,7 @@ export default function AdminPage() {
   // Analytics
   const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useSWR(
     user?.role === 'admin' ? '/api/admin/analytics' : null,
-    fetcher,
+    postFetcher,
     { revalidateOnFocus: false, dedupingInterval: 60000 }
   );
 

@@ -164,7 +164,7 @@ export default function AdminCachedTracksPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-md bg-white/10 overflow-hidden shrink-0 flex items-center justify-center">
-                            {thumb ? <img src={thumb} className="w-full h-full object-cover" /> : <Music className="w-4 h-4 text-muted-foreground" />}
+                            {thumb ? <img src={thumb} className="w-full h-full object-cover" alt="Track thumbnail" /> : <Music className="w-4 h-4 text-muted-foreground" />}
                           </div>
                           <div className="min-w-0 max-w-[250px]">
                             <p className="text-sm font-bold truncate text-foreground" title={track.title}>{track.title}</p>
