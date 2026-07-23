@@ -88,6 +88,8 @@ export async function GET(req: NextRequest) {
           plainLyrics: saavnLyrics,
           syncedLyrics: null,
           source: 'jiosaavn',
+        }, {
+          headers: { 'Cache-Control': 's-maxage=86400, stale-while-revalidate=172800' },
         });
       }
     }
@@ -144,6 +146,8 @@ export async function GET(req: NextRequest) {
         plainLyrics: foundData.plainLyrics || null,
         syncedLyrics: foundData.syncedLyrics || null,
         source: 'lrclib',
+      }, {
+        headers: { 'Cache-Control': 's-maxage=86400, stale-while-revalidate=172800' },
       });
     }
 

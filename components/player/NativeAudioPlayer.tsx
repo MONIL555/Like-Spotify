@@ -290,6 +290,7 @@ export function NativeAudioPlayer() {
       <audio
         ref={audioRef}
         src={streamUrl || undefined}
+        preload="auto"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleEnded}

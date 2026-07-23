@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { mutate } from 'swr';
+import { toast } from 'sonner';
 import { usePlayerStore } from '@/store/playerStore';
 import { useQueueStore } from '@/store/queueStore';
 import { useHistoryStore } from '@/store/historyStore';
@@ -20,6 +21,8 @@ export function YouTubeEmbed() {
   const silentAudioRef = useRef<HTMLAudioElement>(null);
   const wakeLockRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  // In-memory dedup: skip /api/cache-track GET for videoIds we've already checked this session
+  const cacheCheckedIds = useRef<Set<string>>(new Set());
 
   const {
     currentTrack,
@@ -160,11 +163,9 @@ export function YouTubeEmbed() {
       playerRef.current.loadVideoById(currentTrack.videoId);
       
       // Inform user about limited lockscreen
-      import('sonner').then(({ toast }) => {
-        toast('ℹ️ Playing via YouTube — lockscreen controls limited.', { 
-          description: 'Listen for 30s to unlock full background playback!',
-          duration: 5000 
-        });
+      toast('ℹ️ Playing via YouTube — lockscreen controls limited.', { 
+        description: 'Listen for 30s to unlock full background playback!',
+        duration: 5000 
       });
       // Wait for it to play, the onStateChange will handle the isPlaying state update
     }
@@ -175,6 +176,10 @@ export function YouTubeEmbed() {
   // ══════════════════════════════════════════════════════════════
   useEffect(() => {
     if (isActive && currentTrack && currentTrack.source === 'youtube') {
+      // Skip if we've already checked this videoId this session
+      if (cacheCheckedIds.current.has(currentTrack.videoId)) return;
+      cacheCheckedIds.current.add(currentTrack.videoId);
+
       // Check if it's already cached in the database
       fetch(`/api/cache-track?videoId=${currentTrack.videoId}`)
         .then(res => res.json())
@@ -276,9 +281,7 @@ export function YouTubeEmbed() {
             if (t >= 30 && !cacheRequestedRef.current && currentTrack) {
               cacheRequestedRef.current = true;
               
-              import('sonner').then(({ toast }) => {
-                toast('🎵 Caching this song for lockscreen playback...', { duration: 3000 });
-              });
+              toast('🎵 Caching this song for lockscreen playback...', { duration: 3000 });
               
               fetch('/api/cache-track', {
                 method: 'POST',
@@ -292,11 +295,7 @@ export function YouTubeEmbed() {
               .then(res => res.json())
               .then(data => {
                 if (data.status === 'ready') {
-                   if (data.message) {
-                     import('sonner').then(({ toast }) => {
-                       toast.success(`✅ "${currentTrack.title}" is now available with full lockscreen support!`);
-                     });
-                   }
+                      toast.success(`✅ "${currentTrack.title}" is now available with full lockscreen support!`);
                    if (data.audioUrl) {
                      const store = usePlayerStore.getState();
                      const t = store.currentTime;
@@ -315,12 +314,10 @@ export function YouTubeEmbed() {
                        if (typeof (window as any).seekTo === 'function') {
                          (window as any).seekTo(t);
                        }
-                     }, 500);
+                     }, 200);
                    }
                 } else if (data.error) {
-                   import('sonner').then(({ toast }) => {
-                       toast.error(`⚠️ Song couldn't be cached — lockscreen won't work for this track`);
-                   });
+                      toast.error(`⚠️ Song couldn't be cached — lockscreen won't work for this track`);
                 }
               })
               .catch(err => console.error('Failed to trigger cache:', err));
@@ -328,7 +325,7 @@ export function YouTubeEmbed() {
           }
         } catch { /* ignore */ }
       }
-    }, 250);
+    }, 1000);
 
     return () => clearInterval(id);
   }, [isPlaying, isActive, setCurrentTime, currentTrack]);

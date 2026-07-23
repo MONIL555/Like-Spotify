@@ -23,7 +23,9 @@ export async function GET(req: NextRequest) {
 
     const playlists = await Playlist.find(query).sort({ createdAt: -1 }).lean();
 
-    return NextResponse.json(playlists);
+    const res = NextResponse.json(playlists);
+    res.headers.set('Cache-Control', 'private, s-maxage=60, stale-while-revalidate=120');
+    return res;
   } catch (error: any) {
     console.error('Playlists GET Error:', error);
     return NextResponse.json({ error: 'Failed to get playlists' }, { status: 500 });

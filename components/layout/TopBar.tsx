@@ -32,7 +32,7 @@ function SearchInput() {
       } else {
         router.push('/search');
       }
-    }, 400);
+    }, 350);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

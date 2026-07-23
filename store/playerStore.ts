@@ -163,10 +163,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       const recentSkipIds = allSkipIds.slice(-60);
       const skipParam = recentSkipIds.length > 0 ? `&skipVideoIds=${recentSkipIds.join(',')}` : '';
       
-      // OPTIMIZATION: Delay background mix fetching by 2.5s to free up concurrent connections for the audio stream
-      if (!force) {
-        await new Promise(resolve => setTimeout(resolve, 2500));
-      }
+      // Background mix fetch — no artificial delay (browser handles connection scheduling)
       
       console.log(`[Autoplay] Fetching mix for: "${track.title}" by "${track.artist}"...`);
       const res = await fetch(
@@ -254,7 +251,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
     if (next) {
       setCurrentTrack(next);
-      setTimeout(() => setIsPlaying(true), 50);
+      setIsPlaying(true);
 
       // Pre-fetch next batch if autoplay queue is running low (< 3 tracks)
       const { autoplayQueue, playbackSource } = useQueueStore.getState();

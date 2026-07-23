@@ -17,13 +17,17 @@ export async function GET(
         return NextResponse.json({ error: 'Stream not found' }, { status: 404 });
       }
       
-      return NextResponse.json({ streamUrl: track.streamUrl, source: 'jiosaavn' });
+      return NextResponse.json({ streamUrl: track.streamUrl, source: 'jiosaavn' }, {
+        headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=7200' },
+      });
     }
     
     // If it's just a regular JioSaavn ID (no prefix)
     const track = await getSaavnTrackDetails(id);
     if (track && track.streamUrl) {
-      return NextResponse.json({ streamUrl: track.streamUrl, source: 'jiosaavn' });
+      return NextResponse.json({ streamUrl: track.streamUrl, source: 'jiosaavn' }, {
+        headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=7200' },
+      });
     }
 
     // Check CachedTrack collection
@@ -33,7 +37,9 @@ export async function GET(
       const CachedTrack = (await import('@/models/CachedTrack')).default;
       const cached = await CachedTrack.findOne({ videoId: id, status: 'ready' }).lean();
       if (cached && cached.audioUrl) {
-        return NextResponse.json({ streamUrl: cached.audioUrl, source: 'pagalworld_cached' });
+        return NextResponse.json({ streamUrl: cached.audioUrl, source: 'pagalworld_cached' }, {
+          headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=7200' },
+        });
       }
     } catch (e) {
       console.warn('Error checking CachedTrack:', e);

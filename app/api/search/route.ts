@@ -8,9 +8,8 @@ import { ZodError } from 'zod';
 
 export async function GET(req: NextRequest) {
   try {
-    // 1. Rate Limiting
+    // 1. Get client IP for rate limiting (check happens in parallel below)
     const ip = getClientIp(req);
-    await checkRateLimit(searchLimiter, ip);
 
     // 2. Parse Query Parameters
     const url = new URL(req.url);
@@ -27,28 +26,49 @@ export async function GET(req: NextRequest) {
       ...(sourceParam && { source: sourceParam }) 
     });
 
-    // Step 2.5: Fetch from CachedTrack (PagalWorld/PagalNew cached tracks)
-    const CachedTrack = (await import('@/models/CachedTrack')).default;
-    let localCachedTracks: any[] = [];
-    if (validated.source !== 'jiosaavn' && (validated.type === 'video' || validated.type === 'all' || !validated.type)) {
-      await connectDB();
-      const dbCachedTracks = await CachedTrack.find(
-        { $text: { $search: validated.q }, status: 'ready' },
-        { score: { $meta: 'textScore' } }
-      ).sort({ score: { $meta: 'textScore' } }).limit(5).lean();
+    // Step 2.5: Kick off rate-limit, Redis cache, and CachedTrack DB search in parallel
+    const cacheKey = `search:${validated.type}:${validated.q.toLowerCase()}`;
+    
+    const [, searchCacheResult, localCachedTracks] = await Promise.all([
+      checkRateLimit(searchLimiter, ip),
+      redis.get(cacheKey),
+      // Fetch from CachedTrack (PagalWorld/PagalNew cached tracks)
+      (validated.source !== 'jiosaavn' && (validated.type === 'video' || validated.type === 'all' || !validated.type))
+        ? (async () => {
+            await connectDB();
+            const CachedTrack = (await import('@/models/CachedTrack')).default;
+            const dbCachedTracks = await CachedTrack.find(
+              { $text: { $search: validated.q }, status: 'ready' },
+              { score: { $meta: 'textScore' } }
+            ).sort({ score: { $meta: 'textScore' } }).limit(5).lean();
+            return dbCachedTracks.map((ct: any) => ({
+              videoId: ct.videoId,
+              title: ct.title,
+              artist: ct.artist,
+              channelTitle: ct.channelTitle,
+              channelId: ct.channelId,
+              thumbnails: ct.thumbnails,
+              duration: ct.duration,
+              durationText: ct.durationText,
+              source: 'pagalworld_cached',
+              audioUrl: ct.audioUrl,
+            }));
+          })()
+        : Promise.resolve([] as any[]),
+    ]);
 
-      localCachedTracks = dbCachedTracks.map((ct: any) => ({
-        videoId: ct.videoId,
-        title: ct.title,
-        artist: ct.artist,
-        channelTitle: ct.channelTitle,
-        channelId: ct.channelId,
-        thumbnails: ct.thumbnails,
-        duration: ct.duration,
-        durationText: ct.durationText,
-        source: 'pagalworld_cached',
-        audioUrl: ct.audioUrl,
-      }));
+    if (searchCacheResult) {
+      const parsedResults: any = typeof searchCacheResult === 'string' ? JSON.parse(searchCacheResult) : searchCacheResult;
+      
+      if (parsedResults?.items?.length > 0 && parsedResults.source !== 'youtube') {
+        const localIds = new Set(localCachedTracks.map((t: any) => t.videoId));
+        parsedResults.items = parsedResults.items.filter((item: any) => !localIds.has(item.videoId || item.id));
+        parsedResults.items = [...localCachedTracks, ...parsedResults.items];
+        
+        const res = NextResponse.json(parsedResults);
+        res.headers.set('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
+        return res;
+      }
     }
 
     if (validated.source === 'youtube') {
@@ -56,18 +76,14 @@ export async function GET(req: NextRequest) {
       const searchData = await searchYouTube(validated.q, fetchLimit, undefined, validated.type);
       
       if (validated.type === 'video' && searchData.items && searchData.items.length > 0) {
-        // Sort to prioritize official channels ("Topic" or "VEVO")
         searchData.items.sort((a: any, b: any) => {
           const aIsOfficial = a.channelName?.toLowerCase().includes('topic') || a.channelName?.toLowerCase().includes('vevo') ? 1 : 0;
           const bIsOfficial = b.channelName?.toLowerCase().includes('topic') || b.channelName?.toLowerCase().includes('vevo') ? 1 : 0;
           return bIsOfficial - aIsOfficial;
         });
-        
-        // Slice down to requested limit
         searchData.items = searchData.items.slice(0, validated.limit);
       }
 
-      // Deduplicate and prepend
       const localIds = new Set(localCachedTracks.map(t => t.videoId));
       if (searchData.items) {
         searchData.items = searchData.items.filter((item: any) => !localIds.has(item.videoId));
@@ -75,24 +91,6 @@ export async function GET(req: NextRequest) {
       }
       
       return NextResponse.json({ ...searchData, source: 'youtube' });
-    }
-
-    // 3. Check Redis Cache
-    const cacheKey = `search:${validated.type}:${validated.q.toLowerCase()}`;
-    const searchCacheResult = await redis.get(cacheKey);
-
-    if (searchCacheResult) {
-      // Upstash Redis parses JSON automatically, but just in case we handle both
-      const parsedResults: any = typeof searchCacheResult === 'string' ? JSON.parse(searchCacheResult) : searchCacheResult;
-      
-      if (parsedResults?.items?.length > 0 && parsedResults.source !== 'youtube') {
-        // Prepend local tracks if not present
-        const localIds = new Set(localCachedTracks.map((t: any) => t.videoId));
-        parsedResults.items = parsedResults.items.filter((item: any) => !localIds.has(item.videoId || item.id));
-        parsedResults.items = [...localCachedTracks, ...parsedResults.items];
-        
-        return NextResponse.json(parsedResults);
-      }
     }
 
     // 4. Try JioSaavn API First
@@ -136,7 +134,9 @@ export async function GET(req: NextRequest) {
     }
 
 
-    return NextResponse.json({ ...searchData, source });
+    const res = NextResponse.json({ ...searchData, source });
+    res.headers.set('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
+    return res;
 
   } catch (error: any) {
     if (error instanceof ZodError) {

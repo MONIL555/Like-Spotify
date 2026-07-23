@@ -42,8 +42,10 @@ export const TrackRow = memo(function TrackRow({ track, index, showCover = true,
   const loadSingle = useQueueStore(s => s.loadSingle);
   const addToQueue = useQueueStore(s => s.addToQueue);
   
-  const { mutate } = useSWRConfig();
-  const { data: playlists } = useSWR('/api/playlists', fetcher);
+  const { mutate, cache } = useSWRConfig();
+  // Read playlists from shared SWR cache (populated by Sidebar) instead of firing a new fetch per row
+  const cachedPlaylists = cache.get('/api/playlists');
+  const playlists = cachedPlaylists?.data;
   
   const isCurrentTrack = currentTrack?.videoId === track.videoId;
   

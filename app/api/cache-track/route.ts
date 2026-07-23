@@ -13,9 +13,13 @@ export async function GET(req: NextRequest) {
     await connectDB();
     const cachedTrack = await CachedTrack.findOne({ videoId, status: 'ready' }).lean();
     if (cachedTrack) {
-      return NextResponse.json({ status: 'ready', track: cachedTrack });
+      return NextResponse.json({ status: 'ready', track: cachedTrack }, {
+        headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=7200' },
+      });
     }
-    return NextResponse.json({ status: 'not_found' });
+    return NextResponse.json({ status: 'not_found' }, {
+      headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=120' },
+    });
   } catch (error) {
     return NextResponse.json({ status: 'error' }, { status: 500 });
   }

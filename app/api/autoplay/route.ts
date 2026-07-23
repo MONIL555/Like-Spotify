@@ -89,7 +89,7 @@ function buildDiverseQueries(cleanArtist: string, cleanTitle: string, allArtists
     queries.push(cleanTitle);
   }
 
-  return Array.from(new Set(queries)).filter(Boolean).slice(0, 8); // deduplicate and cap at 8
+  return Array.from(new Set(queries)).filter(Boolean).slice(0, 4); // deduplicate and cap at 4 for speed
 }
 
 /**
@@ -240,15 +240,17 @@ export async function GET(req: NextRequest) {
     // Shuffle the mix for a radio-like feel (not always same order)
     const shuffledMix = shuffleArray(mixTracks);
 
-    // Return up to 20 tracks for longer uninterrupted play
-    const playlist = shuffledMix.slice(0, 20);
+    // Return up to 15 tracks for good uninterrupted play without excessive payload
+    const playlist = shuffledMix.slice(0, 15);
 
     console.log(`[Autoplay] Built mix: ${playlist.length} tracks from ${artistCounts.size} artists`);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       playlist,
       track: playlist[0],
     });
+    response.headers.set('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
+    return response;
 
   } catch (error: any) {
     console.error('Autoplay GET Error:', error);

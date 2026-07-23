@@ -27,33 +27,6 @@ export async function GET(req: NextRequest) {
     const jwtUser = await getUserFromReq(req);
     await connectDB();
 
-    let recentlyPlayed: any[] = [];
-
-    if (jwtUser && jwtUser.role !== 'admin') {
-      // Get most recent unique videoIds from history
-      const history = await ListeningHistory.aggregate([
-        { $match: { userId: new mongoose.Types.ObjectId(jwtUser.userId) } },
-        { $sort: { listenedAt: -1 } },
-        { $group: {
-            _id: '$videoId',
-            listenedAt: { $first: '$listenedAt' }
-        }},
-        { $sort: { listenedAt: -1 } },
-        { $limit: 10 }
-      ]);
-
-      if (history.length > 0) {
-        const videoIds = history.map((h: any) => h._id);
-        const tracks = await Track.find({ videoId: { $in: videoIds } }).lean();
-        
-        // Map back to preserve sorted order
-        recentlyPlayed = videoIds.map((id: string) => {
-          const track = tracks.find(t => t.videoId === id);
-          return track ? track : null;
-        }).filter(Boolean);
-      }
-    }
-
     const currentYear = new Date().getFullYear();
     const hourBlock = Math.floor(new Date().getHours() / 4);
     
@@ -71,16 +44,33 @@ export async function GET(req: NextRequest) {
     ];
     const newReleasesQuery = trendingQueries[hourBlock % trendingQueries.length];
 
-    // Fetch New Releases
-    let newReleasesSearchPromise = searchSaavn(newReleasesQuery, 15).catch(() => ([]));
-    
-    // Fetch Admin Picks (formerly "Jump Back In")
-    let adminPicksPromise = CuratedTrack.find({ category: 'admin_picks' }).lean().catch(() => ([]));
-
-    const [rawNewReleasesSearch, rawAdminPicks] = await Promise.all([
-      newReleasesSearchPromise, 
-      adminPicksPromise
+    // Run ALL data fetches in parallel — no sequential waterfall
+    const [recentlyPlayedRaw, rawNewReleasesSearch, rawAdminPicks] = await Promise.all([
+      // 1. Recently played (only for non-admin users)
+      (jwtUser && jwtUser.role !== 'admin')
+        ? (async () => {
+            const history = await ListeningHistory.aggregate([
+              { $match: { userId: new mongoose.Types.ObjectId(jwtUser.userId) } },
+              { $sort: { listenedAt: -1 } },
+              { $group: { _id: '$videoId', listenedAt: { $first: '$listenedAt' } }},
+              { $sort: { listenedAt: -1 } },
+              { $limit: 10 }
+            ]);
+            if (history.length > 0) {
+              const videoIds = history.map((h: any) => h._id);
+              const tracks = await Track.find({ videoId: { $in: videoIds } }).lean();
+              return videoIds.map((id: string) => tracks.find(t => t.videoId === id)).filter(Boolean);
+            }
+            return [];
+          })()
+        : Promise.resolve([]),
+      // 2. Trending search from JioSaavn
+      searchSaavn(newReleasesQuery, 15).catch(() => []),
+      // 3. Admin picks from MongoDB
+      CuratedTrack.find({ category: 'admin_picks' }).lean().catch(() => []),
     ]);
+
+    const recentlyPlayed = recentlyPlayedRaw as any[];
 
     // Deduplicate to avoid the same song from different albums (e.g., 5 versions of Jaan Nisaar)
     const deduplicateTracks = (tracks: any[]) => {
@@ -123,7 +113,7 @@ export async function GET(req: NextRequest) {
       }
     }));
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       recentlyPlayed: recentlyPlayed.map((t: any) => ({
         id: t.videoId,
         title: t.title,
@@ -135,6 +125,8 @@ export async function GET(req: NextRequest) {
       newReleases,
       madeForYou
     });
+    response.headers.set('Cache-Control', 's-maxage=900, stale-while-revalidate=1800');
+    return response;
 
   } catch (error: any) {
     console.error('Recommendations GET Error:', error);

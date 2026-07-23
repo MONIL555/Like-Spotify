@@ -33,7 +33,7 @@ export function SearchBar() {
       } else if (query === '' && currentQuery !== '') {
         router.push('/search');
       }
-    }, 1000);
+    }, 400);
 
     return () => clearTimeout(timer);
   }, [query, router, currentQuery]);

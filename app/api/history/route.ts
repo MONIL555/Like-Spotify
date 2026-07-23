@@ -22,16 +22,15 @@ export async function POST(req: NextRequest) {
     if (!videoId) return NextResponse.json({ error: 'videoId is required' }, { status: 400 });
 
     // We record all listening history (YouTube, JioSaavn, cached, etc.) for analytics.
-    // The previous restriction has been removed to accurately reflect active users and total listening time.
-
-    await connectDB();
-
-    enqueueHistory({
-      userId: jwtUser.userId,
-      videoId,
-      duration,
-      source: source || 'queue',
-    }, body.trackData);
+    // Fire-and-forget: connectDB and enqueue happen in background, response returns instantly
+    connectDB().then(() => {
+      enqueueHistory({
+        userId: jwtUser.userId,
+        videoId,
+        duration,
+        source: source || 'queue',
+      }, body.trackData);
+    }).catch(err => console.error('History enqueue failed:', err));
 
     return NextResponse.json({ success: true });
 

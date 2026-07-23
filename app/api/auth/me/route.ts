@@ -45,6 +45,8 @@ export async function GET(req: NextRequest) {
     return Response.json({
       success: true,
       data: { user },
+    }, {
+      headers: { 'Cache-Control': 'private, s-maxage=30, stale-while-revalidate=60' },
     });
   } catch (error) {
     return handleApiError(error);
