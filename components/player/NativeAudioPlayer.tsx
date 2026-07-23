@@ -66,12 +66,17 @@ export function NativeAudioPlayer() {
       return;
     }
 
-    if (currentTrack.saavnId) {
+    const saavnIdToUse = currentTrack.saavnId || (currentTrack.videoId?.startsWith('saavn_') ? currentTrack.videoId.replace('saavn_', '') : null);
+    const trackIdToFetch = saavnIdToUse || currentTrack.videoId;
+
+    if (trackIdToFetch) {
       if (audioRef.current) {
         audioRef.current.pause();
       }
+      // Clear the old stream URL immediately to prevent playing the old song while loading
+      setStreamUrl(null);
       // Fetch stream dynamically
-      fetch(`/api/tracks/${currentTrack.saavnId}/stream`)
+      fetch(`/api/tracks/${trackIdToFetch}/stream`)
         .then(res => res.json())
         .then(data => {
           if (data.streamUrl) {
@@ -241,9 +246,11 @@ export function NativeAudioPlayer() {
     }
   };
 
-  const handleError = () => {
+  const handleError = (e: any) => {
+    if (!streamUrl) return; // Ignore errors caused by clearing the src during track transitions
+    
     if (isActive) {
-      console.error('Native Audio Player Error.');
+      console.error('Native Audio Player Error:', e?.nativeEvent);
       const { youtubeFallbackEnabled } = useConfigStore.getState();
       
       // Only fallback if YouTube is enabled AND it's a valid YouTube video ID (not a JioSaavn track)

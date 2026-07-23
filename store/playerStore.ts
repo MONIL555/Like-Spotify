@@ -75,7 +75,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
 
     let activePlayer: 'native' | 'youtube' = 'youtube';
-    if (track.streamUrl || track.saavnId || (track.source && (track.source.endsWith('_cached') || track.source === 'admin_manual'))) {
+    if (track.streamUrl || track.saavnId || track.videoId?.startsWith('saavn_') || (track.source && (track.source.endsWith('_cached') || track.source === 'admin_manual'))) {
       activePlayer = 'native';
     }
 
@@ -162,6 +162,11 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       // To prevent extremely long URLs in endless radio mode, take the last 60 skip IDs
       const recentSkipIds = allSkipIds.slice(-60);
       const skipParam = recentSkipIds.length > 0 ? `&skipVideoIds=${recentSkipIds.join(',')}` : '';
+      
+      // OPTIMIZATION: Delay background mix fetching by 2.5s to free up concurrent connections for the audio stream
+      if (!force) {
+        await new Promise(resolve => setTimeout(resolve, 2500));
+      }
       
       console.log(`[Autoplay] Fetching mix for: "${track.title}" by "${track.artist}"...`);
       const res = await fetch(

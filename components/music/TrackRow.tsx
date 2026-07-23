@@ -54,7 +54,7 @@ export const TrackRow = memo(function TrackRow({ track, index, showCover = true,
 
   const handlePlay = () => {
     if (isDragging) return; // Prevent click if we just finished dragging
-    const isNativeTrack = !!(track.streamUrl || track.saavnId || track.audioUrl || (track.source && (track.source.endsWith('_cached') || track.source === 'admin_manual')));
+    const isNativeTrack = !!(track.streamUrl || track.saavnId || track.videoId?.startsWith('saavn_') || track.audioUrl || (track.source && (track.source.endsWith('_cached') || track.source === 'admin_manual')));
     
     if (typeof window !== 'undefined') {
       if (isCurrentTrack) {

@@ -81,7 +81,7 @@ export function HomeDashboard() {
   const { data: playlists } = useSWR('/api/playlists', fetcher, SWR_OPTIONS);
 
   // Trending Bollywood data (Tracks) - JioSaavn (no type=video)
-  const { data: trendingData, isLoading: trendingLoading } = useSWR(`/api/search?q=${encodeURIComponent(currentTrendingQuery)}&limit=15&source=jiosaavn&block=${hourBlock}&v=4`, fetcher, SWR_OPTIONS);
+  const { data: trendingData, isLoading: trendingLoading } = useSWR(`/api/search?q=${encodeURIComponent(currentTrendingQuery)}&limit=30&source=jiosaavn&block=${hourBlock}&v=4`, fetcher, SWR_OPTIONS);
 
   const loadPlaylist = useQueueStore(s => s.loadPlaylist);
   const loadSingle = useQueueStore(s => s.loadSingle);
@@ -92,7 +92,11 @@ export function HomeDashboard() {
 
   const handlePlayTrack = useCallback((track: any, contextList?: any[], index?: number) => {
     if (typeof window !== 'undefined' && (window as any).playVideoSync) {
-      (window as any).playVideoSync(track.videoId || track.id);
+      if (track.source === 'jiosaavn' || track.source === 'pagalworld_cached' || track.source === 'admin_manual' || track.audioUrl || track.saavnId || track.videoId?.startsWith('saavn_')) {
+        (window as any).playVideoSync();
+      } else {
+        (window as any).playVideoSync(track.videoId || track.id);
+      }
     } else if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
       (window as any).playSilentAudio();
     }
@@ -130,7 +134,11 @@ export function HomeDashboard() {
       shuffleQueue();
       if (nextTrack) {
         if (typeof window !== 'undefined' && (window as any).playVideoSync) {
-          (window as any).playVideoSync(nextTrack.videoId);
+          if (nextTrack.source === 'jiosaavn' || nextTrack.source === 'pagalworld_cached' || nextTrack.source === 'admin_manual' || nextTrack.audioUrl || nextTrack.saavnId || nextTrack.videoId?.startsWith('saavn_')) {
+            (window as any).playVideoSync();
+          } else {
+            (window as any).playVideoSync(nextTrack.videoId);
+          }
         } else if (typeof window !== 'undefined' && (window as any).playSilentAudio) {
           (window as any).playSilentAudio();
         }

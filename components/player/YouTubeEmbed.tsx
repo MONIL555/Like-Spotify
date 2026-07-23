@@ -127,8 +127,14 @@ export function YouTubeEmbed() {
           }
         },
         onError: () => {
-          // If the video fails to load or play, try the next one in the queue after a brief delay
-          setTimeout(handleAdvanceToNext, 1000);
+          // Only advance if YouTube is actually the active player!
+          const store = usePlayerStore.getState();
+          if (store.activePlayer === 'youtube') {
+            console.error('[YouTube Player] Error occurred, advancing to next track...');
+            setTimeout(handleAdvanceToNext, 1000);
+          } else {
+            console.warn('[YouTube Player] Error occurred, but ignored since native player is active.');
+          }
         },
       },
     });
